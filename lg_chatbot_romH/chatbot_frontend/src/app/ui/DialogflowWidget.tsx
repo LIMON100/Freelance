@@ -3,6 +3,7 @@ import Head from 'next/head';
 
 const DialogflowWidget = () => {
   useEffect(() => {
+    if (typeof window !== 'undefined') {
     // Ensure the script is added only once to avoid conflicts
     const script = document.createElement('script');
     script.src = 'https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/df-messenger.js';
@@ -12,7 +13,7 @@ const DialogflowWidget = () => {
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+}}, []);
 
   return (
     <>
