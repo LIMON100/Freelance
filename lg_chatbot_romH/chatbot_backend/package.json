@@ -1,3 +1,5 @@
+
+
 {
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -9,8 +11,8 @@
   },
   "scripts": {
     "start": "node dist/server.js",
-    "build": "tsc",
-    "dev": "nodemon src/server.ts"
+     "build": "tsc",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "^0.3.8",
