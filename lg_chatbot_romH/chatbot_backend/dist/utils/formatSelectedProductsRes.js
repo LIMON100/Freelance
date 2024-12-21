@@ -7,3 +7,4 @@ const formatSelectedProductsRes = (rows) => {
     return rows.map((row, price) => `*${row.name}* (Platform: ${row.platform}) (Price: ${row.price}`).join("\n");
 };
 exports.default = formatSelectedProductsRes;
+//# sourceMappingURL=formatSelectedProductsRes.js.map

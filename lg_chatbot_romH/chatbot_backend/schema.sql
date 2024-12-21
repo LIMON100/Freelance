@@ -1,7 +1,6 @@
-CREATE TABLE IF NOT EXISTS user_memories (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE memories (
+    id UUID PRIMARY KEY,
     user_id VARCHAR(255) NOT NULL,
-    memory_id VARCHAR(255) NOT NULL UNIQUE,
-    content TEXT,
+    content TEXT NOT NULL,
     context TEXT
 );

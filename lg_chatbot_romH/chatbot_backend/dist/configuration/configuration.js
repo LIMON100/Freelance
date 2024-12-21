@@ -20,3 +20,4 @@ function ensureConfiguration(config) {
         systemPrompt: (configurable === null || configurable === void 0 ? void 0 : configurable.systemPrompt) || prompts_1.SYSTEM_PROMPT,
     };
 }
+//# sourceMappingURL=configuration.js.map

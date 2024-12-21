@@ -35,3 +35,4 @@ app.listen(PORT, () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
 });
 (0, db_1.testConnection)();
+//# sourceMappingURL=server.js.map

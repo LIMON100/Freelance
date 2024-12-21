@@ -56,3 +56,4 @@ const allProductsTool = (0, tools_1.tool)((input, config) => __awaiter(void 0, v
     }),
 });
 exports.default = allProductsTool;
+//# sourceMappingURL=allProductsTool.js.map

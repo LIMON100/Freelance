@@ -21,13 +21,6 @@ const upsertMemoryTool_1 = __importDefault(require("./tools/upsertMemoryTool"));
 const prompts_1 = require("./prompts/prompts");
 const configuration_1 = require("./configuration/configuration");
 const allProductsTool_1 = __importDefault(require("./tools/allProductsTool"));
-
-import { pool } from "./db/db"; //NEW
-
-const checkpointer = new langgraph_1.MemorySaver();
-const userId = "12"; // Get userId from config or elsewhere (better to pass this in)
-const namespaceForMemory = [userId, "memories"];
-
 const chatBot = (humanMessage, prevMessages) => __awaiter(void 0, void 0, void 0, function* () {
     const StateAnnotation = configuration_1.ConfigurationAnnotation;
     // Define the tools for the agent to use
@@ -55,25 +48,8 @@ const chatBot = (humanMessage, prevMessages) => __awaiter(void 0, void 0, void 0
         // Otherwise, we stop (reply to the user)
         return "__end__";
     }
-
-    // NEW function
-    async function getMemories(userId) {
-        const client = await pool.connect();
-        try {
-            const query = `SELECT content, context FROM user_memories WHERE user_id = $1`;
-            const result = await client.query(query, [userId]);
-            return result.rows.map(row => ({ content: row.content, context: row.context }));
-        } catch (error) {
-            console.error("Error fetching memories:", error);
-            throw error;
-        } finally {
-            client.release();
-        }
-    }
     // Define the function that calls the model
-    async function callModel(state, config) {
-        const memories = await getMemories(config.configurable.user_id);
-        let formatted = memories.map(mem => `${mem.content}: ${mem.context}`).join("\n") || "";
+    function callModel(state, config) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             const store = config.store;
@@ -130,23 +106,18 @@ const chatBot = (humanMessage, prevMessages) => __awaiter(void 0, void 0, void 0
         return langgraph_1.END;
     }
     // Define a new graph
-    // const workflow = new langgraph_1.StateGraph(StateAnnotation)
-    //     .addNode("agent", callModel)
-    //     // .addNode("store_memory", storeMemory)
-    //     .addNode("tools", toolNode)
-    //     .addEdge("__start__", "agent")
-    //     // .addConditionalEdges("agent", routeMessage, {
-    //     //   store_memory: "store_memory",
-    //     //   [END]: END,
-    //     // })
-    //     // .addEdge("store_memory", "agent")
-    //     .addConditionalEdges("agent", shouldContinue)
-    //     .addEdge("tools", "agent");
-    const workflow = new StateGraph(StateAnnotation)
+    const workflow = new langgraph_1.StateGraph(StateAnnotation)
         .addNode("agent", callModel)
+        // .addNode("store_memory", storeMemory)
         .addNode("tools", toolNode)
-        .addEdge("start", "agent")
-        .addConditionalEdges("agent", shouldContinue); 
+        .addEdge("__start__", "agent")
+        // .addConditionalEdges("agent", routeMessage, {
+        //   store_memory: "store_memory",
+        //   [END]: END,
+        // })
+        // .addEdge("store_memory", "agent")
+        .addConditionalEdges("agent", shouldContinue)
+        .addEdge("tools", "agent");
     // Initialize memory to persist state between graph runs
     const checkpointer = new langgraph_1.MemorySaver();
     const inMemoryStore = new langgraph_2.InMemoryStore();
@@ -176,4 +147,3 @@ const chatBot = (humanMessage, prevMessages) => __awaiter(void 0, void 0, void 0
     return finalState.messages[finalState.messages.length - 1].content;
 });
 exports.default = chatBot;
-

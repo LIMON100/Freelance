@@ -43,3 +43,4 @@ When responding, follow these guidelines:
    - Prioritize accuracy when retrieving data from the database.
    - Maintain a friendly and professional tone.
 `;
+//# sourceMappingURL=prompts.js.map

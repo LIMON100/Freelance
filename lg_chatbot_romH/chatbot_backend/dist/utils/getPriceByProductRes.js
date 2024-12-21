@@ -7,3 +7,4 @@ const formatPriceByProductRes = (rows) => {
     return rows.map((row) => `*${row.name}* (Price: ${row.price})`).join("\n");
 };
 exports.default = formatPriceByProductRes;
+//# sourceMappingURL=getPriceByProductRes.js.map
