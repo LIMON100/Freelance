@@ -1,0 +1,11 @@
+{
+  "42": [
+    {
+      "key": "platform_preference",
+      "value": {
+        "content": "pc",
+        "context": "User mentioned platform preference."
+      }
+    }
+  ]
+}

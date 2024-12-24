@@ -11,6 +11,7 @@ exports.ConfigurationAnnotation = langgraph_1.Annotation.Root({
     userId: (0, langgraph_1.Annotation)(),
     model: (0, langgraph_1.Annotation)(),
     systemPrompt: (0, langgraph_1.Annotation)(),
+    platformPreference: (0, langgraph_1.Annotation)(),
 });
 function ensureConfiguration(config) {
     const configurable = (config === null || config === void 0 ? void 0 : config.configurable) || {};
@@ -18,5 +19,6 @@ function ensureConfiguration(config) {
         userId: (configurable === null || configurable === void 0 ? void 0 : configurable.userId) || "default",
         model: (configurable === null || configurable === void 0 ? void 0 : configurable.model) || "anthropic/claude-3-5-sonnet-20240620",
         systemPrompt: (configurable === null || configurable === void 0 ? void 0 : configurable.systemPrompt) || prompts_1.SYSTEM_PROMPT,
+        platformPreference: configurable === null || configurable === void 0 ? void 0 : configurable.platformPreference,
     };
 }

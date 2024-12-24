@@ -9,6 +9,7 @@ export const ConfigurationAnnotation = Annotation.Root({
   userId: Annotation<string>(),
   model: Annotation<string>(),
   systemPrompt: Annotation<string>(),
+  platformPreference: Annotation<string | undefined>(), 
 });
 
 export type Configuration = typeof ConfigurationAnnotation.State;
@@ -19,5 +20,6 @@ export function ensureConfiguration(config?: LangGraphRunnableConfig) {
     userId: configurable?.userId || "default",
     model: configurable?.model || "anthropic/claude-3-5-sonnet-20240620",
     systemPrompt: configurable?.systemPrompt || SYSTEM_PROMPT,
+    platformPreference: configurable?.platformPreference, 
   };
 }
