@@ -1,56 +1,63 @@
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 import { tool } from "@langchain/core/tools";
+import { pool } from "../db/db"; // Assuming you have your database pool setup
 
-async function upsertMemory(opts: {
-  content: string;
-  context: string;
-  memoryId?: string;
-}, config?: LangGraphRunnableConfig): Promise<string> {
-  const { content, context, memoryId } = opts;
-  if (!config || !config.store) {
-    throw new Error("Config or store not provided");
-  }
+async function upsertPlatformPreference(
+    opts: {
+        content: string;
+        context: string;
+        memoryId?: string; // We can ignore this now, as we're using user_id
+    },
+    config?: LangGraphRunnableConfig
+): Promise<string> {
+    const { content } = opts;
+    const userId = config?.configurable?.user_id;
 
-  console.log("opts:", opts);
-  console.log("config:", config);
+    if (!userId) {
+        throw new Error("User ID not provided in config");
+    }
 
-  const memId = memoryId || uuidv4();
-  const store = config.store;
+    const client = await pool.connect();
 
-  await store.put(["12", "memories"], memId, {
-    content,
-    context,
-  });
+    try {
+        // Check if a preference exists for the user
+        const checkQuery = `SELECT * FROM user_preferences WHERE user_id = $1`;
+        const checkResult = await client.query(checkQuery, [userId]);
 
-  return `Stored memory ${memId}`;
+        if (checkResult.rows.length > 0) {
+            // Update existing preference
+            const updateQuery = `UPDATE user_preferences SET platform_preference = $1 WHERE user_id = $2`;
+            await client.query(updateQuery, [content, userId]);
+            return `Updated platform preference to ${content} for user ${userId}`;
+        } else {
+            // Insert new preference
+            const insertQuery = `INSERT INTO user_preferences (user_id, platform_preference) VALUES ($1, $2)`;
+            await client.query(insertQuery, [userId, content]);
+            return `Stored platform preference ${content} for user ${userId}`;
+        }
+
+    } catch (error) {
+        console.error("Error upserting platform preference:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
 }
 
-const upsertMemoryTool = tool(upsertMemory, {
-  name: "upsertMemory",
-  description:
-    "Upsert a memory in the database related to the user's preferred gaming platform. \
-     If an existing platform preference memory is found, update it by passing the same memoryId, \
-     rather than creating a new entry. If the user changes or corrects their platform preference, \
-     simply update the existing memory with the new information.",
-  schema: z.object({
-    content: z.string().describe(
-      "The user's preferred gaming platform in a single word or short phrase. \
-      For example: 'playstation', 'xbox', or 'pc'."
-    ),
-    context: z.string().describe(
-      "Additional context for why or when the user stated this preference. \
-       For example: 'User mentioned this after being asked about platform preference.'"
-    ),
-    memoryId: z
-      .string()
-      .optional()
-      .describe(
-        "The memory ID to overwrite if updating an existing preference. \
-         For example, using 'platform_preference' ensures future updates overwrite the same memory."
-      ),
-  }),
+const upsertMemoryTool = tool(upsertPlatformPreference, {
+    name: "upsertMemory",
+    description:
+        "Upsert the user's preferred gaming platform in the database.",
+    schema: z.object({
+        content: z.string().describe(
+            "The user's preferred gaming platform (e.g., 'pc', 'xbox')."
+        ),
+        context: z.string().describe(
+            "Context for the preference (e.g., 'User mentioned this')."
+        ),
+        memoryId: z.string().optional(), // Keep it for compatibility, but we'll use user_id
+    }),
 });
 
 export default upsertMemoryTool;

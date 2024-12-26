@@ -1,4 +1,8 @@
 "use strict";
+// import { LangGraphRunnableConfig } from "@langchain/langgraph";
+// import { z } from "zod";
+// import { v4 as uuidv4 } from "uuid";
+// import { tool } from "@langchain/core/tools";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -10,41 +14,50 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const zod_1 = require("zod");
-const uuid_1 = require("uuid");
 const tools_1 = require("@langchain/core/tools");
-function upsertMemory(opts, config) {
+const db_1 = require("../db/db"); // Assuming you have your database pool setup
+function upsertPlatformPreference(opts, config) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { content, context, memoryId } = opts;
-        if (!config || !config.store) {
-            throw new Error("Config or store not provided");
+        var _a;
+        const { content } = opts;
+        const userId = (_a = config === null || config === void 0 ? void 0 : config.configurable) === null || _a === void 0 ? void 0 : _a.user_id;
+        if (!userId) {
+            throw new Error("User ID not provided in config");
         }
-        console.log("opts:", opts);
-        console.log("config:", config);
-        const memId = memoryId || (0, uuid_1.v4)();
-        const store = config.store;
-        yield store.put(["12", "memories"], memId, {
-            content,
-            context,
-        });
-        return `Stored memory ${memId}`;
+        const client = yield db_1.pool.connect();
+        try {
+            // Check if a preference exists for the user
+            const checkQuery = `SELECT * FROM user_preferences WHERE user_id = $1`;
+            const checkResult = yield client.query(checkQuery, [userId]);
+            if (checkResult.rows.length > 0) {
+                // Update existing preference
+                const updateQuery = `UPDATE user_preferences SET platform_preference = $1 WHERE user_id = $2`;
+                yield client.query(updateQuery, [content, userId]);
+                return `Updated platform preference to ${content} for user ${userId}`;
+            }
+            else {
+                // Insert new preference
+                const insertQuery = `INSERT INTO user_preferences (user_id, platform_preference) VALUES ($1, $2)`;
+                yield client.query(insertQuery, [userId, content]);
+                return `Stored platform preference ${content} for user ${userId}`;
+            }
+        }
+        catch (error) {
+            console.error("Error upserting platform preference:", error);
+            throw error;
+        }
+        finally {
+            client.release();
+        }
     });
 }
-const upsertMemoryTool = (0, tools_1.tool)(upsertMemory, {
+const upsertMemoryTool = (0, tools_1.tool)(upsertPlatformPreference, {
     name: "upsertMemory",
-    description: "Upsert a memory in the database related to the user's preferred gaming platform. \
-     If an existing platform preference memory is found, update it by passing the same memoryId, \
-     rather than creating a new entry. If the user changes or corrects their platform preference, \
-     simply update the existing memory with the new information.",
+    description: "Upsert the user's preferred gaming platform in the database.",
     schema: zod_1.z.object({
-        content: zod_1.z.string().describe("The user's preferred gaming platform in a single word or short phrase. \
-      For example: 'playstation', 'xbox', or 'pc'."),
-        context: zod_1.z.string().describe("Additional context for why or when the user stated this preference. \
-       For example: 'User mentioned this after being asked about platform preference.'"),
-        memoryId: zod_1.z
-            .string()
-            .optional()
-            .describe("The memory ID to overwrite if updating an existing preference. \
-         For example, using 'platform_preference' ensures future updates overwrite the same memory."),
+        content: zod_1.z.string().describe("The user's preferred gaming platform (e.g., 'pc', 'xbox')."),
+        context: zod_1.z.string().describe("Context for the preference (e.g., 'User mentioned this')."),
+        memoryId: zod_1.z.string().optional(), // Keep it for compatibility, but we'll use user_id
     }),
 });
 exports.default = upsertMemoryTool;

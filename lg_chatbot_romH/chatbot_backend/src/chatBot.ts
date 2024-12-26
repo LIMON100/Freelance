@@ -1,23 +1,15 @@
-// Define an interface for your memory item
-interface MemoryItem {
-    key: string;
-    value: {
-        content: string;
-        context: string;
-    };
-}
-
 import { AIMessage, BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { LangGraphRunnableConfig, MemorySaver, StateGraph, END } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
-import { InMemoryStore } from "@langchain/langgraph";
 import upsertMemoryTool from "./tools/upsertMemoryTool";
 import { SYSTEM_PROMPT } from "./prompts/prompts";
 import { ConfigurationAnnotation, ensureConfiguration } from "./configuration/configuration";
 import allProductsTool from "./tools/allProductsTool";
-import { loadMemory, saveMemory } from "./memoryStorage";
-import { DynamicStructuredTool } from "@langchain/core/tools";
+import { DynamicStructuredTool,  Tool } from "@langchain/core/tools";
+import { pool } from "./db/db"; // Import your database pool
+import { InMemoryStore } from "@langchain/langgraph";
+
 
 export type PrevMessages = {
     id: string;
@@ -35,6 +27,7 @@ function detectPlatformKeyword(message: string): string | undefined {
     }
     return platform;
 }
+
 
 const chatBot = async (humanMessage: string, prevMessages: PrevMessages[]) => {
     const StateAnnotation = ConfigurationAnnotation;
@@ -73,18 +66,11 @@ const chatBot = async (humanMessage: string, prevMessages: PrevMessages[]) => {
             throw new Error("userId is required in the config");
         }
 
-        let preferredPlatform: string | undefined;
-        try {
-            const memories = loadMemory();
-            preferredPlatform = memories[userId]?.find((mem: MemoryItem) => mem.key === "platform_preference")?.value?.content;
-            console.log("Loaded preferred platform from memory:", preferredPlatform);
-        } catch (error) {
-            console.error("Error loading memory:", error);
-        }
+         const configurable = ensureConfiguration(config);
+        let formatted = "";
 
-        const configurable = ensureConfiguration(config);
         const lastMessageContent = state.messages[state.messages.length - 1]?.content;
-        let messageText: string | undefined;
+      let messageText: string | undefined;
 
         if (typeof lastMessageContent === 'string') {
             messageText = lastMessageContent;
@@ -94,33 +80,58 @@ const chatBot = async (humanMessage: string, prevMessages: PrevMessages[]) => {
                 messageText = textPart;
             }
         }
+       const detectedPlatform = messageText ? detectPlatformKeyword(messageText) : undefined;
 
-        const detectedPlatform = messageText ? detectPlatformKeyword(messageText) : undefined;
 
-        if (detectedPlatform) {
-            try {
-                await upsertMemoryTool.invoke({
-                    content: detectedPlatform,
-                    context: "User mentioned platform preference.",
-                    memoryId: "platform_preference"
-                }, config);
-                preferredPlatform = detectedPlatform; // Update for the current turn
-                console.log("Successfully updated platform preference in memory.");
-            } catch (error) {
-                console.error("Error updating memory:", error);
-            }
+     if (detectedPlatform) {
+        try {
+               await upsertMemoryTool.invoke({
+                   content: detectedPlatform,
+                   context: "User mentioned platform preference.",
+                   memoryId: "platform_preference"
+               }, config);
+
+            formatted = `\n<platform_preference>\n${detectedPlatform}\n</platform_preference>`;
+
+           console.log("Updated the platform to:", detectedPlatform);
+        } catch (error) {
+            console.error("Failed to update platform preference", error);
         }
-
-        const formatted = preferredPlatform ? `\n<platform_preference>\n${preferredPlatform}\n</platform_preference>` : "";
+    }
 
         const sys = configurable.systemPrompt
             .replace("{user_info}", formatted)
             .replace("{time}", new Date().toISOString());
 
-        const result = await model.invoke([{ role: "system", content: sys }, ...state.messages]);
+         const result = await model.invoke([{ role: "system", content: sys }, ...state.messages]);
 
         return { messages: [result] };
     }
+
+    async function storeMemory(state: typeof StateAnnotation.State, config: LangGraphRunnableConfig): Promise<{ messages: BaseMessage[] }> {
+        const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
+        const toolCalls = lastMessage.tool_calls || [];
+          console.log("toolCalls in storeMemory:", toolCalls)
+        let savedMemories: BaseMessage[] = [];
+        if (toolCalls.length > 0) {
+            savedMemories = await Promise.all(
+                toolCalls.map(async (tc) => {
+                    const tool = tools.find((tool) => tool.name === tc.name);
+                     if (!tool) {
+                       return null
+                     }
+                    try {
+                       return await tool.invoke(tc.args, config)
+                    } catch (error) {
+                        console.error(`Error invoking tool ${tool.name}:`, error);
+                        return null
+                    }
+                }),
+            );
+        }
+          return { messages: savedMemories.filter(Boolean) } as { messages: BaseMessage[] };
+    }
+
 
     function routeMessage(state: typeof StateAnnotation.State): "tools" | typeof END {
         const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
@@ -130,22 +141,27 @@ const chatBot = async (humanMessage: string, prevMessages: PrevMessages[]) => {
         return END;
     }
 
+
+
     const workflow = new StateGraph(StateAnnotation)
         .addNode("agent", callModel)
         .addNode("tools", toolNode)
+          .addNode("store_memory", storeMemory)
         .addEdge("__start__", "agent")
         .addConditionalEdges("agent", shouldContinue, {
             tools: "tools",
             end: END,
         })
-        .addEdge("tools", "agent");
+         .addEdge("tools", "store_memory")
+        .addEdge("store_memory", "agent");
+
 
     const checkpointer = new MemorySaver();
     const inMemoryStore = new InMemoryStore();
 
     const app = workflow.compile({
         checkpointer,
-        store: inMemoryStore,
+       store: inMemoryStore,
     });
 
     const history = (prevMessages ?? [])
