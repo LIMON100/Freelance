@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Chatbot</title>
+    <style>
+        body { font-family: sans-serif; }
+        #chat-area { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; height: 300px; overflow-y: scroll; }
+        .user-message { text-align: right; margin-bottom: 5px; color: blue; }
+        .bot-message { text-align: left; margin-bottom: 5px; color: green; }
+    </style>
+</head>
+<body>
+    <h1>Simple Chatbot</h1>
+    <div id="chat-area"></div>
+    <input type="text" id="message-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+    <script>
+        const chatArea = document.getElementById('chat-area');
+        const messageInput = document.getElementById('message-input');
+        let userId = 'default_user'; // You might implement a user id in the feature, but for now it is default.
+        function sendMessage() {
+            const message = messageInput.value;
+            if (message.trim() === '') return;
+
+            // Display the user's message
+            chatArea.innerHTML += `<div class="user-message">User: ${message}</div>`;
+            messageInput.value = '';
+
+            // Send the message to the server
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message, userId: userId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the bot's response
+                chatArea.innerHTML += `<div class="bot-message">Bot: ${data.response}</div>`;
+                 chatArea.scrollTop = chatArea.scrollHeight; // Auto-scroll to the bottom
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                chatArea.innerHTML += '<div class="bot-message">Error: Could not get a response.</div>';
+            });
+        }
+
+        messageInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

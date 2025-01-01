@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chatbot</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        #chat-container { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; }
+        .user-message { text-align: right; margin-bottom: 5px; }
+        .bot-message { text-align: left; margin-bottom: 5px; }
+        #message-input { width: 70%; padding: 8px; }
+        button { padding: 8px 12px; }
+        .message {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            max-width: 70%;
+            display: inline-block;
+        }
+        .user-message .message {
+            background-color: #e0f7fa;
+            float: right;
+        }
+        .bot-message .message {
+            background-color: #f0f0f0;
+             float: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Chatbot</h1>
+    <div id="chat-container">
+        </div>
+    <input type="text" id="message-input" placeholder="Type your message here...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        let prevMessages = [];
+        const userId = 'test_user'; // You can make this configurable if you want
+
+         function addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+             messageDiv.classList.add(role === 'user' ? 'user-message' : 'bot-message');
+             const messageContentDiv = document.createElement('div');
+             messageContentDiv.classList.add('message');
+             messageContentDiv.textContent = content;
+             messageDiv.appendChild(messageContentDiv);
+             chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll down
+        }
+
+        async function sendMessage() {
+         const message = messageInput.value;
+         if (!message) return;
+          addMessage(message, 'user');
+
+
+         messageInput.value = '';
+
+         try {
+             const response = await fetch('http://localhost:5001/chat', {
+                 method: 'POST',  // THIS LINE IS IMPORTANT
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify({
+                     message: message,
+                     prevMessages: prevMessages,
+                     userId: userId,
+                 }),
+             });
+             if (!response.ok) {
+                 throw new Error(`HTTP error! status: ${response.status}`);
+             }
+             const data = await response.json();
+              addMessage(data.response, 'bot');
+
+
+             prevMessages.push({ role: 'user', content: message });
+             prevMessages.push({ role: 'assistant', content: data.response });
+         } catch (error) {
+             console.error('Error:', error);
+             addMessage('Error communicating with the server.', 'bot')
+         }
+     }
+    </script>
+</body>
+</html>
