@@ -30,7 +30,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
 # User profile schema
 class Profile(BaseModel):
     """This is the profile of the user you are chatting with"""
@@ -45,7 +44,7 @@ class Profile(BaseModel):
         description="Interests that the user has",
         default_factory=list
     )
-    platform_preference: Optional[Literal["NinTech", "PlayStation", "PC", "Xbox"]] = Field(
+    platform_preference: Optional[Literal['pc', 'xbox', 'playstation', 'ps4', 'ps5', 'nintendo switch']] = Field(
         description="The user's preferred gaming platform", default=None
     )
 
@@ -67,6 +66,7 @@ class Spy:
                     r.outputs["generations"][0][0]["message"]["kwargs"]["tool_calls"]
                 )
 
+spy = Spy()
 # Extract information from tool calls for both patches and new memories in Trustcall
 def extract_tool_info(tool_calls, schema_name="Memory"):
     """Extract information from tool calls for both patches and new memories.
@@ -166,47 +166,63 @@ profile_extractor = create_extractor(
 ## Prompts
 
 # Chatbot instruction for choosing what to update and what tools to call
-MODEL_SYSTEM_MESSAGE = """You are a helpful chatbot specializing in video games.
+# CREATE_INSTRUCTIONS = """You are a helpful chatbot specializing in video games.
 
-You are designed to be a companion to a user, helping them with information about games and their preferences.
+# You are designed to be a companion to a user, helping them with information about games and their *currently discussed* gaming platform.
+
+# You have a long term memory which keeps track of three things:
+# 1. The user's profile (general information about them, including their preferred gaming platform)
+# 2. The user's ToDo list
+# 3. General instructions for updating the ToDo list
+
+# Here is the current User Profile (may be empty if no information has been collected yet):
+# <user_profile>
+# {user_profile}
+# </user_profile>
+
+# Here is the current ToDo List (may be empty if no tasks have been added yet):
+# <todo>
+# {todo}
+# </todo>
+
+# Here are the current user-specified preferences for updating the ToDo list (may be empty if no preferences have been specified yet):
+# <instructions>
+# {instructions}
+# </instructions>
+
+# Here are your instructions for reasoning about the user's messages:
+
+# 1. Reason carefully about the user's messages as presented below.
+
+# 2. Decide whether any of the your long-term memory should be updated:
+# - If personal information was provided about the user, *including their preferred gaming platform (NinTech, PlayStation, PC, or Xbox)*, update the user's profile by calling UpdateMemory tool with type `user`
+# - If tasks are mentioned, update the ToDo list by calling UpdateMemory tool with type `todo`
+# - If the user has specified preferences for how to update the ToDo list, update the instructions by calling UpdateMemory tool with type `instructions`
+
+# 3. Tell the user that you have updated your memory, if appropriate:
+# - Do not tell the user you have updated the user's profile (including platform preference)
+# - Tell the user them when you update the todo list
+# - Do not tell the user that you have updated instructions
+
+# 4. Err on the side of updating the todo list. No need to ask for explicit permission.
+
+# 5. Respond naturally to user user after a tool call was made to save memories, or if no tool call was made.
+# """
+
+CREATE_INSTRUCTIONS = """You are a helpful chatbot specializing in video games.
+
+You are designed to be a companion to a user, helping them with information about games and their *currently preferred* gaming platform.
 
 You have a long term memory which keeps track of three things:
-1. The user's profile (general information about them, including their preferred gaming platform)
-2. The user's ToDo list
-3. General instructions for updating the ToDo list
-
-Here is the current User Profile (may be empty if no information has been collected yet):
-<user_profile>
-{user_profile}
-</user_profile>
-
-Here is the current ToDo List (may be empty if no tasks have been added yet):
-<todo>
-{todo}
-</todo>
-
-Here are the current user-specified preferences for updating the ToDo list (may be empty if no preferences have been specified yet):
-<instructions>
-{instructions}
-</instructions>
-
+1. The user's profile (general information about them, including their *most recently mentioned* gaming platform)
+...
 Here are your instructions for reasoning about the user's messages:
 
 1. Reason carefully about the user's messages as presented below.
 
-2. Decide whether any of the your long-term memory should be updated:
-- If personal information was provided about the user, *including their preferred gaming platform (NinTech, PlayStation, PC, or Xbox)*, update the user's profile by calling UpdateMemory tool with type `user`
-- If tasks are mentioned, update the ToDo list by calling UpdateMemory tool with type `todo`
-- If the user has specified preferences for how to update the ToDo list, update the instructions by calling UpdateMemory tool with type `instructions`
-
-3. Tell the user that you have updated your memory, if appropriate:
-- Do not tell the user you have updated the user's profile (including platform preference)
-- Tell the user them when you update the todo list
-- Do not tell the user that you have updated instructions
-
-4. Err on the side of updating the todo list. No need to ask for explicit permission.
-
-5. Respond naturally to user user after a tool call was made to save memories, or if no tool call was made.
+2. Decide whether any of your long-term memory should be updated:
+- If the user explicitly mentions a gaming platform (pc, xbox, playstation, ps4, ps5, nintendo switch), *immediately update their profile to reflect this as their current preference.* Call UpdateMemory tool with type `user`.
+...
 """
 
 # You might want to adjust TRUSTCALL_INSTRUCTION to emphasize platform extraction
@@ -286,43 +302,6 @@ class _MemoryItem(BaseModel):
 
 ## Node definitions
 
-# def task_mAIstro(state: MessagesState, config: RunnableConfig):
-#     """Load memories from the store and use them to personalize the chatbot's response."""
-
-#     store = config["configurable"]["store"]
-
-#     # Get the user ID from the config
-#     configurable = configuration.Configuration.from_runnable_config(config)
-#     user_id = configurable.user_id
-
-#     # Retrieve profile memory from the store
-#     namespace = ("profile", user_id)
-#     memories = store.search(namespace)
-#     if memories:
-#         user_profile = memories[0].value
-#     else:
-#         user_profile = None
-
-#     # Retrieve people memory from the store
-#     namespace = ("todo", user_id)
-#     memories = store.search(namespace)
-#     todo = "\n".join(f"{mem.value}" for mem in memories)
-
-#     # Retrieve custom instructions
-#     namespace = ("instructions", user_id)
-#     memories = store.search(namespace)
-#     if memories:
-#         instructions = memories[0].value
-#     else:
-#         instructions = ""
-
-#     system_msg = MODEL_SYSTEM_MESSAGE.format(user_profile=user_profile, todo=todo, instructions=instructions)
-
-#     # Respond using memory as well as the chat history
-#     response = model.bind_tools([UpdateMemory], parallel_tool_calls=False).invoke([SystemMessage(content=system_msg)]+state["messages"])
-
-#     return {"messages": [response]}
-
 
 def task_mAIstro(state: MessagesState, config: RunnableConfig):
     """Load memories from the store and use them to personalize the chatbot's response."""
@@ -336,7 +315,7 @@ def task_mAIstro(state: MessagesState, config: RunnableConfig):
     # Retrieve profile memory from the store
     namespace = ("profile", user_id)
     memories = store.search(namespace)
-    user_profile = memories[0].value if memories else {} # Handle case where profile is empty
+    user_profile = memories[0].value if memories else {}
 
     # Retrieve people memory from the store
     namespace = ("todo", user_id)
@@ -348,15 +327,18 @@ def task_mAIstro(state: MessagesState, config: RunnableConfig):
     memories = store.search(namespace)
     instructions = memories[0].value if memories else ""
 
-    system_msg = MODEL_SYSTEM_MESSAGE.format(user_profile=user_profile, todo=todo, instructions=instructions)
+    system_msg = CREATE_INSTRUCTIONS.format(user_profile=user_profile, todo=todo, instructions=instructions)
 
     # Respond using memory as well as the chat history
-    response = model.bind_tools([UpdateMemory], parallel_tool_calls=False).invoke([SystemMessage(content=system_msg)]+state["messages"])
+    # Bind the UpdateMemory tool here!
+    response = model.bind_tools([UpdateMemory], parallel_tool_calls=False).invoke([SystemMessage(content=system_msg)] + state["messages"])
 
     return {"messages": [response]}
 
+
 def update_profile(state: MessagesState, config: RunnableConfig):
     """Reflect on the chat history and update the memory collection."""
+    print("INSIDE UPDATE PROFILE..........")
 
     store = config["configurable"]["store"]
 
@@ -383,8 +365,7 @@ def update_profile(state: MessagesState, config: RunnableConfig):
     updated_messages=list(merge_message_runs(messages=[SystemMessage(content=TRUSTCALL_INSTRUCTION_FORMATTED)] + state["messages"][:-1]))
 
     # Invoke the extractor
-    result = profile_extractor.invoke({"messages": updated_messages,
-                                         "existing": existing_memories})
+    result = profile_extractor.invoke({"messages": updated_messages, "existing": existing_memories})
 
     # Save save the memories from Trustcall to the store
     for r, rmeta in zip(result["responses"], result["response_metadata"]):
@@ -395,6 +376,62 @@ def update_profile(state: MessagesState, config: RunnableConfig):
     tool_calls = state['messages'][-1].tool_calls
     # Return tool message with update verification
     return {"messages": [{"role": "tool", "content": "updated profile", "tool_call_id":tool_calls[0]['id']}]}
+
+# def update_todos(state: MessagesState, config: RunnableConfig):
+#     """Reflect on the chat history and update the memory collection."""
+#     store = config["configurable"]["store"]
+#     # Get the user ID from the config
+#     configurable = configuration.Configuration.from_runnable_config(config)
+#     user_id = configurable.user_id
+
+#     # Define the namespace for the memories
+#     namespace = ("todo", user_id)
+
+#     # Retrieve the most recent memories for context
+#     existing_items = store.search(namespace)
+
+#     # Format the existing memories for the Trustcall extractor
+#     tool_name = "ToDo"
+#     existing_memories = ([(existing_item.key, tool_name, existing_item.value)
+#                           for existing_item in existing_items]
+#                           if existing_items
+#                           else None
+#                         )
+
+#     # Merge the chat history and the instruction
+#     TRUSTCALL_INSTRUCTION_FORMATTED=TRUSTCALL_INSTRUCTION.format(time=datetime.now().isoformat())
+#     updated_messages=list(merge_message_runs(messages=[SystemMessage(content=TRUSTCALL_INSTRUCTION_FORMATTED)] + state["messages"][:-1]))
+
+#     # Initialize the spy for visibility into the tool calls made by Trustcall
+#     spy = Spy()
+
+#     # Create the Trustcall extractor for updating the ToDo list
+#     todo_extractor = create_extractor(
+#     model,
+#     # tools=[ToDo],
+#     # tool_choice=tool_name,
+#     tools=[Profile],  # Ensure your updated Profile schema is used here
+#     tool_choice="Profile",
+#     enable_inserts=True
+#     ).with_listeners(on_end=spy)
+
+#     # Invoke the extractor
+#     result = todo_extractor.invoke({"messages": updated_messages,
+#                                          "existing": existing_memories})
+
+#     # Save save the memories from Trustcall to the store
+#     for r, rmeta in zip(result["responses"], result["response_metadata"]):
+#         store.put(namespace,
+#                   rmeta.get("json_doc_id", str(uuid.uuid4())),
+#                   r.model_dump(mode="json"),
+#             )
+
+#     # Respond to the tool call made in task_mAIstro, confirming the update
+#     tool_calls = state['messages'][-1].tool_calls
+
+#     # Extract the changes made by Trustcall and add the the ToolMessage returned to task_mAIstro
+#     todo_update_msg = extract_tool_info(spy.called_tools, tool_name)
+#     return {"messages": [{"role": "tool", "content": todo_update_msg, "tool_call_id":tool_calls[0]['id']}]}
 
 def update_todos(state: MessagesState, config: RunnableConfig):
     """Reflect on the chat history and update the memory collection."""
@@ -427,10 +464,8 @@ def update_todos(state: MessagesState, config: RunnableConfig):
     # Create the Trustcall extractor for updating the ToDo list
     todo_extractor = create_extractor(
     model,
-    # tools=[ToDo],
-    # tool_choice=tool_name,
-    tools=[Profile],  # Ensure your updated Profile schema is used here
-    tool_choice="Profile",
+    tools=[ToDo],  # Corrected: Use the ToDo schema
+    tool_choice=tool_name, # Corrected: Use the ToDo tool name
     enable_inserts=True
     ).with_listeners(on_end=spy)
 
@@ -476,19 +511,25 @@ def update_instructions(state: MessagesState, config: RunnableConfig):
     return {"messages": [{"role": "tool", "content": "updated instructions", "tool_call_id":tool_calls[0]['id']}]}
 
 # Conditional edge
-def route_message(state: MessagesState, config: RunnableConfig) -> Literal[END, "update_todos", "update_instructions", "update_profile"]:
 
+def route_message(state: MessagesState, config: RunnableConfig) -> Literal[END, "update_todos", "update_instructions", "update_profile"]:
     """Reflect on the memories and chat history to decide whether to update the memory collection."""
     message = state['messages'][-1]
-    if len(message.tool_calls) ==0:
+    # print(f"route_message: Received message with tool calls: {message.tool_calls}") # Added
+    if len(message.tool_calls) == 0:
+        # print("route_message: No tool calls, returning END") # Added
         return END
     else:
         tool_call = message.tool_calls[0]
+        # print(f"route_message: Tool call details: {tool_call}") # Added
         if tool_call['args']['update_type'] == "user":
+            # print("route_message: update_type is user, returning update_profile") # Added
             return "update_profile"
         elif tool_call['args']['update_type'] == "todo":
+            # print("route_message: update_type is todo, returning update_todos") # Added
             return "update_todos"
         elif tool_call['args']['update_type'] == "instructions":
+            # print("route_message: update_type is instructions, returning update_instructions") # Added
             return "update_instructions"
         else:
             raise ValueError
@@ -564,4 +605,4 @@ def chat_endpoint():
     return jsonify({"response": last_message.content})
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)
