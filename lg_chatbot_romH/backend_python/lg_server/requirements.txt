@@ -1,0 +1,9 @@
+Flask
+flask-cors
+pydantic
+redis
+langchain-openai
+langgraph
+psycopg2-binary
+python-dotenv
+trustcall
