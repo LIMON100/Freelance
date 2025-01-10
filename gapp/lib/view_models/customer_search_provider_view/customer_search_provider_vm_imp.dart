@@ -1,0 +1,3 @@
+import 'package:groom/view_models/customer_search_provider_view/customer_search_provider_vm.dart';
+
+class CustomerSearchProviderVmImp implements CustomerSearchProviderVm{}

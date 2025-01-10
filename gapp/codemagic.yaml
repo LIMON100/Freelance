@@ -1,0 +1,15 @@
+workflows:
+  ios-build:
+    name: iOS Build
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+          cd ios
+          pod install
+          cd ..
+      - name: Clean previous builds
+        script: flutter clean
+    build:
+      ios:
+        project: ios/Runner.xcworkspace

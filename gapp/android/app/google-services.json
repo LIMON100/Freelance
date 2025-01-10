@@ -1,0 +1,138 @@
+{
+  "project_info": {
+    "project_number": "597837975870",
+    "firebase_url": "https://groom202406-web-default-rtdb.firebaseio.com",
+    "project_id": "groom202406-web",
+    "storage_bucket": "groom202406-web.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597837975870:android:9c27415bc8d98304031c6f",
+        "android_client_info": {
+          "package_name": "com.app.groomapp.groom"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "597837975870-a9l0sjnfdi956bghaek2trdkn8bjdn1h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.groomapp.groom",
+            "certificate_hash": "27992c21aaea80c6d31b8c9835517a4fe817b4f4"
+          }
+        },
+        {
+          "client_id": "597837975870-ev12h85hcpfkvfn9g7gc3k2b707sq47v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.groomapp.groom",
+            "certificate_hash": "5aeefe7d15c0311927172a1c32006e1eac1b4f98"
+          }
+        },
+        {
+          "client_id": "597837975870-oj4qm91g2jch9an6pvbhs9cf4u6fcrdp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.groomapp.groom",
+            "certificate_hash": "6151a0b9461360d54bb26ccca20e47ea0bbac250"
+          }
+        },
+        {
+          "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOoFYPymKaFmlpZojMukcoyEER3W_c8YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597837975870:android:e4563e612c080a3f031c6f",
+        "android_client_info": {
+          "package_name": "com.groomadmnportal.groom_admin_portal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "597837975870-l7st9jlb8bmhame6n5aadt9ap93447h0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomadmnportal.groom_admin_portal",
+            "certificate_hash": "6151a0b9461360d54bb26ccca20e47ea0bbac250"
+          }
+        },
+        {
+          "client_id": "597837975870-pjf19crogdt01gq7gd6769g9g1jlo2s5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomadmnportal.groom_admin_portal",
+            "certificate_hash": "5aeefe7d15c0311927172a1c32006e1eac1b4f98"
+          }
+        },
+        {
+          "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOoFYPymKaFmlpZojMukcoyEER3W_c8YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597837975870:android:1668293335d5838e031c6f",
+        "android_client_info": {
+          "package_name": "com.groomapp.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOoFYPymKaFmlpZojMukcoyEER3W_c8YY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

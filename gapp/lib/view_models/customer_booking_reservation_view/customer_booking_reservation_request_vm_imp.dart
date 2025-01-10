@@ -1,0 +1,4 @@
+
+import 'customer_booking_reservation_request_vm.dart';
+
+class CustomerBookingReservationRequestVmImp implements CustomerBookingReservationRequestVm{}

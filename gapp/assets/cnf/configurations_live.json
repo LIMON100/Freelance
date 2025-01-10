@@ -1,0 +1,12 @@
+{
+  "stripe_api_key_pk": "pk_test_ajyjX25IOpFaCxbfsbLYdNGT",
+  "stripe_api_key_sk": "sk_test_UAzA5ww2KfqlhvN6ocYA3Dez",
+  "google_api_key": "AIzaSyBgoNj42PSh5dzlVmPUeUMPoxiJ4WB04co",
+  "apiKey": "AIzaSyCOoFYPymKaFmlpZojMukcoyEER3W_c8YY",
+  "appIdAndroid": "1:597837975870:android:9c27415bc8d98304031c6f",
+  "appIdIos": "1:597837975870:ios:eb22b442c03e0008031c6f",
+  "messagingSenderId": "597837975870",
+  "projectId": "groom202406-web",
+  "storageBucket": "groom202406-web.appspot.com",
+  "databaseURL": "https://groom-web-production.firebaseio.com/"
+}
