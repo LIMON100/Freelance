@@ -49,3 +49,5 @@ app.*.map.json
 
 
 groom202406-web-9b8322aff74a.json
+lib/firebase/firebase_notifications.dart
+lib/ui/invite/invite_controller.dart

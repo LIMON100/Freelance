@@ -19,6 +19,7 @@ import '../../../firebase/dynamic_link.dart';
 import '../../../firebase/user_firebase.dart';
 import '../../../repo/session_repo.dart';
 import '../../signup/m/select_status_model.dart';
+import 'package:intl/intl.dart';
 
 class CustomerProfileController extends GetxController {
   UserFirebase userService = UserFirebase();
@@ -58,8 +59,8 @@ class CustomerProfileController extends GetxController {
 
     print(auth.value.toJson());
     try {
-      selectedDob.value = DateFormat("yyyy-MM-dd")
-          .parse(Tools.changeDateFormat(auth.value.dateOfBirth!, globalTimeFormat));
+      // selectedDob.value = DateFormat("yyyy-MM-dd").parse(Tools.changeDateFormat(auth.value.dateOfBirth!, globalTimeFormat));
+      selectedDob.value = DateFormat("yyyy-MM-dd").parse(auth.value.dateOfBirth!);
     } catch (e, s) {
       print(s);
     }
@@ -117,7 +118,8 @@ class CustomerProfileController extends GetxController {
       contactNumber: auth.value.contactNumber,
       joinedOn: auth.value.joinedOn,
       updatedOn: DateTime.now().microsecondsSinceEpoch,
-      dateOfBirth: selectedDob.toString(),
+      // dateOfBirth: selectedDob.toString(),
+      dateOfBirth: DateFormat('yyyy-MM-dd').format(selectedDob.value!),
       requestsThisMonth: auth.value.requestsThisMonth,
       notification_status: auth.value.notification_status,
       defaultAddress: auth.value.defaultAddress,

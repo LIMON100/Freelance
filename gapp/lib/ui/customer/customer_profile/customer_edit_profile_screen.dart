@@ -119,8 +119,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 SubTxtWidget(_con.selectedDob.value == null
                                     ? 'Select date of birth'
                                     : Tools.changeDateFormat(
-                                        _con.selectedDob.value.toString(),
-                                        "MM-dd-yyyy")),
+                                        _con.selectedDob.toString(),
+                                        "yyyy-MM-dd")),
                                 SvgPicture.asset(Assets.svgCalender),
                               ],
                             ),
