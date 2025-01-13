@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/data_models/customer_offer_model.dart';
 import 'package:groom/states/customer_request_state.dart';
 import 'package:groom/widgets/header_txt_widget.dart';

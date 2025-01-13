@@ -3,7 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/data_models/provider_service_request_offer_model.dart';
 import 'package:groom/data_models/user_model.dart';
 import 'package:groom/ext/themehelper.dart';

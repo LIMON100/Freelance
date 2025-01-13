@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rounded_date_picker/flutter_rounded_date_picker.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/repo/setting_repo.dart';
 import 'package:groom/widgets/social_login_widget.dart';
 import 'package:groom/widgets/button_primary_widget.dart';

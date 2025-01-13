@@ -19,7 +19,7 @@ import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/network_image_widget.dart';
 import 'package:groom/widgets/read_more_text.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../data_models/user_model.dart';
 import '../../../firebase/provider_service_firebase.dart';
 import '../../../firebase/user_firebase.dart';

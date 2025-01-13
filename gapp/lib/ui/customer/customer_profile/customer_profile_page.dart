@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:googleapis/firestore/v1.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/data_models/provider_user_model.dart';
 import 'package:groom/ext/hex_color.dart';
 import 'package:groom/generated/assets.dart';

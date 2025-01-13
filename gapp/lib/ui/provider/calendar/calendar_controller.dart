@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:calendar_view/calendar_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 
 import '../../../data_models/customer_offer_model.dart';
 import '../../../data_models/request_reservation_model.dart';

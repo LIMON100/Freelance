@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/ui/provider/home/widgets/bar_chart_widget.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/loading_widget.dart';

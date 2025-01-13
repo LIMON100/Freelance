@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:groom/firebase/user_firebase.dart';
 
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../firebase/provider_user_firebase.dart';
 import '../../../repo/setting_repo.dart';
 import '../../../repo/stripre_repo.dart';

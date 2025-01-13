@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import '../Constant/global_configuration.dart';
-import '../Utils/tools.dart';
+import '../constant/global_configuration.dart';
+import '../utils/tools.dart';
+
 import '../utils/colors.dart';
+
 
 Future<void> stripeMakePayment({required String amount,required String description,required String username,
   required Function(Map data)paymentSuccess,required Function()paymentFailed,}) async {

@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/data_models/user_model.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../data_models/provider_service_model.dart';

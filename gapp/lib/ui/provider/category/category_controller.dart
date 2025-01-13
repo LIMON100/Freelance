@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../firebase/user_firebase.dart';
 import '../../../repo/setting_repo.dart';
 import '../skills/skill_model.dart';

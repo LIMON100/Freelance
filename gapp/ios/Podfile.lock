@@ -1363,11 +1363,11 @@ PODS:
     - Flutter
   - geolocator_apple (1.2.0):
     - Flutter
-  - Google-Maps-iOS-Utils (5.0.0):
+  - Google-Maps-iOS-utils (5.0.0):
     - GoogleMaps (~> 8.0)
   - google_maps_flutter_ios (0.0.1):
     - Flutter
-    - Google-Maps-iOS-Utils (< 7.0, >= 5.0)
+    - Google-Maps-iOS-utils (< 7.0, >= 5.0)
     - GoogleMaps (< 10.0, >= 8.4)
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
@@ -1684,7 +1684,7 @@ SPEC REPOS:
     - FirebaseMessaging
     - FirebaseSharedSwift
     - FirebaseStorage
-    - Google-Maps-iOS-Utils
+    - Google-Maps-iOS-utils
     - GoogleAppMeasurement
     - GoogleDataTransport
     - GoogleMaps
@@ -1824,7 +1824,7 @@ SPEC CHECKSUMS:
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
   geocoding_ios: d7460f56e80e118d57678efe5c2cdc888739ff18
   geolocator_apple: 9bcea1918ff7f0062d98345d238ae12718acfbc1
-  Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
+  Google-Maps-iOS-utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
   google_maps_flutter_ios: e31555a04d1986ab130f2b9f24b6cdc861acc6d3
   google_sign_in_ios: 07375bfbf2620bc93a602c0e27160d6afc6ead38
   GoogleAppMeasurement: 987769c4ca6b968f2479fbcc9fe3ce34af454b8e

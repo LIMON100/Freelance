@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:groom/widgets/button_primary_widget.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../data_models/service_reservation_model.dart';
 import '../../../firebase/reservation_firebase.dart';
 import '../../../utils/colors.dart';

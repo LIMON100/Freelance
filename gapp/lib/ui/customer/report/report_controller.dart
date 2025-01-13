@@ -1,10 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/repo/setting_repo.dart';
 
-import '../../../Constant/global_configuration.dart';
+import '../../../constant/global_configuration.dart';
 import '../../../data_models/user_model.dart';
 import 'm/region_model.dart';
 

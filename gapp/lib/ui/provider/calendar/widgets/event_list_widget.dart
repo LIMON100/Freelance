@@ -1,6 +1,6 @@
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/material.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
 

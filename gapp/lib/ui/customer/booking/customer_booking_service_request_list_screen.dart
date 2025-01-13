@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/data_models/user_model.dart';
 import 'package:groom/firebase/provider_service_firebase.dart';
 import 'package:groom/firebase/user_firebase.dart';

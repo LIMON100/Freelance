@@ -12,7 +12,7 @@ import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../Utils/tools.dart';
+import '../../../../utils/tools.dart';
 import '../../../../data_models/customer_offer_model.dart';
 import '../../../../generated/assets.dart';
 import '../../../../utils/colors.dart';

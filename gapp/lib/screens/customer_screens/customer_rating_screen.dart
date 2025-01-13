@@ -3,7 +3,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/repo/setting_repo.dart';
 import 'package:groom/utils/utils.dart';
 import 'package:groom/widgets/header_txt_widget.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:groom/utils/colors.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
-import '../../Utils/tools.dart';
+import '../../utils/tools.dart';
 
 enum ValidationType { EMAIL, TEXT, NONE, ShowError }
 

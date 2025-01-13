@@ -14,7 +14,7 @@ import 'package:groom/widgets/button_primary_widget.dart';
 import 'package:groom/widgets/custom_switch.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/network_image_widget.dart';
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../data_models/customer_offer_model.dart';
 import '../../../generated/assets.dart';
 import '../../../states/customer_offer_state.dart';

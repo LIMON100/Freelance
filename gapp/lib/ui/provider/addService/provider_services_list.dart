@@ -8,7 +8,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:groom/ui/provider/addService/provider_create_service_screen.dart';
 import 'package:groom/widgets/loading_widget.dart';
-import '../../../Constant/global_configuration.dart';
+import '../../../constant/global_configuration.dart';
 import '../../../data_models/provider_service_model.dart';
 import '../../../repo/setting_repo.dart';
 import '../../../states/customer_service_state.dart';

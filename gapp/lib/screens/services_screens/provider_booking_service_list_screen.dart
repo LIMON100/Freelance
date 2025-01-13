@@ -10,7 +10,7 @@ import 'package:groom/firebase/service_booking_firebase.dart';
 import 'package:groom/repo/setting_repo.dart';
 import 'package:intl/intl.dart';
 
-import '../../Utils/tools.dart';
+import '../../utils/tools.dart';
 import '../../data_models/notification_model.dart';
 import '../../data_models/provider_service_model.dart';
 import '../../data_models/service_booking_model.dart';

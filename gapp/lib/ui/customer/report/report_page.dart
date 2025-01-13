@@ -8,7 +8,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/loading_widget.dart';
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../firebase/user_firebase.dart';
 import '../../../widgets/network_image_widget.dart';
 import '../../../widgets/sub_txt_widget.dart';

@@ -8,7 +8,7 @@ import 'package:groom/ext/hex_color.dart';
 import 'package:groom/utils/colors.dart';
 import 'package:groom/widgets/button_primary_widget.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../generated/assets.dart';
 import '../../../repo/setting_repo.dart';
 import '../../../widgets/sub_txt_widget.dart';

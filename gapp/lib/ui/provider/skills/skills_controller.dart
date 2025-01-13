@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/firebase/user_firebase.dart';
 import 'package:groom/repo/setting_repo.dart';
 import 'package:groom/ui/provider/skills/skill_model.dart';

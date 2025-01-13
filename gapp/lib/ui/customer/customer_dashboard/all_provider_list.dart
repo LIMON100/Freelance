@@ -8,7 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:groom/ext/hex_color.dart';
 import 'package:groom/widgets/loading_widget.dart';
-import '../../../Constant/global_configuration.dart';
+import '../../../constant/global_configuration.dart';
 import '../../../data_models/user_model.dart';
 import '../../../firebase/provider_user_firebase.dart';
 import '../../../generated/assets.dart';

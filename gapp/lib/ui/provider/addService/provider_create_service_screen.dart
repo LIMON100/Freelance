@@ -8,7 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:groom/Utils/tools.dart';
+import 'package:groom/utils/tools.dart';
 import 'package:groom/data_models/provider_service_model.dart';
 import 'package:groom/ext/hex_color.dart';
 import 'package:groom/firebase/provider_service_firebase.dart';

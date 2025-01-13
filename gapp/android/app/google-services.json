@@ -8,65 +8,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:597837975870:android:9c27415bc8d98304031c6f",
-        "android_client_info": {
-          "package_name": "com.app.groomapp.groom"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "597837975870-a9l0sjnfdi956bghaek2trdkn8bjdn1h.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.app.groomapp.groom",
-            "certificate_hash": "27992c21aaea80c6d31b8c9835517a4fe817b4f4"
-          }
-        },
-        {
-          "client_id": "597837975870-ev12h85hcpfkvfn9g7gc3k2b707sq47v.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.app.groomapp.groom",
-            "certificate_hash": "5aeefe7d15c0311927172a1c32006e1eac1b4f98"
-          }
-        },
-        {
-          "client_id": "597837975870-oj4qm91g2jch9an6pvbhs9cf4u6fcrdp.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.app.groomapp.groom",
-            "certificate_hash": "6151a0b9461360d54bb26ccca20e47ea0bbac250"
-          }
-        },
-        {
-          "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCOoFYPymKaFmlpZojMukcoyEER3W_c8YY"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:597837975870:android:e4563e612c080a3f031c6f",
         "android_client_info": {
           "package_name": "com.groomadmnportal.groom_admin_portal"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "597837975870-friabjl94q25dif164q1t38g6t2bk35u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomadmnportal.groom_admin_portal",
+            "certificate_hash": "1063e78b5289dd2f946980e4836a44e1e1d8a22e"
+          }
+        },
         {
           "client_id": "597837975870-l7st9jlb8bmhame6n5aadt9ap93447h0.apps.googleusercontent.com",
           "client_type": 1,
@@ -84,6 +39,14 @@
           }
         },
         {
+          "client_id": "597837975870-pn0jj5ohko4t78id1nv9pfhnm0qvho44.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomadmnportal.groom_admin_portal",
+            "certificate_hash": "1dbcdd3982bd11696e3eaf6dc4a4064c54ab8649"
+          }
+        },
+        {
           "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -99,6 +62,14 @@
             {
               "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "597837975870-4j4sssje9hs0lgqmuigqrguu3no5o2d1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wegroomyou.groom",
+                "app_store_id": "1567715321"
+              }
             }
           ]
         }
@@ -113,6 +84,38 @@
       },
       "oauth_client": [
         {
+          "client_id": "597837975870-1gdb9mvlm0k5sdfuhln5pobctll8vmgk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomapp.android",
+            "certificate_hash": "33592a4648166abdd88f71ddf5f53a5ce3ddf0c7"
+          }
+        },
+        {
+          "client_id": "597837975870-48iorhavnhvg95dik10u1rloec7md5n1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomapp.android",
+            "certificate_hash": "6151a0b9461360d54bb26ccca20e47ea0bbac250"
+          }
+        },
+        {
+          "client_id": "597837975870-frnis1ai04b922pa9mt3d5qfp4c8bnfo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomapp.android",
+            "certificate_hash": "27992c21aaea80c6d31b8c9835517a4fe817b4f4"
+          }
+        },
+        {
+          "client_id": "597837975870-mmmdhs4mruq8j9qu467p5qh9kf55npar.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.groomapp.android",
+            "certificate_hash": "a76b9338d2718e6398ae0a6ac7c7e1a51101ab15"
+          }
+        },
+        {
           "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -128,6 +131,14 @@
             {
               "client_id": "597837975870-hl7r5g9c8s0h00bhq1hmrffppgfpts05.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "597837975870-4j4sssje9hs0lgqmuigqrguu3no5o2d1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wegroomyou.groom",
+                "app_store_id": "1567715321"
+              }
             }
           ]
         }

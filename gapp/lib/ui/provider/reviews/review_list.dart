@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:groom/firebase/user_firebase.dart';
 import 'package:groom/widgets/loading_widget.dart';
-import '../../../Constant/global_configuration.dart';
+import '../../../constant/global_configuration.dart';
 import '../../../repo/setting_repo.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/header_txt_widget.dart';

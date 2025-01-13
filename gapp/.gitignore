@@ -46,3 +46,6 @@ app.*.map.json
 /android/app/upload-keystore.jks
 /functions/
 /node_modules/
+
+
+groom202406-web-9b8322aff74a.json

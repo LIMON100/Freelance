@@ -20,7 +20,7 @@ import 'package:groom/ui/provider/home/widgets/bar_chart_widget.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/network_image_widget.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
-import '../../../Constant/global_configuration.dart';
+import '../../../constant/global_configuration.dart';
 import '../../../data_models/provider_service_model.dart';
 import '../../../data_models/request_reservation_model.dart';
 import '../../../data_models/service_reservation_model.dart';

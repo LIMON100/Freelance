@@ -17,7 +17,7 @@ import 'package:groom/ui/provider/schedule/schedule_model.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/loading_widget.dart';
 import 'package:groom/widgets/sub_txt_widget.dart';
-import '../../../Utils/tools.dart';
+import '../../../utils/tools.dart';
 import '../../../data_models/provider_service_model.dart';
 import '../../../data_models/user_model.dart';
 import '../../../firebase/notifications_firebase.dart';

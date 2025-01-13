@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:groom/ui/customer/customer_dashboard/customer_dashboard_page.dart';
 
-import '../../Utils/tools.dart';
+import '../../utils/tools.dart';
 import '../../data_models/user_model.dart';
 import '../../firebase/user_firebase.dart';
 import '../../main.dart';
