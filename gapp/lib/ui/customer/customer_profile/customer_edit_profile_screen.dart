@@ -120,7 +120,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     ? 'Select date of birth'
                                     : Tools.changeDateFormat(
                                         _con.selectedDob.toString(),
-                                        "yyyy-MM-dd")),
+                                        "MM-dd-yyyy")),
                                 SvgPicture.asset(Assets.svgCalender),
                               ],
                             ),
