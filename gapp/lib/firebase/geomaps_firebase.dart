@@ -13,10 +13,20 @@ class GeoMapsFirebase {
 
   UserFirebase userFirebase = UserFirebase();
 
+  // Future<void> checkAndFetchLocation() async {
+  //   await getSession();
+  //   if (auth.value.defaultAddress!.isEmpty) {
+  //     getLocationAndUpdateUser();
+  //   }
+  // }
+
   Future<void> checkAndFetchLocation() async {
     await getSession();
     if (auth.value.defaultAddress!.isEmpty) {
       getLocationAndUpdateUser();
+    } else {
+      providerServiceState.getAllProviders(); // Load providers if address exists
+      providerServiceState.getAllServices();
     }
   }
 

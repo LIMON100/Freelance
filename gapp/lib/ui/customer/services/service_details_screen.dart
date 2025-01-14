@@ -48,6 +48,8 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
   String groomerName = '';
   String? selectedTime2;
 
+
+
   DatePickerController datePickerController = DatePickerController();
   bool isLoading = false;
   Rx<UserModel?> user = Rx(null);
@@ -84,11 +86,27 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
         _con.getScheduleList(_con.selectedService.value!.userId);
       },
     );
+    if (similarServiceState.selectedService.value == null) {
+      // Perhaps fetch the service details again if needed
+      // Or simply wait for it to be populated
+      Future.delayed(const Duration(milliseconds: 500), () { // Adjust the duration
+        setState(() {
+          isLoading = false;
+        });
+      });
+    } else {
+      isLoading = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     double distance = 0.0;
+    if (isLoading || similarServiceState.selectedService.value == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     if (auth.value.location != null &&
         similarServiceState.selectedService.value.location != null) {
       distance = Geolocator.distanceBetween(
@@ -117,9 +135,16 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
               width: size.width,
               child: Stack(
                 children: [
+                  // CachedNetworkImage(
+                  //   imageUrl: similarServiceState.selectedService.value.serviceImages!.first,
+                  //   fit: BoxFit.cover,
+                  //   height: 300,
+                  //   width: size.width,
+                  // ),
                   CachedNetworkImage(
-                    imageUrl: similarServiceState
-                        .selectedService.value.serviceImages!.first,
+                    imageUrl: similarServiceState.selectedService.value?.serviceImages?.isNotEmpty == true
+                        ? similarServiceState.selectedService.value!.serviceImages!.first
+                        : '', // Or a placeholder image URL
                     fit: BoxFit.cover,
                     height: 300,
                     width: size.width,
@@ -307,9 +332,13 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: HeaderTxtWidget(
-                                  similarServiceState
-                                      .selectedService.value.serviceType,
+                                child:
+                                // HeaderTxtWidget(
+                                //   similarServiceState.selectedService.value.serviceType,
+                                //   fontSize: 25,
+                                // ),
+                                HeaderTxtWidget(
+                                  similarServiceState.selectedService.value?.serviceType ?? 'Loading...',
                                   fontSize: 25,
                                 ),
                               ),
@@ -327,11 +356,18 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                                 width: 5,
                               ),
                               Expanded(
-                                  child: SubTxtWidget(
-                                '${similarServiceState.selectedService.value.address}',
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w500,
-                              )),
+                                  child:
+                              //     SubTxtWidget(
+                              //   '${similarServiceState.selectedService.value.address}',
+                              //   fontSize: 14.5,
+                              //   fontWeight: FontWeight.w500,
+                              // )
+                                  SubTxtWidget(
+                                    similarServiceState.selectedService.value?.address ?? 'Loading address...',
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                              ),
                             ],
                           ),
                         ],
@@ -760,7 +796,8 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                       width: 2,
                     ),
                     SubTxtWidget(
-                        similarServiceState.selectedService.value.serviceType),
+                        similarServiceState.selectedService.value.serviceType
+                    ),
                   ],
                 ),
                 Row(

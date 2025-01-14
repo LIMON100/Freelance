@@ -5,6 +5,7 @@ import 'package:groom/repo/setting_repo.dart';
 import '../../../generated/assets.dart';
 import '../../../screens/provider_screens/provider_form_screen.dart';
 import '../../../services/route_generator.dart';
+import '../../../states/customer_service_state.dart';
 import '../../../utils/colors.dart';
 import 'customer_dashboard_controller.dart';
 
@@ -14,6 +15,7 @@ class CustomerDashboardPage extends StatelessWidget {
    final GlobalKey<NavigatorState>? nestedKey=Get.nestedKey(1);
   @override
   Widget build(BuildContext context) {
+    Get.put(CustomerServiceState()); //updated for null value
     return ValueListenableBuilder(valueListenable: isProvider, builder: (context, value, child) {
       return Scaffold(
         resizeToAvoidBottomInset: false,

@@ -213,12 +213,17 @@ class ServiceCard extends StatelessWidget {
                       borderRadius: const BorderRadius.all(Radius.circular(10)),
                       child: Stack(
                         children: [
+                          // CachedNetworkImage(
+                          //   imageUrl: service.serviceImages!.first,
+                          //   fit: BoxFit.fill,
+                          //   height: 140,
+                          //   width: 134,
+                          // ),
                           CachedNetworkImage(
-                            imageUrl: service.serviceImages!.first,
+                            imageUrl: service.serviceImages?.isNotEmpty == true ? service.serviceImages!.first : '', // Or a placeholder image
                             fit: BoxFit.fill,
-                            height: 140,
-                            width: 134,
                           ),
+
                           Padding(
                             padding: const EdgeInsets.all(4.0),
                             child: Obx(() => GestureDetector(

@@ -18,6 +18,7 @@ import '../../services/service_details_screen.dart';
 // ignore: must_be_immutable
 class NearbyServiceWidget extends StatelessWidget {
   ProviderServiceState providerServiceState = Get.put(ProviderServiceState());
+  final CustomerServiceState customerServiceState = Get.find<CustomerServiceState>();
   NearbyServiceWidget({super.key});
 
   @override
@@ -43,6 +44,33 @@ class NearbyServiceWidget extends StatelessWidget {
   }
 
   Widget _body() {
+    // if (providerServiceState.isServiceLoading.value &&
+    //     providerServiceState.allService.isEmpty) {
+    //   return LoadingWidget(
+    //     type: LoadingType.MyEvent,
+    //   );
+    // }
+    // if (providerServiceState.allService.isEmpty) {
+    //   return Row(
+    //     children: [
+    //       SubTxtWidget(
+    //         "No nearby services, ",
+    //         fontWeight: FontWeight.w300,
+    //       ),
+    //       InkWell(
+    //         onTap: () {
+    //           Get.toNamed('/invite');
+    //         },
+    //         child: SubTxtWidget(
+    //           "invite a pro",
+    //           fontWeight: FontWeight.w300,
+    //           color: secoundryColorCode,
+    //         ),
+    //       ),
+    //     ],
+    //   );
+    // }
+
     if (providerServiceState.isServiceLoading.value &&
         providerServiceState.allService.isEmpty) {
       return LoadingWidget(
@@ -68,7 +96,6 @@ class NearbyServiceWidget extends StatelessWidget {
           ),
         ],
       );
-      ;
     }
     List<ProviderServiceModel> allService = providerServiceState.allService;
     if (filter.value.isNotEmpty) {
@@ -119,8 +146,13 @@ class NearbyServiceWidget extends StatelessWidget {
                       child: SizedBox(
                         width: 100,
                         height: 100,
-                        child: CachedNetworkImage(
-                          imageUrl: service.serviceImages!.first,
+                        child:
+                        // CachedNetworkImage(
+                        //   imageUrl: service.serviceImages!.first,
+                        //   fit: BoxFit.fill,
+                        // ),
+                        CachedNetworkImage(
+                          imageUrl: service.serviceImages?.isNotEmpty == true ? service.serviceImages!.first : '', // Or a placeholder image
                           fit: BoxFit.fill,
                         ),
                       ),
@@ -132,7 +164,8 @@ class NearbyServiceWidget extends StatelessWidget {
                         child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        HeaderTxtWidget(service.serviceName!),
+                        // HeaderTxtWidget(service.serviceName!),
+                        HeaderTxtWidget(service.serviceName ?? 'Loading...'),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -141,10 +174,17 @@ class NearbyServiceWidget extends StatelessWidget {
                               width: 5,
                             ),
                             Expanded(
-                              child: SubTxtWidget(
+                              child:
+                              // SubTxtWidget(
+                              //   isGuest.value
+                              //       ? 'Login to view'
+                              //       : '${service.address!.toMiniAddress()} (${service.distance})',
+                              //   color: "#8683A1".toColor(),
+                              // ),
+                              SubTxtWidget(
                                 isGuest.value
                                     ? 'Login to view'
-                                    : '${service.address!.toMiniAddress()} (${service.distance})',
+                                    : '${service.address?.toMiniAddress() ?? 'Loading address...'} (${service.distance ?? ''})',
                                 color: "#8683A1".toColor(),
                               ),
                             )
@@ -160,10 +200,14 @@ class NearbyServiceWidget extends StatelessWidget {
                                 const SizedBox(
                                   width: 5,
                                 ),
-                                SubTxtWidget(
-                                  '${service.provider!.providerUserModel!.overallRating}',
-                                  color: "#8683A1".toColor(),
-                                ),
+                                // SubTxtWidget(
+                                //   '${service.provider!.providerUserModel!.overallRating}',
+                                //   color: "#8683A1".toColor(),
+                                // ),
+                              SubTxtWidget(
+                                '${service.provider?.providerUserModel?.overallRating ?? 'No ratings yet'}',
+                                color: "#8683A1".toColor(),
+                              ),
                               ],
                             ),
                             Container(
@@ -196,13 +240,24 @@ class NearbyServiceWidget extends StatelessWidget {
                   ],
                 ),
               ),
+              // onTap: () {
+              //   if (isGuest.value) {
+              //     Get.toNamed('/login');
+              //   } else {
+              //     CustomerServiceState similarServiceState =
+              //         Get.put(CustomerServiceState());
+              //     similarServiceState.selectedService.value = service;
+              //     Get.to(() => ServiceDetailsScreen());
+              //   }
+              // },
+              // In NearbyServiceWidget
+
               onTap: () {
                 if (isGuest.value) {
                   Get.toNamed('/login');
                 } else {
-                  CustomerServiceState similarServiceState =
-                      Get.put(CustomerServiceState());
-                  similarServiceState.selectedService.value = service;
+                  // Use the already found instance
+                  customerServiceState.selectedService.value = service;
                   Get.to(() => ServiceDetailsScreen());
                 }
               },

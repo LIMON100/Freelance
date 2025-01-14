@@ -60,7 +60,7 @@ class CustomerProfileController extends GetxController {
     print(auth.value.toJson());
     try {
       // selectedDob.value = DateFormat("yyyy-MM-dd").parse(Tools.changeDateFormat(auth.value.dateOfBirth!, globalTimeFormat));
-      selectedDob.value = DateFormat("yyyy-MM-dd").parse(auth.value.dateOfBirth!);
+      selectedDob.value = DateFormat("MM-dd-yyyy").parse(auth.value.dateOfBirth!);
     } catch (e, s) {
       print(s);
     }
@@ -119,7 +119,8 @@ class CustomerProfileController extends GetxController {
       joinedOn: auth.value.joinedOn,
       updatedOn: DateTime.now().microsecondsSinceEpoch,
       // dateOfBirth: selectedDob.toString(),
-      dateOfBirth: DateFormat('yyyy-MM-dd').format(selectedDob.value!),
+      // dateOfBirth: DateFormat('yyyy-MM-dd').format(selectedDob.value!),
+      dateOfBirth: DateFormat('MM-dd-yyyy').format(selectedDob.value!),
       requestsThisMonth: auth.value.requestsThisMonth,
       notification_status: auth.value.notification_status,
       defaultAddress: auth.value.defaultAddress,
