@@ -141,6 +141,94 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                   //   height: 300,
                   //   width: size.width,
                   // ),
+                  // CachedNetworkImage(
+                  //   imageUrl: similarServiceState.selectedService.value?.serviceImages?.isNotEmpty == true
+                  //       ? similarServiceState.selectedService.value!.serviceImages!.first
+                  //       : '', // Or a placeholder image URL
+                  //   fit: BoxFit.cover,
+                  //   height: 300,
+                  //   width: size.width,
+                  // ),
+                  // Positioned(
+                  //   bottom: 10,
+                  //   right: 10,
+                  //   child: Column(
+                  //     children: [
+                  //       if (similarServiceState
+                  //               .selectedService.value.serviceImages!.length >
+                  //           1) ...{
+                  //         Container(
+                  //           height: 70,
+                  //           width: 70,
+                  //           margin: const EdgeInsets.symmetric(vertical: 2),
+                  //           padding: const EdgeInsets.all(2),
+                  //           decoration: BoxDecoration(
+                  //             border: Border.all(color: Colors.white, width: 1),
+                  //             borderRadius:
+                  //                 const BorderRadius.all(Radius.circular(10)),
+                  //           ),
+                  //           child: ClipRRect(
+                  //             borderRadius:
+                  //                 const BorderRadius.all(Radius.circular(10)),
+                  //             child: CachedNetworkImage(
+                  //               imageUrl: similarServiceState
+                  //                   .selectedService.value.serviceImages![1],
+                  //               fit: BoxFit.cover,
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       },
+                  //       if (similarServiceState
+                  //               .selectedService.value.serviceImages!.length >
+                  //           2) ...{
+                  //         Container(
+                  //           height: 70,
+                  //           width: 70,
+                  //           margin: const EdgeInsets.symmetric(vertical: 2),
+                  //           padding: const EdgeInsets.all(2),
+                  //           decoration: BoxDecoration(
+                  //             border: Border.all(color: Colors.white, width: 1),
+                  //             borderRadius:
+                  //                 const BorderRadius.all(Radius.circular(10)),
+                  //           ),
+                  //           child: ClipRRect(
+                  //             borderRadius:
+                  //                 const BorderRadius.all(Radius.circular(10)),
+                  //             child: CachedNetworkImage(
+                  //               imageUrl: similarServiceState
+                  //                   .selectedService.value.serviceImages![2],
+                  //               fit: BoxFit.cover,
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       },
+                  //       if (similarServiceState
+                  //               .selectedService.value.serviceImages!.length >
+                  //           3) ...{
+                  //         Container(
+                  //           height: 70,
+                  //           width: 70,
+                  //           margin: const EdgeInsets.symmetric(vertical: 2),
+                  //           padding: const EdgeInsets.all(2),
+                  //           decoration: BoxDecoration(
+                  //             border: Border.all(color: Colors.white, width: 1),
+                  //             borderRadius:
+                  //                 const BorderRadius.all(Radius.circular(10)),
+                  //           ),
+                  //           child: ClipRRect(
+                  //             borderRadius:
+                  //                 const BorderRadius.all(Radius.circular(10)),
+                  //             child: CachedNetworkImage(
+                  //               imageUrl: similarServiceState
+                  //                   .selectedService.value.serviceImages![3],
+                  //               fit: BoxFit.cover,
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       }
+                  //     ],
+                  //   ),
+                  // ),
                   CachedNetworkImage(
                     imageUrl: similarServiceState.selectedService.value?.serviceImages?.isNotEmpty == true
                         ? similarServiceState.selectedService.value!.serviceImages!.first
@@ -154,9 +242,9 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                     right: 10,
                     child: Column(
                       children: [
-                        if (similarServiceState
-                                .selectedService.value.serviceImages!.length >
-                            1) ...{
+                        if (similarServiceState.selectedService.value?.serviceImages != null &&
+                            similarServiceState.selectedService.value!.serviceImages!.length >
+                                1) ...{
                           Container(
                             height: 70,
                             width: 70,
@@ -165,22 +253,23 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.white, width: 1),
                               borderRadius:
-                                  const BorderRadius.all(Radius.circular(10)),
+                              const BorderRadius.all(Radius.circular(10)),
                             ),
                             child: ClipRRect(
                               borderRadius:
-                                  const BorderRadius.all(Radius.circular(10)),
+                              const BorderRadius.all(Radius.circular(10)),
                               child: CachedNetworkImage(
                                 imageUrl: similarServiceState
-                                    .selectedService.value.serviceImages![1],
+                                    .selectedService.value!.serviceImages![1],
                                 fit: BoxFit.cover,
+                                errorWidget: (context, url, error) => Icon(Icons.error),
                               ),
                             ),
                           ),
                         },
-                        if (similarServiceState
-                                .selectedService.value.serviceImages!.length >
-                            2) ...{
+                        if (similarServiceState.selectedService.value?.serviceImages != null &&
+                            similarServiceState.selectedService.value!.serviceImages!.length >
+                                2) ...{
                           Container(
                             height: 70,
                             width: 70,
@@ -189,22 +278,24 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.white, width: 1),
                               borderRadius:
-                                  const BorderRadius.all(Radius.circular(10)),
+                              const BorderRadius.all(Radius.circular(10)),
                             ),
                             child: ClipRRect(
                               borderRadius:
-                                  const BorderRadius.all(Radius.circular(10)),
+                              const BorderRadius.all(Radius.circular(10)),
                               child: CachedNetworkImage(
                                 imageUrl: similarServiceState
-                                    .selectedService.value.serviceImages![2],
+                                    .selectedService.value!.serviceImages![2],
                                 fit: BoxFit.cover,
+                                errorWidget: (context, url, error) => Icon(Icons.error),
+
                               ),
                             ),
                           ),
                         },
-                        if (similarServiceState
-                                .selectedService.value.serviceImages!.length >
-                            3) ...{
+                        if (similarServiceState.selectedService.value?.serviceImages != null &&
+                            similarServiceState.selectedService.value!.serviceImages!.length >
+                                3) ...{
                           Container(
                             height: 70,
                             width: 70,
@@ -213,15 +304,16 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.white, width: 1),
                               borderRadius:
-                                  const BorderRadius.all(Radius.circular(10)),
+                              const BorderRadius.all(Radius.circular(10)),
                             ),
                             child: ClipRRect(
                               borderRadius:
-                                  const BorderRadius.all(Radius.circular(10)),
+                              const BorderRadius.all(Radius.circular(10)),
                               child: CachedNetworkImage(
                                 imageUrl: similarServiceState
-                                    .selectedService.value.serviceImages![3],
+                                    .selectedService.value!.serviceImages![3],
                                 fit: BoxFit.cover,
+                                errorWidget: (context, url, error) => Icon(Icons.error),
                               ),
                             ),
                           ),
@@ -616,25 +708,30 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                   const SizedBox(height: 20),
+                  similarServiceState.selectedService.value?.serviceImages == null ?
+                  Center(
+                    child: HeaderTxtWidget("No photo found"),
+                  ):
                   GridView.builder(
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5),
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5),
                     itemBuilder: (context, index) {
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: NetworkImageWidget(
                             url: similarServiceState
-                                .selectedService.value.serviceImages![index]),
+                                .selectedService.value!.serviceImages![index]),
                       );
                     },
                     itemCount: similarServiceState
-                        .selectedService.value.serviceImages!.length,
+                        .selectedService.value?.serviceImages?.length ?? 0,
                     primary: false,
                     shrinkWrap: true,
                   ),
+                  const SizedBox(height: 20),
                   const SizedBox(height: 20),
                   if (!self())
                     ButtonPrimaryWidget(

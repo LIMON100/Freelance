@@ -607,8 +607,13 @@ class _ServiceDisplayScreenState extends State<ProviderDetailsScreen> {
                           child: SizedBox(
                             width: 100,
                             height: 100,
-                            child: CachedNetworkImage(
-                              imageUrl: service.serviceImages!.first,
+                            child:
+                            // CachedNetworkImage(
+                            //   imageUrl: service.serviceImages!.first,
+                            //   fit: BoxFit.fill,
+                            // ),
+                            CachedNetworkImage(
+                              imageUrl: service.serviceImages?.isNotEmpty == true ? service.serviceImages!.first : '', // Or a placeholder image
                               fit: BoxFit.fill,
                             ),
                           ),
@@ -797,96 +802,200 @@ class _ServiceDisplayScreenState extends State<ProviderDetailsScreen> {
         .toList();
   }
 
+  // Widget _slider() {
+  //   return Container(
+  //     height: 250,
+  //     margin: const EdgeInsets.all(10),
+  //     child: Stack(
+  //       children: [
+  //         CarouselSlider(
+  //           items: _con
+  //               .selectedProvider.value!.providerUserModel!.providerImages!
+  //               .map((e) {
+  //             return ClipRRect(
+  //               borderRadius: const BorderRadius.all(Radius.circular(10)),
+  //               child: CachedNetworkImage(
+  //                 imageUrl: e,
+  //                 fit: BoxFit.cover,
+  //                 width: 1000.0,
+  //               ),
+  //             );
+  //           }).toList(),
+  //           options: CarouselOptions(
+  //             aspectRatio: 1,
+  //             height: 250,
+  //             viewportFraction: 1,
+  //             initialPage: 0,
+  //             enableInfiniteScroll: true,
+  //             reverse: false,
+  //             autoPlay: true,
+  //             autoPlayInterval: const Duration(seconds: 3),
+  //             autoPlayAnimationDuration: const Duration(milliseconds: 800),
+  //             autoPlayCurve: Curves.fastOutSlowIn,
+  //             enlargeCenterPage: true,
+  //             scrollDirection: Axis.horizontal,
+  //             onPageChanged: (index, reason) {
+  //               selectedIndex.value = index;
+  //             },
+  //           ),
+  //         ),
+  //         Positioned(
+  //           top: 0,
+  //           right: 0,
+  //           child: Container(
+  //             padding: const EdgeInsets.all(5),
+  //             decoration: const BoxDecoration(
+  //                 borderRadius: BorderRadius.only(
+  //                     bottomLeft: Radius.circular(10),
+  //                     topRight: Radius.circular(10)),
+  //                 color: Colors.green),
+  //             child: SubTxtWidget(
+  //               _con.openStatus.value,
+  //               color: Colors.white,
+  //               fontSize: 14,
+  //             ),
+  //           ),
+  //         ),
+  //         Positioned(
+  //           bottom: 10,
+  //           right: 10,
+  //           child: Obx(
+  //             () => _dots(_con.selectedProvider.value!.providerUserModel!
+  //                 .providerImages!.length),
+  //           ),
+  //         ),
+  //         InkWell(
+  //           onTap: () {
+  //             Get.toNamed('/add_provider_report', arguments: widget.provider);
+  //           },
+  //           child: Container(
+  //             padding: const EdgeInsets.all(10),
+  //             child: Row(
+  //               children: [
+  //                 const Icon(
+  //                   Icons.report_outlined,
+  //                   color: Colors.red,
+  //                   size: 14,
+  //                 ),
+  //                 const SizedBox(
+  //                   width: 5,
+  //                 ),
+  //                 SubTxtWidget(
+  //                   'Report User',
+  //                   color: Colors.white,
+  //                   fontSize: 13,
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         )
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _slider() {
-    return Container(
-      height: 250,
-      margin: const EdgeInsets.all(10),
-      child: Stack(
-        children: [
-          CarouselSlider(
-            items: _con
-                .selectedProvider.value!.providerUserModel!.providerImages!
-                .map((e) {
-              return ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(10)),
-                child: CachedNetworkImage(
-                  imageUrl: e,
-                  fit: BoxFit.cover,
-                  width: 1000.0,
+    return Obx(() {
+      if (_con.selectedProvider.value?.providerUserModel?.providerImages ==
+          null) {
+        return Container(
+          height: 250,
+          margin: const EdgeInsets.all(10),
+          child: Center(
+            child: HeaderTxtWidget('Loading...'),
+          ),
+        );
+      }
+      return Container(
+        height: 250,
+        margin: const EdgeInsets.all(10),
+        child: Stack(
+          children: [
+            CarouselSlider(
+              items: _con
+                  .selectedProvider.value!.providerUserModel!.providerImages!
+                  .map((e) {
+                return ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  child: CachedNetworkImage(
+                    imageUrl: e,
+                    fit: BoxFit.cover,
+                    width: 1000.0,
+                  ),
+                );
+              }).toList(),
+              options: CarouselOptions(
+                aspectRatio: 1,
+                height: 250,
+                viewportFraction: 1,
+                initialPage: 0,
+                enableInfiniteScroll: true,
+                reverse: false,
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 3),
+                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                autoPlayCurve: Curves.fastOutSlowIn,
+                enlargeCenterPage: true,
+                scrollDirection: Axis.horizontal,
+                onPageChanged: (index, reason) {
+                  selectedIndex.value = index;
+                },
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(10),
+                        topRight: Radius.circular(10)),
+                    color: Colors.green),
+                child: SubTxtWidget(
+                  _con.openStatus.value,
+                  color: Colors.white,
+                  fontSize: 14,
                 ),
-              );
-            }).toList(),
-            options: CarouselOptions(
-              aspectRatio: 1,
-              height: 250,
-              viewportFraction: 1,
-              initialPage: 0,
-              enableInfiniteScroll: true,
-              reverse: false,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 3),
-              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              autoPlayCurve: Curves.fastOutSlowIn,
-              enlargeCenterPage: true,
-              scrollDirection: Axis.horizontal,
-              onPageChanged: (index, reason) {
-                selectedIndex.value = index;
+              ),
+            ),
+            Positioned(
+              bottom: 10,
+              right: 10,
+              child: Obx(
+                    () => _dots(_con.selectedProvider.value!.providerUserModel!
+                    .providerImages!.length),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Get.toNamed('/add_provider_report', arguments: widget.provider);
               },
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(10),
-                      topRight: Radius.circular(10)),
-                  color: Colors.green),
-              child: SubTxtWidget(
-                _con.openStatus.value,
-                color: Colors.white,
-                fontSize: 14,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.report_outlined,
+                      color: Colors.red,
+                      size: 14,
+                    ),
+                    const SizedBox(
+                      width: 5,
+                    ),
+                    SubTxtWidget(
+                      'Report User',
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: Obx(
-              () => _dots(_con.selectedProvider.value!.providerUserModel!
-                  .providerImages!.length),
-            ),
-          ),
-          InkWell(
-            onTap: () {
-              Get.toNamed('/add_provider_report', arguments: widget.provider);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.report_outlined,
-                    color: Colors.red,
-                    size: 14,
-                  ),
-                  const SizedBox(
-                    width: 5,
-                  ),
-                  SubTxtWidget(
-                    'Report User',
-                    color: Colors.white,
-                    fontSize: 13,
-                  ),
-                ],
-              ),
-            ),
-          )
-        ],
-      ),
-    );
+            )
+          ],
+        ),
+      );
+    });
   }
 
   String getSkills() {

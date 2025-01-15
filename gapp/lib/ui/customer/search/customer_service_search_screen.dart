@@ -203,9 +203,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                 child: ClipRRect(
                                   borderRadius:
                                   BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    imageUrl:
-                                    service.serviceImages!.first,
+                                  child:
+                                  // CachedNetworkImage(
+                                  //   imageUrl:
+                                  //   service.serviceImages!.first,
+                                  //   fit: BoxFit.fill,
+                                  // ),
+                                  CachedNetworkImage(
+                                    imageUrl: service.serviceImages?.isNotEmpty == true ? service.serviceImages!.first : '', // Or a placeholder image
                                     fit: BoxFit.fill,
                                   ),
                                 ),
@@ -279,11 +284,16 @@ class _SearchScreenState extends State<SearchScreen> {
                                   height: 90,
                                   child: ClipRRect(
                                     borderRadius: const BorderRadius.all(Radius.circular(60)),
-                                    child: CachedNetworkImage(
-                                      imageUrl: service.serviceImages!.first,
+                                    child:
+                                    // CachedNetworkImage(
+                                    //   imageUrl: service.serviceImages!.first,
+                                    //   fit: BoxFit.fill,
+                                    //   height: 90,
+                                    //   width: 90,
+                                    // ),
+                                    CachedNetworkImage(
+                                      imageUrl: service.serviceImages?.isNotEmpty == true ? service.serviceImages!.first : '', // Or a placeholder image
                                       fit: BoxFit.fill,
-                                      height: 90,
-                                      width: 90,
                                     ),
                                   )
                               ),
