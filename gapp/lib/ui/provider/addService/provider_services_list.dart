@@ -71,8 +71,15 @@ class _ServiceProviderListState extends State<ServiceProviderList> {
                   height: 220,
                   child: Stack(
                     children: [
+                      // NetworkImageWidget(
+                      //   url: data.serviceImages!.first,
+                      //   height: 150,
+                      //   fit: BoxFit.cover,
+                      // ),
                       NetworkImageWidget(
-                        url: data.serviceImages!.first,
+                        url: data.serviceImages != null && data.serviceImages!.isNotEmpty
+                            ? data.serviceImages!.first
+                            : '',  //Or use a placeholder image, like: "assets/placeholder.png"
                         height: 150,
                         fit: BoxFit.cover,
                       ),
