@@ -69,12 +69,23 @@ class _RequestReservationWidgetState extends State<RequestReservationWidget> {
                               child: Card(
                                 child: Row(
                                   children: [
+                                    // CachedNetworkImage(
+                                    //     height: 100,
+                                    //     width: 90,
+                                    //     fit: BoxFit.fill,
+                                    //     imageUrl: user.providerUserModel!
+                                    //         .providerImages!.first
+                                    // ),
                                     CachedNetworkImage(
-                                        height: 100,
-                                        width: 90,
-                                        fit: BoxFit.fill,
-                                        imageUrl: user.providerUserModel!
-                                            .providerImages!.first),
+                                      height: 100,
+                                      width: 90,
+                                      fit: BoxFit.fill,
+                                      imageUrl: user.providerUserModel != null &&
+                                          user.providerUserModel!.providerImages != null &&
+                                          user.providerUserModel!.providerImages!.isNotEmpty
+                                          ? user.providerUserModel!.providerImages!.first
+                                          : '',
+                                    ),
                                     const SizedBox(
                                       width: 6,
                                     ),

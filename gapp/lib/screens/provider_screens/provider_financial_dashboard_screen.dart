@@ -58,7 +58,8 @@ class _ProviderFinancialDashboardState
                     return ListTile(
                       title: SubTxtWidget(data.paymentMode!),
                       subtitle: SubTxtWidget(Tools.changeDateFormat(data.createdDate!, globalTimeFormat),fontSize: 12,),
-                      trailing: SubTxtWidget('${data.amount} USD'),
+                      // trailing: SubTxtWidget('${data.amount} USD'),
+                      trailing: SubTxtWidget('${data.amount?.toStringAsFixed(2)} USD'),
                     );
                   },
                   itemCount: snapshot.data!.length,

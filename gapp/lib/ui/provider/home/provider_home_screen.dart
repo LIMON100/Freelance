@@ -313,10 +313,12 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                           Get.to(() =>
                                               const ProviderFinancialDashboard());
                                         },
-                                        child: CardWidget(
+                                        child:
+                                        CardWidget(
                                           title: snapshot.data == null
                                               ? "0"
-                                              : snapshot.data.toString(),
+                                              // : snapshot.data.toString(),
+                                              : double.parse(snapshot.data.toString()).toStringAsFixed(2),
                                           subTitle: "Total Earnings",
                                           icon: "assets/services.png",
                                         ),
@@ -449,8 +451,15 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                 height: 220,
                 child: Stack(
                   children: [
+                    // NetworkImageWidget(
+                    //   url: data.serviceImages!.first,
+                    //   height: 150,
+                    //   fit: BoxFit.cover,
+                    // ),
                     NetworkImageWidget(
-                      url: data.serviceImages!.first,
+                      url: data.serviceImages != null && data.serviceImages!.isNotEmpty
+                          ? data.serviceImages!.first
+                          : '',  //Or use a placeholder image, like: "assets/placeholder.png"
                       height: 150,
                       fit: BoxFit.cover,
                     ),
