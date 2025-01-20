@@ -104,6 +104,7 @@ class _ScreenState extends State<CalendarPage>{
       margin: const EdgeInsets.all(10),
       child: ListView.builder(itemBuilder: (context, index) {
         DateModel data=_con.calendarList[index];
+
         return InkWell(
           splashColor: Colors.transparent,
           onTap: (){
@@ -180,8 +181,9 @@ class _ScreenState extends State<CalendarPage>{
                         }
                         return const SizedBox();
                       },),
-                      SubTxtWidget('\$${data.depositAmount} - ${data.status}',fontSize: 10,),
-                      SubTxtWidget('\$${data.description}',fontSize: 10,)
+                      SubTxtWidget('${"Deposite Amount"} - \$${data.depositAmount}', fontSize: 10,),
+                      SubTxtWidget('${"Status"} - ${data.status}',fontSize: 10,),
+                      SubTxtWidget('${"Description"} - ${data.description}',fontSize: 10,)
                     ],
                   ),
                 );
