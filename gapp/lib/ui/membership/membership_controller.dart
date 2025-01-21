@@ -133,44 +133,90 @@ class MembershipController extends GetxController {
     }
     return 7;
   }
-  List<MembershipModel> getFilteredList({String? currentMembershipDuration, bool isUpgrade = false, bool isDowngrade = false}){
+
+
+  // Indexing left-right checking
+  // List<MembershipModel> getFilteredList({String? currentMembershipDuration, bool isUpgrade = false, bool isDowngrade = false}) {
+  //   List<MembershipModel> result = list.toList();
+  //   if (currentMembershipDuration == null) {
+  //     return result;
+  //   }
+  //   // Calculate index for current duration
+  //   int currentDurationIndex = list.indexWhere((element) => element.duration == currentMembershipDuration);
+  //
+  //   if (isUpgrade) {
+  //     // Show plans with indices greater than the current, excluding the current plan
+  //     result = list.where((element) => list.indexOf(element) > currentDurationIndex).toList();
+  //   }
+  //
+  //   if (isDowngrade) {
+  //     // Show plans with indices less than the current, excluding the current plan
+  //     result = list.where((element) => list.indexOf(element) < currentDurationIndex).toList();
+  //   }
+  //   return result;
+  // }
+
+  List<MembershipModel> getFilteredList({
+    String? currentMembershipDuration,
+    bool isUpgrade = false,
+    bool isDowngrade = false,
+  }) {
     List<MembershipModel> result = list.toList();
-    if (currentMembershipDuration == null){
+
+    if (currentMembershipDuration == null) {
       return result;
     }
 
-    if (currentMembershipDuration.contains("week")){
+    // Handle 1-week plan
+    if (currentMembershipDuration.contains("week")) {
       if (isUpgrade) {
         result.removeWhere((element) => element.duration.contains("week"));
       }
-      if (isDowngrade){
-        result.clear();
+      if (isDowngrade) {
+        result.clear(); // No downgrade for the 1-week plan
       }
       return result;
-    } else if (currentMembershipDuration.contains("6 months")){
+    }
+
+    // Handle 6-month plan
+    if (currentMembershipDuration.contains("6 months")) {
       if (isUpgrade) {
-        result.clear();
+        result.clear(); // No upgrade for the 6-month plan
       }
-      if (isDowngrade){
+      if (isDowngrade) {
         result.removeWhere((element) => element.duration.contains("6 months"));
       }
       return result;
-    } else {
-      // Calculate index for current duration
-      int currentDurationIndex = list.indexWhere((element) => element.duration.contains(currentMembershipDuration.split(" ")[0]));
+    }
 
+    // Handle 1-month plan
+    if (currentMembershipDuration.contains("1 month")) {
       if (isUpgrade) {
-        // Get all indices greater than the current
-        result = list.where((element) => list.indexOf(element) > currentDurationIndex).toList();
+        // Exclude 1-month and any lower plans (like 1-week)
+        result.removeWhere((element) => !element.duration.contains("3 months") && !element.duration.contains("6 months"));
       }
-
-      if(isDowngrade){
-        result.removeWhere((element) =>
-        element.duration.contains("6 months") ||
-            element.duration.contains(currentMembershipDuration.split(" ")[0]));
+      if (isDowngrade) {
+        // Only include 1-week plan
+        result.removeWhere((element) => !element.duration.contains("week"));
       }
-
       return result;
     }
+
+    // For all other plans (e.g., 3 months), calculate based on index
+    int currentDurationIndex = list.indexWhere(
+            (element) => element.duration.contains(currentMembershipDuration.split(" ")[0]));
+
+    if (isUpgrade) {
+      // Include only plans with indices higher than the current plan
+      result = list.where((element) => list.indexOf(element) > currentDurationIndex).toList();
+    }
+
+    if (isDowngrade) {
+      // Include only plans with indices lower than the current plan
+      result = list.where((element) => list.indexOf(element) < currentDurationIndex).toList();
+    }
+
+    return result;
   }
+
 }
