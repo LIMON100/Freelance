@@ -118,7 +118,8 @@ class _ListState extends State<AllServiceList> {
                                           width: 5,
                                         ),
                                         SubTxtWidget(
-                                          '${service.provider!.providerUserModel!.overallRating}',
+                                          // '${service.provider!.providerUserModel!.overallRating}',
+                                          '${service.provider!.providerUserModel!.overallRating.toStringAsFixed(1)}',
                                           color: "#8683A1".toColor(),
                                         ),
                                       ],
