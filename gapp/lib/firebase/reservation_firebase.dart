@@ -45,6 +45,7 @@ class ReservationFirebase {
 
   Future<List<ServiceReservationModel>> getServiceReservationsByUserId(
       String userId) async {
+    print("INSIDE THIS..");
     List<ServiceReservationModel> serviceReservationsList = [];
     var source = await ref
         .child("serviceReservation")
@@ -65,6 +66,7 @@ class ReservationFirebase {
 
     return serviceReservationsList;
   }
+
   Future<List<ServiceReservationModel>> getProviderServiceReservationsByUserId(
       String providerId) async {
     List<ServiceReservationModel> serviceReservationsList = [];

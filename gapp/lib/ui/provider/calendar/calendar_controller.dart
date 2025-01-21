@@ -143,6 +143,7 @@ class CalendarController extends GetxController {
     }
   }
   void getRequestReservations(){
+    print('getRequestReservations started');
     reservationFirebase.getProviderRequestReservationsByUserId(auth.value.uid).then((value) {
       for(RequestReservationModel data in value){
         print('data.selectedDate ${data.selectedDate}');
@@ -162,6 +163,8 @@ class CalendarController extends GetxController {
         }
       }
       eventList.value.addAll(eventListAll.value);
+      print('eventListAll ${eventListAll.value}');
+      print('eventList ${eventList.value}');
     },);
   }
 }

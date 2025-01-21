@@ -29,8 +29,7 @@ class CustomerServiceRequestViewScreen extends StatefulWidget {
       _CustomerServiceRequestViewScreenState();
 }
 
-class _CustomerServiceRequestViewScreenState
-    extends State<CustomerServiceRequestViewScreen> {
+class _CustomerServiceRequestViewScreenState extends State<CustomerServiceRequestViewScreen> {
   CustomerRequestState customerRequestState = Get.find();
   ProviderServiceFirebase providerServiceFirebase = ProviderServiceFirebase();
   UserFirebase userFirebase = UserFirebase();

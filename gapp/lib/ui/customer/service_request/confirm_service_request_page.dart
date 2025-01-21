@@ -76,7 +76,7 @@ class _ConfirmServiceRequestPageState extends State<ConfirmServiceRequestPage> {
               ),
               Row(
                 children: [
-                  // HeaderTxtWidget('Timing :'),
+                  HeaderTxtWidget('Time :'),
                   const SizedBox(
                     width: 20,
                   ),

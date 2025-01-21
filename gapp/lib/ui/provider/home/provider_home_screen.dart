@@ -16,6 +16,7 @@ import 'package:groom/firebase/user_firebase.dart';
 import 'package:groom/generated/assets.dart';
 import 'package:groom/repo/session_repo.dart';
 import 'package:groom/repo/setting_repo.dart';
+import 'package:groom/ui/membership/membership_active_plan_page.dart';
 import 'package:groom/ui/provider/home/widgets/bar_chart_widget.dart';
 import 'package:groom/widgets/header_txt_widget.dart';
 import 'package:groom/widgets/network_image_widget.dart';
@@ -84,7 +85,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                   toolbarHeight: 65,
                   title: Container(
                     color: primaryColorCode,
-                    child: Row(
+                    child:
+                    Row(
                       children: [
                         HeaderTxtWidget(
                           'HOME',
@@ -111,20 +113,36 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                             .salonTitle!
                                         : auth.value.fullName,
                                     color: Colors.white,
-                                    fontSize: 10,
+                                    fontSize: 9,
                                   );
                                 },
                               ),
+                              // FutureBuilder(
+                              //   future: totalEarning(),
+                              //   builder: (context, snapshot) {
+                              //     return HeaderTxtWidget(
+                              //       '\$${snapshot.data}USD',
+                              //       color: Colors.white,
+                              //       fontSize: 10,
+                              //     );
+                              //   },
+                              // )
                               FutureBuilder(
                                 future: totalEarning(),
                                 builder: (context, snapshot) {
+                                  // Ensure snapshot.data is properly formatted as a float
+                                  String earnings = snapshot.data == null
+                                      ? "0.00" // Default value if data is null
+                                      : double.parse(snapshot.data.toString()).toStringAsFixed(2);
+
                                   return HeaderTxtWidget(
-                                    '\$${snapshot.data}USD',
+                                    '\$$earnings USD', // Format with currency symbol and units
                                     color: Colors.white,
-                                    fontSize: 12,
+                                    fontSize: 10,
                                   );
                                 },
                               )
+
                             ],
                           ),
                         ),
@@ -327,6 +345,37 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                   },
                                 ),
                               ), // Adding space between ListTiles
+                              // Expanded(
+                              //   child: FutureBuilder(
+                              //     future: totalEarning(),
+                              //     builder: (context, snapshot) {
+                              //       // Check if the snapshot has data or is still loading
+                              //       if (snapshot.connectionState ==
+                              //           ConnectionState.waiting) {
+                              //         // While waiting, return a CardWidget with the title set to '0'
+                              //         return CardWidget(
+                              //           title: '0',
+                              //           subTitle: "Total Earnings",
+                              //           icon: "assets/services.png",
+                              //         );
+                              //       } else {
+                              //         return GestureDetector(
+                              //           onTap: () {
+                              //             Get.to(() =>
+                              //             const ProviderFinancialDashboard());
+                              //           },
+                              //           child: CardWidget(
+                              //             title: snapshot.data == null
+                              //                 ? "0"
+                              //                 : double.parse(snapshot.data.toString()).toStringAsFixed(2),
+                              //             subTitle: "Total Earnings",
+                              //             icon: "assets/services.png",
+                              //           ),
+                              //         );
+                              //       }
+                              //     },
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),

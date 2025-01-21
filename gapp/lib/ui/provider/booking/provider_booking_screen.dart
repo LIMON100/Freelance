@@ -533,23 +533,52 @@ class _BookingScreenState extends State<BookingScreen> {
                                           child: Card(
                                             child: Row(
                                               children: [
+                                                // ClipRRect(
+                                                //   borderRadius:
+                                                //       const BorderRadius.only(
+                                                //           topLeft:
+                                                //               Radius.circular(
+                                                //                   10),
+                                                //           bottomLeft:
+                                                //               Radius.circular(
+                                                //                   10)),
+                                                //   child:
+                                                //   CachedNetworkImage(
+                                                //       height: 90,
+                                                //       width: 100,
+                                                //       fit: BoxFit.fill,
+                                                //       imageUrl: user
+                                                //           .providerUserModel!
+                                                //           .providerImages!
+                                                //           .first),
+                                                // ),
                                                 ClipRRect(
                                                   borderRadius:
-                                                      const BorderRadius.only(
-                                                          topLeft:
-                                                              Radius.circular(
-                                                                  10),
-                                                          bottomLeft:
-                                                              Radius.circular(
-                                                                  10)),
-                                                  child: CachedNetworkImage(
+                                                  const BorderRadius.only(
+                                                      topLeft:
+                                                      Radius.circular(
+                                                          10),
+                                                      bottomLeft:
+                                                      Radius.circular(
+                                                          10)),
+                                                  child: user.providerUserModel != null &&
+                                                      user.providerUserModel!.providerImages != null &&
+                                                      user.providerUserModel!.providerImages!.isNotEmpty
+                                                      ? CachedNetworkImage(
                                                       height: 90,
                                                       width: 100,
                                                       fit: BoxFit.fill,
-                                                      imageUrl: user
-                                                          .providerUserModel!
-                                                          .providerImages!
-                                                          .first),
+                                                      imageUrl:
+                                                      user.providerUserModel!.providerImages!.first)
+                                                      : const SizedBox(
+                                                      height: 90,
+                                                      width: 100,
+                                                      child: Center(
+                                                        child: Icon(
+                                                          Icons.image_not_supported,
+                                                          size: 30,
+                                                        ),
+                                                      )),
                                                 ),
                                                 const SizedBox(
                                                   width: 6,

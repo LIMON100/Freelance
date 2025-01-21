@@ -27,6 +27,7 @@ import '../../../screens/provider_screens/provider_form_screen.dart';
 import '../favorite/customer_favorite_service_list_screen.dart';
 import '../../../screens/services_screens/provider_booking_service_reservation_screen.dart';
 import '../booking/customer_booking_service_reservation_list_screen.dart';
+import '../payment/payment_page.dart';
 import 'customer_profile_controller.dart';
 
 class CustomerProfilePage extends StatelessWidget {
@@ -287,6 +288,21 @@ class CustomerProfilePage extends StatelessWidget {
                               height: 5,
                               color: "#F4F4F5".toColor(),
                             ),
+                            // ListTile(
+                            //   title: HeaderTxtWidget('Payment'),
+                            //   trailing: const Icon(
+                            //     Icons.arrow_forward_ios_outlined,
+                            //     size: 18,
+                            //   ),
+                            //   onTap: () {
+                            //     if (!isProvider.value) {
+                            //       Get.to(() => const CustomerPaymentScreen());
+                            //     } else {
+                            //       Get.to(
+                            //           () => const ProviderFinancialDashboard());
+                            //     }
+                            //   },
+                            // ),
                             ListTile(
                               title: HeaderTxtWidget('Payment'),
                               trailing: const Icon(
@@ -295,10 +311,9 @@ class CustomerProfilePage extends StatelessWidget {
                               ),
                               onTap: () {
                                 if (!isProvider.value) {
-                                  Get.to(() => const CustomerPaymentScreen());
+                                  Get.to(() =>  PaymentPage());
                                 } else {
-                                  Get.to(
-                                      () => const ProviderFinancialDashboard());
+                                  Get.to(() => const ProviderFinancialDashboard());
                                 }
                               },
                             ),

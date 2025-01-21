@@ -134,6 +134,46 @@ class MembershipController extends GetxController {
     return 7;
   }
 
+  // List<MembershipModel> getFilteredList({String? currentMembershipDuration, bool isUpgrade = false, bool isDowngrade = false}){
+  //   List<MembershipModel> result = list.toList();
+  //   if (currentMembershipDuration == null){
+  //     return result;
+  //   }
+  //
+  //   if (currentMembershipDuration.contains("week")){
+  //     if (isUpgrade) {
+  //       result.removeWhere((element) => element.duration.contains("week"));
+  //     }
+  //     if (isDowngrade){
+  //       result.clear();
+  //     }
+  //     return result;
+  //   } else if (currentMembershipDuration.contains("6 months")){
+  //     if (isUpgrade) {
+  //       result.clear();
+  //     }
+  //     if (isDowngrade){
+  //       result.removeWhere((element) => element.duration.contains("6 months"));
+  //     }
+  //     return result;
+  //   } else {
+  //     // Calculate index for current duration
+  //     int currentDurationIndex = list.indexWhere((element) => element.duration.contains(currentMembershipDuration.split(" ")[0]));
+  //
+  //     if (isUpgrade) {
+  //       // Get all indices greater than the current
+  //       result = list.where((element) => list.indexOf(element) > currentDurationIndex).toList();
+  //     }
+  //
+  //     if(isDowngrade){
+  //       result.removeWhere((element) =>
+  //       element.duration.contains("6 months") ||
+  //           element.duration.contains(currentMembershipDuration.split(" ")[0]));
+  //     }
+  //
+  //     return result;
+  //   }
+  // }
 
   // Indexing left-right checking
   // List<MembershipModel> getFilteredList({String? currentMembershipDuration, bool isUpgrade = false, bool isDowngrade = false}) {
