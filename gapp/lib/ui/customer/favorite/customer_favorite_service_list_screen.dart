@@ -293,7 +293,7 @@ class _FavoriteServicesScreenState extends State<FavoriteServicesScreen> {
                               width: 5,
                             ),
                             SubTxtWidget(
-                              '${data.providerUserModel!.overallRating}',
+                              '${data.providerUserModel!.overallRating.toStringAsFixed(1)}',
                               color: "#8683A1".toColor(),
                             ),
                           ],

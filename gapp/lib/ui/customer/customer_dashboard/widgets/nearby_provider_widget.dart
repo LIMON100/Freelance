@@ -170,7 +170,7 @@ class NearbyProviderWidget extends StatelessWidget {
                                   width: 5,
                                 ),
                                 SubTxtWidget(
-                                  '${data.providerUserModel!.overallRating}',
+                                  '${data.providerUserModel!.overallRating.toStringAsFixed(1)}',
                                   color: "#8683A1".toColor(),
                                 ),
                               ],

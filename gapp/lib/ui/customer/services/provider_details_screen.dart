@@ -143,7 +143,8 @@ class _ServiceDisplayScreenState extends State<ProviderDetailsScreen> {
                         width: 5,
                       ),
                       SubTxtWidget(
-                        '${_con.selectedProvider.value!.providerUserModel!.overallRating}',
+                        // '${_con.selectedProvider.value!.providerUserModel!.overallRating}',
+                        '${_con.selectedProvider.value!.providerUserModel!.overallRating.toStringAsFixed(1)}',
                         color: "#8683A1".toColor(),
                       ),
                     ],
@@ -656,7 +657,7 @@ class _ServiceDisplayScreenState extends State<ProviderDetailsScreen> {
                                           width: 5,
                                         ),
                                         SubTxtWidget(
-                                          '${service.provider!.providerUserModel!.overallRating}',
+                                          '${service.provider!.providerUserModel!.overallRating.toStringAsFixed(1)}',
                                           color: "#8683A1".toColor(),
                                         ),
                                       ],

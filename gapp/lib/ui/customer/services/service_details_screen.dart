@@ -348,7 +348,8 @@ class _SimilarServiceDisplayScreenState extends State<ServiceDetailsScreen> {
                                         width: 5,
                                       ),
                                       SubTxtWidget(
-                                        '${user.value!.providerUserModel!.overallRating}',
+                                        // '${user.value!.providerUserModel!.overallRating}',
+                                        '${user.value!.providerUserModel!.overallRating.toStringAsFixed(1)}',
                                         color: Colors.white,
                                       ),
                                       const SizedBox(

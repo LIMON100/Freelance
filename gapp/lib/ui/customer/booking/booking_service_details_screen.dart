@@ -192,7 +192,7 @@ class _SimilarServiceDisplayScreenState extends State<BookingServiceDetailsScree
                             children: [
                               const Icon(Icons.star,color: Colors.amber,size: 18,),
                               const SizedBox(width: 5,),
-                              SubTxtWidget('${user.value!.providerUserModel!.overallRating}',color: Colors.white,),
+                              SubTxtWidget('${user.value!.providerUserModel!.overallRating.toStringAsFixed(1)}',color: Colors.white,),
                               const SizedBox(width: 5,),
                               SubTxtWidget('(${user.value!.providerUserModel!.numReviews.toInt()})',color: Colors.white)
                             ],

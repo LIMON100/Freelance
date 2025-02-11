@@ -234,7 +234,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           children: [
                                             SvgPicture.asset(Assets.svgStar),
                                             const SizedBox(width: 5,),
-                                            SubTxtWidget('${service.provider!.providerUserModel!.overallRating}',color: "#8683A1".toColor(),),
+                                            SubTxtWidget('${service.provider!.providerUserModel!.overallRating.toStringAsFixed(1)}',color: "#8683A1".toColor(),),
                                           ],
                                         ),
                                         HeaderTxtWidget('\$${service.provider!.providerUserModel!.basePrice}',color: Colors.blue,),

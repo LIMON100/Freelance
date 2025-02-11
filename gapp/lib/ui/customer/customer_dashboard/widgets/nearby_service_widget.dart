@@ -205,7 +205,7 @@ class NearbyServiceWidget extends StatelessWidget {
                                 //   color: "#8683A1".toColor(),
                                 // ),
                               SubTxtWidget(
-                                '${service.provider?.providerUserModel?.overallRating ?? 'No ratings yet'}',
+                                '${service.provider?.providerUserModel?.overallRating.toStringAsFixed(1) ?? 'No ratings yet'}',
                                 color: "#8683A1".toColor(),
                               ),
                               ],
