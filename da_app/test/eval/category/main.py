@@ -20,17 +20,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import cv2
-from html_report_generator import generate_html_report  # Import HTML report generator
-
-def read_classes_from_file(class_file_path):
-    """
-    Read class names from a file.
-    Each class name should be on a separate line.
-    """
-    with open(class_file_path, 'r') as file:
-        classes = [line.strip() for line in file.readlines() if line.strip()]
-    return classes
-
+from html_report_generator import generate_html_report 
+from report_utils import read_classes_from_file, log_average_miss_rate, error, is_float_between_0_and_1, voc_ap, file_lines_to_list, draw_text_in_image
+from generate_graphs import adjust_axes, draw_plot_func, make_metric_graph_for_three_matric, make_metric_graph_for_two_matric
 
 def calculate_mean_avg_pres(root_dir, gt_classes):
 
@@ -40,9 +32,7 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
     parser.add_argument('-na', '--no-animation', help="no animation is shown.", action="store_true")
     parser.add_argument('-np', '--no-plot', help="no plot is shown.", action="store_true")
     parser.add_argument('-q', '--quiet', help="minimalistic console output.", action="store_true")
-    # argparse receiving list of classes to be ignored (e.g., python main.py --ignore person book)
     parser.add_argument('-i', '--ignore', nargs='+', type=str, help="ignore a list of classes.")
-    # argparse receiving list of classes with specific IoU (e.g., python main.py --set-class-iou person 0.7)
     parser.add_argument('--set-class-iou', nargs='+', type=str, help="set IoU for a specific class.")
     args = parser.parse_args()
 
@@ -60,13 +50,9 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
     GT_PATH2 = os.path.join(os.getcwd(), root_dir, 'actual')
     GT_PATH = os.path.join(os.getcwd(), root_dir, 'ground-truth')
     DR_PATH = os.path.join(os.getcwd(), root_dir, 'detection-results')
-    # if there are no images then no animation can be shown
     IMG_PATH = os.path.join(os.getcwd(), root_dir, 'images')
 
     n_classes = len(gt_classes)
-    print(f"Number of classes: {n_classes}")
-    print(f"Classes: {gt_classes}")
-
     if os.path.exists(IMG_PATH):
         for dirpath, dirnames, files in os.walk(IMG_PATH):
             if not files:
@@ -94,345 +80,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
         except ImportError:
             print("\"matplotlib\" not found, please install it to get the resulting plots.")
             args.no_plot = True
-
-
-    def log_average_miss_rate(prec, rec, num_images):
-        """ ... (rest of the log_average_miss_rate function) ... """
-        # if there were no detections of that class
-        if prec.size == 0:
-            lamr = 0
-            mr = 1
-            fppi = 0
-            return lamr, mr, fppi
-
-        fppi = (1 - prec)
-        mr = (1 - rec)
-
-        fppi_tmp = np.insert(fppi, 0, -1.0)
-        mr_tmp = np.insert(mr, 0, 1.0)
-
-        # Use 9 evenly spaced reference points in log-space
-        ref = np.logspace(-2.0, 0.0, num = 9)
-        for i, ref_i in enumerate(ref):
-            # np.where() will always find at least 1 index, since min(ref) = 0.01 and min(fppi_tmp) = -1.0
-            j = np.where(fppi_tmp <= ref_i)[-1][-1]
-            ref[i] = mr_tmp[j]
-
-        # log(0) is undefined, so we use the np.maximum(1e-10, ref)
-        lamr = math.exp(np.mean(np.log(np.maximum(1e-10, ref))))
-
-        return lamr, mr, fppi
-
-
-    def error(msg):
-        """ ... (rest of the error function) ... """
-        print(msg)
-        sys.exit(0)
-
-    def is_float_between_0_and_1(value):
-        """ ... (rest of the is_float_between_0_and_1 function) ... """
-        try:
-            val = float(value)
-            if val > 0.0 and val < 1.0:
-                return True
-            else:
-                return False
-        except ValueError:
-            return False
-
-    def voc_ap(rec, prec):
-        """ ... (rest of the voc_ap function) ... """
-        """
-        --- Official matlab code VOC2012---
-        mrec=[0 ; rec ; 1];
-        mpre=[0 ; prec ; 0];
-        for i=numel(mpre)-1:-1:1
-                mpre(i)=max(mpre(i),mpre(i+1));
-        end
-        i=find(mrec(2:end)~=mrec(1:end-1))+1;
-        ap=sum((mrec(i)-mrec(i-1)).*mpre(i));
-        """
-        rec.insert(0, 0.0) # insert 0.0 at begining of list
-        rec.append(1.0) # insert 1.0 at end of list
-        mrec = rec[:]
-        prec.insert(0, 0.0) # insert 0.0 at begining of list
-        prec.append(0.0) # insert 0.0 at end of list
-        mpre = prec[:]
-        """
-        This part makes the precision monotonically decreasing
-            (goes from the end to the beginning)
-            matlab: for i=numel(mpre)-1:-1:1
-                        mpre(i)=max(mpre(i),mpre(i+1));
-        """
-        # matlab indexes start in 1 but python in 0, so I have to do:
-        #     range(start=(len(mpre) - 2), end=0, step=-1)
-        # also the python function range excludes the end, resulting in:
-        #     range(start=(len(mpre) - 2), end=-1, step=-1)
-        for i in range(len(mpre)-2, -1, -1):
-            mpre[i] = max(mpre[i], mpre[i+1])
-        """
-        This part creates a list of indexes where the recall changes
-            matlab: i=find(mrec(2:end)~=mrec(1:end-1))+1;
-        """
-        i_list = []
-        for i in range(1, len(mrec)):
-            if mrec[i] != mrec[i-1]:
-                i_list.append(i) # if it was matlab would be i + 1
-        """
-        The Average Precision (AP) is the area under the curve
-            (numerical integration)
-            matlab: ap=sum((mrec(i)-mrec(i-1)).*mpre(i));
-        """
-        ap = 0.0
-        for i in i_list:
-            ap += ((mrec[i]-mrec[i-1])*mpre[i])
-        return ap, mrec, mpre
-
-    def file_lines_to_list(path):
-        """ ... (rest of the file_lines_to_list function) ... """
-        # open txt file lines to a list
-        with open(path) as f:
-            content = f.readlines()
-        # remove whitespace characters like `\n` at the end of each line
-        content = [x.strip() for x in content]
-        return content
-
-    def draw_text_in_image(img, text, pos, color, line_width):
-        """ ... (rest of the draw_text_in_image function) ... """
-        font = cv2.FONT_HERSHEY_PLAIN
-        fontScale = 1
-        lineType = 1
-        bottomLeftCornerOfText = pos
-        cv2.putText(img, text,
-                bottomLeftCornerOfText,
-                font,
-                fontScale,
-                color,
-                lineType)
-        text_width, _ = cv2.getTextSize(text, font, fontScale, lineType)[0]
-        return img, (line_width + text_width)
-
-    def adjust_axes(r, t, fig, axes):
-        """ ... (rest of the adjust_axes function) ... """
-        # get text width for re-scaling
-        bb = t.get_window_extent(renderer=r)
-        text_width_inches = bb.width / fig.dpi
-        # get axis width in inches
-        current_fig_width = fig.get_figwidth()
-        new_fig_width = current_fig_width + text_width_inches
-        propotion = new_fig_width / current_fig_width
-        # get axis limit
-        x_lim = axes.get_xlim()
-        axes.set_xlim([x_lim[0], x_lim[1]*propotion])
-
-    def draw_plot_func(dictionary, n_classes, window_title, plot_title, x_label, output_path, to_show, plot_color, true_p_bar):
-        """ ... (rest of the draw_plot_func function) ... """
-        # sort the dictionary by decreasing value, into a list of tuples
-        sorted_dic_by_value = sorted(dictionary.items(), key=operator.itemgetter(1))
-
-        # unpacking the list of tuples into two lists
-        sorted_keys, sorted_values = zip(*sorted_dic_by_value)
-        #print(sorted_values)
-        #
-        if true_p_bar != "":
-            """
-            Special case to draw in:
-                - green -> TP: True Positives (object detected and matches ground-truth)
-                - red -> FP: False Positives (object detected but does not match ground-truth)
-                - pink -> FN: False Negatives (object not detected but present in the ground-truth)
-            """
-            fp_sorted = []
-            tp_sorted = []
-            fn_sorted = [30, 33]
-
-            for key in sorted_keys:
-                fp_sorted.append(dictionary[key] - true_p_bar[key])
-                tp_sorted.append(true_p_bar[key])
-            fp_sorted = [2,3]
-
-            plt.barh(range(n_classes), tp_sorted, color='forestgreen', label='True Positive')
-            plt.barh(range(n_classes), fn_sorted, color='orange', label='False Negative')
-
-            # add legend
-            plt.legend(loc='lower right')
-            """
-            Write number on side of bar
-            """
-            fig = plt.gcf() # gcf - get current figure
-            axes = plt.gca()
-            r = fig.canvas.get_renderer()
-            for i, val in enumerate(sorted_values):
-                fp_val = fp_sorted[i]
-                tp_val = tp_sorted[i]
-                fn_val = fn_sorted[i]
-
-                fp_str_val = " " + str(fp_val)
-                tp_str_val = fp_str_val + " " + str(tp_val)
-                fn_str_val = " " + str(fn_val)
-                # trick to paint multicolor with offset:
-                # first paint everything and then repaint the first number
-                t = plt.text(val, i, tp_str_val, color='forestgreen', va='center', fontweight='bold')
-                plt.text(val, i, fp_str_val, color='crimson', va='center', fontweight='bold')
-
-                if i == (len(sorted_values)-1): # largest bar
-                    adjust_axes(r, t, fig, axes)
-        else:
-            plt.barh(range(n_classes), sorted_values, color=plot_color)
-            """
-            Write number on side of bar
-            """
-            fig = plt.gcf() # gcf - get current figure
-            axes = plt.gca()
-            r = fig.canvas.get_renderer()
-            for i, val in enumerate(sorted_values):
-                str_val = " " + str(val) # add a space before
-                if val < 1.0:
-                    str_val = " {0:.2f}".format(val)
-                t = plt.text(val, i, str_val, color=plot_color, va='center', fontweight='bold')
-                # re-set axes to show number inside the figure
-                if i == (len(sorted_values)-1): # largest bar
-                    adjust_axes(r, t, fig, axes)
-        # set window title
-        # fig.canvas.set_window_title(window_title)
-        fig.canvas.manager.set_window_title(window_title)
-        # write classes in y axis
-        tick_font_size = 12
-        plt.yticks(range(n_classes), sorted_keys, fontsize=tick_font_size)
-        """
-        Re-scale height accordingly
-        """
-        init_height = fig.get_figheight()
-        # comput the matrix height in points and inches
-        dpi = fig.dpi
-        height_pt = n_classes * (tick_font_size * 1.4) # 1.4 (some spacing)
-        height_in = height_pt / dpi
-        # compute the required figure height
-        top_margin = 0.15 # in percentage of the figure height
-        bottom_margin = 0.05 # in percentage of the figure height
-        figure_height = height_in / (1 - top_margin - bottom_margin)
-        # set new height
-        if figure_height > init_height:
-            fig.set_figheight(figure_height)
-
-        # set plot title
-        plt.title(plot_title, fontsize=14)
-        # set axis titles
-        # plt.xlabel('classes')
-        plt.xlabel(x_label, fontsize='large')
-        # adjust size of window
-        fig.tight_layout()
-        # save the plot
-        fig.savefig(output_path)
-        # show image
-        if to_show:
-            plt.show()
-        # close the plot
-        plt.close()
-
-    def make_metric_graph_for_three_matric(results, category_names, output_path):
-        """ ... (rest of the make_metric_graph_for_three_matric function) ... """
-        """
-        Parameters
-        ----------
-        results : dict
-            A mapping from question labels to a list of answers per category.
-            It is assumed all lists contain the same number of entries and that
-            it matches the length of *category_names*.
-        category_names : list of str
-            The category labels.
-        """
-        labels = list(results.keys())
-        data = np.array(list(results.values()))
-        #print(data)
-        data_cum = data.cumsum(axis=1)
-        category_colors = plt.get_cmap('RdYlGn')(
-            np.linspace(0.15, 0.95, data.shape[1]))
-
-        #print(category_colors)
-
-        fig, ax = plt.subplots(figsize=(9.2, 5))
-        ax.invert_yaxis()
-        ax.xaxis.set_visible(False)
-        ax.set_xlim(0, np.sum(data, axis=1).max())
-
-        color2 = ["green", 'crimson', 'purple']
-
-        for i, (colname, color) in enumerate(zip(category_names, category_colors)):
-            widths = data[:, i]
-            starts = data_cum[:, i] - widths
-
-            # Check if there are any values greater than zero for this metric
-            if np.any(widths > 0):
-                ax.barh(labels, widths, left=starts, height=0.5,
-                        label=colname, color=color2[i])
-                xcenters = starts + widths / 2
-
-                r, g, b, _ = color
-                text_color = 'darkgrey' #if r * g * b < 0.5 else 'darkgrey'
-                for y, (x, c) in enumerate(zip(xcenters, widths)):
-                    if c > 0: # Only add text if value is greater than 0
-                        ax.text(x, y, str(int(c)), ha='center', va='center',
-                                color="gainsboro")
-        ax.legend(ncol=len(category_names), bbox_to_anchor=(0, 1),
-                loc='lower left', fontsize='small')
-
-        plt.savefig(output_path)
-        plt.close() # Close plot after saving
-
-        return fig, ax
-
-    def make_metric_graph_for_two_matric(results, category_names, output_path):
-        """ ... (rest of the make_metric_graph_for_two_matric function) ... """
-        """
-        Parameters
-        ----------
-        results : dict
-            A mapping from question labels to a list of answers per category.
-            It is assumed all lists contain the same number of entries and that
-            it matches the length of *category_names*.
-        category_names : list of str
-            The category labels.
-        """
-        labels = list(results.keys())
-        data = np.array(list(results.values()))
-        #print(data)
-        data_cum = data.cumsum(axis=1)
-        category_colors = plt.get_cmap('RdYlGn')(
-            np.linspace(0.15, 0.95, data.shape[1]))
-
-        #print(category_colors)
-
-        fig, ax = plt.subplots(figsize=(9.2, 5))
-        ax.invert_yaxis()
-        ax.xaxis.set_visible(False)
-        ax.set_xlim(0, np.sum(data, axis=1).max())
-
-        color2 = ["green", 'purple']
-
-        for i, (colname, color) in enumerate(zip(category_names, category_colors)):
-            widths = data[:, i]
-            starts = data_cum[:, i] - widths
-
-            # Check if there are any values greater than zero for this metric
-            if np.any(widths > 0):
-                ax.barh(labels, widths, left=starts, height=0.5,
-                        label=colname, color=color2[i])
-                xcenters = starts + widths / 2
-
-                r, g, b, _ = color
-                text_color = 'darkgrey' #if r * g * b < 0.5 else 'darkgrey'
-                for y, (x, c) in enumerate(zip(xcenters, widths)):
-                    if c > 0: # Only add text if value is greater than 0
-                        ax.text(x, y, str(int(c)), ha='center', va='center',
-                                color="gainsboro")
-        ax.legend(ncol=len(category_names), bbox_to_anchor=(0, 1),
-                loc='lower left', fontsize='small')
-
-        plt.savefig(output_path)
-        plt.close() # Close plot after saving
-
-        return fig, ax
-
 
     """
     Create a ".temp_files/" and "output/" directory
@@ -469,11 +116,8 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
 
     gt_files = []
     for txt_file in ground_truth_files_list:
-        #print(txt_file)
         file_id = txt_file.split(".txt", 1)[0]
         file_id = os.path.basename(os.path.normpath(file_id))
-
-        # check if there is a correspondent detection-results file
 
         lines_list = file_lines_to_list(txt_file)
         # create ground-truth dictionary
@@ -564,7 +208,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
     for class_index, class_name in enumerate(gt_classes):
         bounding_boxes = []
         for txt_file in dr_files_list:
-            #print(txt_file)
             # the first time it checks if all the corresponding ground-truth files exist
             file_id = txt_file.split(".txt",1)[0]
             file_id = os.path.basename(os.path.normpath(file_id))
@@ -614,7 +257,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
             """
             dr_file = TEMP_FILES_PATH + "/" + class_name + "_dr.json"
             dr_data = json.load(open(dr_file))
-            #print(dr_data)
 
             """
             Assign detection-results to ground-truth objects
@@ -632,8 +274,7 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                         error("Error. Image not found with id: " + file_id)
                     elif len(ground_truth_img) > 1:
                         error("Error. Multiple image with id: " + file_id)
-                    else: # found image
-                        #print(IMG_PATH + "/" + ground_truth_img[0])
+                    else:
                         # Load image
                         img = cv2.imread(IMG_PATH + "/" + ground_truth_img[0])
                         # load image with draws of multiple detections
@@ -670,7 +311,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                                 ovmax = ov
                                 gt_match = obj
 
-                #print(ground_truth_data[0]["class_name"])
                 # assign detection as true positive/don't care/false positive
                 if show_animation:
                     status = "NO MATCH FOUND!" # status is only used in the animation
@@ -722,13 +362,11 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                 """
                 if show_animation:
                     height, widht = img.shape[:2]
-                    # colors (OpenCV works with BGR)
                     white = (255,255,255)
-                    light_blue = (255,0,0) #255,200,100)
-                    #green = (0,255,0)
+                    light_blue = (255,0,0) 
                     green = (0,128,0)
                     light_red = (30,30,255)
-                    # 1st line
+
                     margin = 10
                     v_pos = int(height - margin - (bottom_border / 2.0))
                     text = "Image: " + ground_truth_img[0] + " "
@@ -743,15 +381,13 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                         else:
                             text = "IoU: {0:.2f}% ".format(ovmax*100) + ">= {0:.2f}% ".format(min_overlap*100)
                             color = green
-                            #print(text)
                         img, _ = draw_text_in_image(img, text, (margin + line_width, v_pos), color, line_width)
                     # 2nd line
                     v_pos += int(bottom_border / 2.0)
                     rank_pos = str(idx+1) # rank position (idx starts at 0)
                     text = "Detection #rank: " + rank_pos + " confidence: {0:.2f}% ".format(float(detection["confidence"])*100)
                     img, line_width = draw_text_in_image(img, text, (margin, v_pos), white, 0)
-                    #print(text)
-                    #check here now
+
 
                     color = light_red
                     if status == "MATCH!":
@@ -766,7 +402,7 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
 
                     if ovmax >= 0.1:
                         bb_int = [int(coord) for coord in bb]  # Convert all bb coords to int
-                        if len(bb_int) == 4: # Ensure bb has 4 elements
+                        if len(bb_int) == 4:
                             cv2.putText(img, "True positive", (bb_int[0], bb_int[1] - 5), font, 0.6, green, 1, cv2.LINE_AA)
                             cv2.rectangle(img,(bb_int[0],bb_int[1]),(bb_int[2],bb_int[3]),green,2)
                             tp[idx] = 1
@@ -774,7 +410,7 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
 
                     else:
                         bb_int = [int(coord) for coord in bb] # Convert all bb coords to int
-                        if len(bb_int) == 4: # Ensure bb has 4 elements
+                        if len(bb_int) == 4: 
                             cv2.putText(img, "False positive", (bb_int[0], bb_int[1] - 5), font, 0.6, light_red, 1, cv2.LINE_AA)
                             cv2.rectangle(img,(bb_int[0],bb_int[1]),(bb_int[2],bb_int[3]),light_red,2)
                             fp[idx] = 1
@@ -782,8 +418,8 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
 
                     if isinstance(gt_match, dict): # Check if gt_match is a dictionary
                         bbgt = [ int(round(float(x))) for x in gt_match["bbox"].split() ]
-                        bbgt_int = [int(coord) for coord in bbgt] # Convert bbgt to int
-                        if len(bbgt_int) == 4: # Ensure bbgt has 4 elements
+                        bbgt_int = [int(coord) for coord in bbgt] 
+                        if len(bbgt_int) == 4: 
                             cv2.rectangle(img,(bbgt_int[0],bbgt_int[1]),(bbgt_int[2],bbgt_int[3]),light_blue,2)
                             cv2.rectangle(img_cumulative,(bbgt_int[0],bbgt_int[1]),(bbgt_int[2],bbgt_int[3]),light_blue,2)
                             cv2.putText(img_cumulative, class_name, (bbgt_int[0],bbgt_int[1] - 5), font, 0.6, light_blue, 1, cv2.LINE_AA)
@@ -815,7 +451,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
             rec = tp[:]
             for idx, val in enumerate(tp):
                 rec[idx] = float(tp[idx]) / gt_counter_per_class[class_name]
-            #print(rec)
             prec = tp[:]
             for idx, val in enumerate(tp):
                 prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
@@ -848,24 +483,17 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                 area_under_curve_y = mprec[:-1] + [0.0] + [mprec[-1]]
                 plt.fill_between(area_under_curve_x, 0, area_under_curve_y, alpha=0.2, edgecolor='r')
                 # set window title
-                fig = plt.gcf() # gcf - get current figure
-                # fig.canvas.set_window_title('AP ' + class_name)
+                fig = plt.gcf()
                 fig.canvas.manager.set_window_title('AP ' + class_name)
                 # set plot title
                 plt.title('class: ' + text)
-                #plt.suptitle('This is a somewhat long figure title', fontsize=16)
-                # set axis titles
                 plt.xlabel('Recall')
                 plt.ylabel('Precision')
                 # optional - set axes
                 axes = plt.gca() # gca - get current axes
                 axes.set_xlim([0.0,1.0])
                 axes.set_ylim([0.0,1.05]) # .05 to give some extra space
-                # Alternative option -> wait for button to be pressed
-                #while not plt.waitforbuttonpress(): pass # wait for key display
-                # Alternative option -> normal display
-                #plt.show()
-                # save the plot
+
                 fig.savefig(os.path.join(output_files_path, "classes", class_name + ".png"))
                 plt.cla() # clear axes for next plot
 
@@ -883,12 +511,11 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
     count_new_false_negative = {}
     fn_image_results_for_html = [] # List for FN image results
 
-    #name_of_classes = "scripts/extra/classes.txt"
+
     name_of_classes = os.path.join(root_dir, "classes.txt")
     lines = file_lines_to_list(name_of_classes)
 
     for line in range(0, len(lines)):
-        #print(lines[line])
         count_new_false_negative[lines[line]] = 0
 
     """
@@ -914,10 +541,8 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                 img_path = os.path.join(IMG_PATH, img_id + ".jpg")
                 img = cv2.imread(img_path)
             # draw false negatives
-            # print(f"DEBUG - Processing False Negatives for image: {img_id}") # Debug print
             for obj in ground_truth_data:
                 if not obj['used']:
-                    # print(f"  DEBUG - Found unused GT object (False Negative): {obj}") # Debug print
                     TEMP_FN_PATH2 = os.path.join(TEMP_FN_PATH, str(img_cumulative_path.split(os.sep)[-1].split(".")[-2]) + ".jpg")
                     TEMP_FN_PATH3 = os.path.join(root_dir, "images", str(img_cumulative_path.split(os.sep)[-1].split(".")[-2]) + ".jpg")
                     img_fn = cv2.imread(TEMP_FN_PATH3)
@@ -927,15 +552,13 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                         take the xml according to the image name
                     """
                     format = {'xml','txt'}
-                    # xml_dir = root_dir + "\\" + "backup"
-                    # image_dir = root_dir + "\\" + "False_Negative"
+       
                     xml_dir = os.path.join(root_dir, "backup")
                     image_dir = os.path.join(root_dir, "False_Negative")
 
                     # Check if xml_dir exists, and create it if not
                     if not os.path.exists(xml_dir):
                         os.makedirs(xml_dir, exist_ok=True)
-                        # print(f"Created directory: {xml_dir}")
 
                     for obj1 in os.scandir(xml_dir):
                         if obj1.is_dir():
@@ -976,7 +599,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
                         'result': "False Negative",
                         'image_path': TEMP_FN_OUTPUT_IMG_PATH # Use correct FN image path
                     })
-
 
                     cv2.imwrite(img_cumulative_path, img)
 
@@ -1138,8 +760,6 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
             category_names = ['True Positives', 'False Positives', 'False Negatives']
             make_metric_graph_for_three_matric(dict2, category_names, detection_results_graph_path)
 
-
-
     class_wise_accuracy = {}
     for class_name in new_graph.keys():
         tp = new_graph[class_name][0]
@@ -1164,24 +784,18 @@ def calculate_mean_avg_pres(root_dir, gt_classes):
         "overall_precision": overall_precision,
         "overall_recall": overall_recall,
         "image_results": image_results_for_html,
-        "fn_image_results": fn_image_results_for_html # Add FN image results to report data
+        "fn_image_results": fn_image_results_for_html
     }
 
-    generate_html_report("validation_report.html", report_data) # Generate HTML report
+    generate_html_report("validation_report.html", report_data)
     print("FINISH.........")
     return mAP, ap_dictionary, class_wise_accuracy, overall_precision, overall_recall, new_graph
 
-
 if __name__ == "__main__":
-    root_dir = "/home/limonubuntu/Work/Limon/other_task/driver_anomaly/test/testing/eval_demo/ob_eval_da/categorize/test_part1"
+    root_dir = "/home/limonubuntu/Work/Limon/other_task/driver_anomaly/test/testing/eval_demo/ob_eval_da/categorize/da_part1"
 
-    # Path to the classes.txt file
     class_file_path = os.path.join(root_dir, "classes.txt")
-
-    # Read classes from the file
     gt_classes = read_classes_from_file(class_file_path)
-
-    # Calculate evaluation metrics and generate report
     mAP, ap_dictionary, class_wise_accuracy, overall_precision, overall_recall, metrics_data = calculate_mean_avg_pres(root_dir, gt_classes)
 
     print(f"Mean Average Precision (mAP): {mAP*100:.2f}%")

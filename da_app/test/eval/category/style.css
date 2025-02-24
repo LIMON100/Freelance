@@ -1,0 +1,13 @@
+body {
+    font-family: 'Lato', sans-serif;
+}
+input {
+    width: fit-content;
+    border-radius: 5px;
+    text-align: left;
+    border: 1px solid #212121;
+    height: 40px;
+}
+table {
+    margin-top: 30px;
+}
