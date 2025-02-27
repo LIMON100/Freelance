@@ -9,10 +9,17 @@ from utils import draw_table_grid
 
 def initialize_mediapipe():
     mp_face_mesh = mp.solutions.face_mesh
+    # face_mesh = mp_face_mesh.FaceMesh(
+    #     static_image_mode=False,
+    #     max_num_faces=1,
+    #     refine_landmarks=True
+    # )
     face_mesh = mp_face_mesh.FaceMesh(
         static_image_mode=False,
         max_num_faces=1,
-        refine_landmarks=True
+        refine_landmarks=True,  
+        min_detection_confidence=0.3, 
+        min_tracking_confidence=0.3
     )
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -55,7 +62,7 @@ def display_results(frame, rows, h):
                     font_scale=0.5, alignment='left')
     combined_frame = np.hstack((frame, text_frame))
 
-    cv2.imshow("Blink and Yawn Detection with Face Mesh", combined_frame)
+    cv2.imshow("Facial Behaviour", combined_frame)
 
 def main():
     face_mesh, mp_face_mesh, mp_drawing, mp_drawing_styles = initialize_mediapipe()
