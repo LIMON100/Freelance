@@ -127,29 +127,29 @@ class YawnDetector:
 
 
 # Usage example
-if __name__ == "__main__":
-    detector = YawnDetector()
-    cap = cv2.VideoCapture(0)
+# if __name__ == "__main__":
+#     detector = YawnDetector()
+#     cap = cv2.VideoCapture(0)
     
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+#     while cap.isOpened():
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
             
-        processed_frame = detector.process_frame(frame)
-        cv2.imshow("Yawn Detection", processed_frame)
+#         processed_frame = detector.process_frame(frame)
+#         cv2.imshow("Yawn Detection", processed_frame)
         
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+#         if cv2.waitKey(1) & 0xFF == ord('q'):
+#             break
     
-    cap.release()
-    cv2.destroyAllWindows()
+#     cap.release()
+#     cv2.destroyAllWindows()
     
-    # Print statistics after closing
-    stats = detector.get_yawn_stats()
-    print(f"\nYawn Detection Report:")
-    print(f"Total yawns: {stats['total_yawns']}")
-    print(f"Average duration: {stats['average_duration']:.2f}s")
-    print("\nDetailed yawn list:")
-    for i, yawn in enumerate(stats['yawn_list'], 1):
-        print(f"Yawn {i}: {yawn['duration']:.2f}s")
+#     # Print statistics after closing
+#     stats = detector.get_yawn_stats()
+#     print(f"\nYawn Detection Report:")
+#     print(f"Total yawns: {stats['total_yawns']}")
+#     print(f"Average duration: {stats['average_duration']:.2f}s")
+#     print("\nDetailed yawn list:")
+#     for i, yawn in enumerate(stats['yawn_list'], 1):
+#         print(f"Yawn {i}: {yawn['duration']:.2f}s")
