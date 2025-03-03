@@ -83,8 +83,9 @@ class HeadPoseTracker:
 
         return np.degrees(yaw), np.degrees(pitch), np.degrees(roll)
 
-
     def run(self, results):
+        rows = []  # Initialize rows to avoid reference issues.
+
         if results.multi_face_landmarks:
             face = results.multi_face_landmarks[0]
             landmarks = {}
@@ -99,10 +100,36 @@ class HeadPoseTracker:
             yaw = round(yaw, 1)
             pitch = round(pitch, 1)
 
+            # Determine Head Direction
+            if yaw < -10:
+                horizontal_direction = "Head Left"
+            elif yaw > 10:
+                horizontal_direction = "Head Right"
+            else:
+                horizontal_direction = "Facing Forward"
+
+            if pitch < -10:
+                vertical_direction = "Head Down"
+            elif pitch > 10:
+                vertical_direction = "Head Up"
+            else:
+                vertical_direction = "Facing Forward"
+
+            if roll < -15:
+                tilt_direction = "Tilt Left"
+            elif roll > 15:
+                tilt_direction = "Tilt Right"
+            else:
+                tilt_direction = "No Tilt"
+
+
             column_widths = [100, 150]
             rows = [
                 ["Yaw", f"{yaw:.1f} deg"],
                 ["Pitch", f"{pitch:.1f} deg"],
-                ["Roll", f"{roll:.1f} deg"]
+                ["Roll", f"{roll:.1f} deg"],
+                ["Head H", horizontal_direction],
+                ["Head V", vertical_direction],
             ]
+        
         return rows

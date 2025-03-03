@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 
 def draw_table_grid(img, x_offset, y_offset, rows, column_widths, row_height=30, padding=5,
@@ -33,11 +34,6 @@ def draw_table_grid(img, x_offset, y_offset, rows, column_widths, row_height=30,
 
             text_y = y - (row_height - text_height) // 2
             cv2.putText(img, cell_text, (text_x, text_y + 10), font, font_scale, text_color, thickness)
-
-
-import cv2
-import numpy as np
-
 
 def scale_up_frame(frame, scale_factor):
     height, width = frame.shape[:2]
