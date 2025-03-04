@@ -196,8 +196,6 @@ class BlinkDetector:
                         self.eye_closed_time = 0
                         self.perclos_start_time = current_time
 
-                # Calculate landmark confidence (very basic - improve later!)
-
                 if left_ear is None or right_ear is None:
                     landmark_confidence = 0.5  # Reduce if EAR is unreliable
                 if iris_visibility < 0.3:  #arbitrary amount
@@ -209,7 +207,6 @@ class BlinkDetector:
             ["Blink Rate", f"{self.blink_rate:.2f} BPM"],
             ["PERCLOS", f"{self.perclos_durations[-1]:.2f}%" if self.perclos_durations else "N/A"],
             ["EyeC Dur", f"{self.eye_closed_time:.2f}"], 
-            # ["Landmark C", f"{landmark_confidence:.2f}"]
         ]
 
         return rows, self.calibrating

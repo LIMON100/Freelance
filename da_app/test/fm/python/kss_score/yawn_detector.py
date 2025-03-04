@@ -146,7 +146,7 @@ class YawnDetector:
         self.MOUTH_BOTTOM = 14
         
         # Yawn detection parameters
-        self.YAWN_THRESHOLD = 25
+        self.YAWN_THRESHOLD = 19 #25
         self.MIN_YAWN_DURATION = 0.9  # Minimum yawn duration in seconds (changed from .3)
         self.YAWN_COOLDOWN = .1
         
@@ -200,7 +200,6 @@ class YawnDetector:
                     mouth_top, mouth_bottom, frame.shape
                 )
                 
-
                 # Yawn detection logic
                 if mouth_distance > self.YAWN_THRESHOLD:
                     if self.yawn_start_time is None:
