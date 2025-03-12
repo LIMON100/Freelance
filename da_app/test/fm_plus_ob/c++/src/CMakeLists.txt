@@ -1,0 +1,25 @@
+target_sources(${APP_NAME}
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ModelLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ModelLoader.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/DetectionPostProcess.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/DetectionPostProcess.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/IrisLandmark.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/IrisLandmark.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/FaceLandmark.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/FaceLandmark.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/FaceDetection.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/FaceDetection.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/BlinkDetector.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/BlinkDetector.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/HeadPoseTracker.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/HeadPoseTracker.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/YawnDetector.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/YawnDetector.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inference.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inference.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/KSSCalculator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/KSSCalculator.hpp
+)
+
