@@ -1,15 +1,16 @@
 #include "inference.h"
 #include <regex>
+#include <stdexcept>
 
 #define benchmark
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
-YOLO_V8::YOLO_V8() {
-
+YOLO_V8::YOLO_V8(DL_INIT_PARAM& iParams): blob(nullptr) { //Initialize in constructor
+    CreateSession(iParams);
 }
 
 
 YOLO_V8::~YOLO_V8() {
-    delete session;
+    delete[] blob;
 }
 
 #ifdef USE_CUDA
@@ -46,12 +47,11 @@ char* YOLO_V8::PreProcess(cv::Mat& iImg, std::vector<int> iImgSize, cv::Mat& oIm
 {
     if (iImg.channels() == 3)
     {
-        oImg = iImg.clone();
-        cv::cvtColor(oImg, oImg, cv::COLOR_BGR2RGB);
+        cv::cvtColor(iImg, oImg, cv::COLOR_BGR2RGB); // In-place conversion
     }
     else
     {
-        cv::cvtColor(iImg, oImg, cv::COLOR_GRAY2RGB);
+        cv::cvtColor(iImg, oImg, cv::COLOR_GRAY2RGB); // In-place conversion
     }
 
     switch (modelType)
@@ -61,19 +61,19 @@ char* YOLO_V8::PreProcess(cv::Mat& iImg, std::vector<int> iImgSize, cv::Mat& oIm
     case YOLO_DETECT_V8_HALF:
     case YOLO_POSE_V8_HALF://LetterBox
     {
+        cv::Mat resizedImg;
         if (iImg.cols >= iImg.rows)
         {
             resizeScales = iImg.cols / (float)iImgSize.at(0);
-            cv::resize(oImg, oImg, cv::Size(iImgSize.at(0), int(iImg.rows / resizeScales)));
+            cv::resize(oImg, resizedImg, cv::Size(iImgSize.at(0), int(iImg.rows / resizeScales))); // Resize to a temporary cv::Mat
         }
         else
         {
             resizeScales = iImg.rows / (float)iImgSize.at(0);
-            cv::resize(oImg, oImg, cv::Size(int(iImg.cols / resizeScales), iImgSize.at(1)));
+            cv::resize(oImg, resizedImg, cv::Size(int(iImg.cols / resizeScales), iImgSize.at(1))); // Resize to a temporary cv::Mat
         }
-        cv::Mat tempImg = cv::Mat::zeros(iImgSize.at(0), iImgSize.at(1), CV_8UC3);
-        oImg.copyTo(tempImg(cv::Rect(0, 0, oImg.cols, oImg.rows)));
-        oImg = tempImg;
+        oImg = cv::Mat::zeros(iImgSize.at(0), iImgSize.at(1), CV_8UC3); // Create a new zero-filled cv::Mat
+        resizedImg.copyTo(oImg(cv::Rect(0, 0, resizedImg.cols, resizedImg.rows))); // Copy resizedImg to the center of oImg
         break;
     }
     case YOLO_CLS://CenterCrop
@@ -148,6 +148,23 @@ char* YOLO_V8::CreateSession(DL_INIT_PARAM& iParams) {
             outputNodeNames.push_back(temp_buf);
         }
         options = Ort::RunOptions{ nullptr };
+
+         // Allocate blob buffer
+        if (modelType < 4) {
+            blob = new float[iParams.imgSize[0] * iParams.imgSize[1] * 3];
+             if (!blob) {
+                throw std::runtime_error("Failed to allocate blob buffer (float)");
+            }
+        }
+        else {
+#ifdef USE_CUDA
+            blob = new half[iParams.imgSize[0] * iParams.imgSize[1] * 3];
+             if (!blob) {
+                throw std::runtime_error("Failed to allocate blob buffer (half)");
+            }
+#endif
+        }
+
         WarmUpSession();
         return RET_OK;
     }
@@ -173,11 +190,10 @@ char* YOLO_V8::RunSession(cv::Mat& iImg, std::vector<DL_RESULT>& oResult) {
 
     char* Ret = RET_OK;
     cv::Mat processedImg;
-    PreProcess(iImg, imgSize, processedImg);
+    PreProcess(iImg, imgSize, processedImg); // Pass iImg by reference
     if (modelType < 4)
     {
-        float* blob = new float[processedImg.total() * 3];
-        BlobFromImage(processedImg, blob);
+        BlobFromImage(processedImg, blob); // Pass iImg by reference
         std::vector<int64_t> inputNodeDims = { 1, 3, imgSize.at(0), imgSize.at(1) };
         TensorProcess(starttime_1, iImg, blob, inputNodeDims, oResult);
     }
@@ -214,7 +230,6 @@ char* YOLO_V8::TensorProcess(clock_t& starttime_1, cv::Mat& iImg, N& blob, std::
     auto tensor_info = typeInfo.GetTensorTypeAndShapeInfo();
     std::vector<int64_t> outputNodeDims = tensor_info.GetShape();
     auto output = outputTensor.front().GetTensorMutableData<typename std::remove_pointer<N>::type>();
-    delete[] blob;
     switch (modelType)
     {
     case YOLO_DETECT_V8:
@@ -237,7 +252,6 @@ char* YOLO_V8::TensorProcess(clock_t& starttime_1, cv::Mat& iImg, N& blob, std::
             rawData = cv::Mat(signalResultNum, strideNum, CV_16F, output);
             rawData.convertTo(rawData, CV_32F);
         }
-      
         rawData = rawData.t();
 
         float* data = (float*)rawData.data;
@@ -270,6 +284,7 @@ char* YOLO_V8::TensorProcess(clock_t& starttime_1, cv::Mat& iImg, N& blob, std::
         }
         std::vector<int> nmsResult;
         cv::dnn::NMSBoxes(boxes, confidences, rectConfidenceThreshold, iouThreshold, nmsResult);
+        oResult.clear();
         for (int i = 0; i < nmsResult.size(); ++i)
         {
             int idx = nmsResult[i];
@@ -304,12 +319,13 @@ char* YOLO_V8::TensorProcess(clock_t& starttime_1, cv::Mat& iImg, N& blob, std::
         if (modelType == YOLO_CLS) {
             // FP32
             rawData = cv::Mat(1, this->classes.size(), CV_32F, output);
-        } else {
+        }
+        else {
             // FP16
             rawData = cv::Mat(1, this->classes.size(), CV_16F, output);
             rawData.convertTo(rawData, CV_32F);
         }
-        float *data = (float *) rawData.data;
+        float* data = (float*)rawData.data;
 
         DL_RESULT result;
         for (int i = 0; i < this->classes.size(); i++)
@@ -335,7 +351,6 @@ char* YOLO_V8::WarmUpSession() {
     PreProcess(iImg, imgSize, processedImg);
     if (modelType < 4)
     {
-        float* blob = new float[iImg.total() * 3];
         BlobFromImage(processedImg, blob);
         std::vector<int64_t> YOLO_input_node_dims = { 1, 3, imgSize.at(0), imgSize.at(1) };
         Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
@@ -343,7 +358,6 @@ char* YOLO_V8::WarmUpSession() {
             YOLO_input_node_dims.data(), YOLO_input_node_dims.size());
         auto output_tensors = session->Run(options, inputNodeNames.data(), &input_tensor, 1, outputNodeNames.data(),
             outputNodeNames.size());
-        delete[] blob;
         clock_t starttime_4 = clock();
         double post_process_time = (double)(starttime_4 - starttime_1) / CLOCKS_PER_SEC * 1000;
         if (cudaEnable)
@@ -354,12 +368,10 @@ char* YOLO_V8::WarmUpSession() {
     else
     {
 #ifdef USE_CUDA
-        half* blob = new half[iImg.total() * 3];
         BlobFromImage(processedImg, blob);
         std::vector<int64_t> YOLO_input_node_dims = { 1,3,imgSize.at(0),imgSize.at(1) };
         Ort::Value input_tensor = Ort::Value::CreateTensor<half>(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU), blob, 3 * imgSize.at(0) * imgSize.at(1), YOLO_input_node_dims.data(), YOLO_input_node_dims.size());
         auto output_tensors = session->Run(options, inputNodeNames.data(), &input_tensor, 1, outputNodeNames.data(), outputNodeNames.size());
-        delete[] blob;
         clock_t starttime_4 = clock();
         double post_process_time = (double)(starttime_4 - starttime_1) / CLOCKS_PER_SEC * 1000;
         if (cudaEnable)

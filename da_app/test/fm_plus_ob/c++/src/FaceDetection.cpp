@@ -2,7 +2,7 @@
 
 
 my::FaceDetection::FaceDetection(std::string modelDir) :
-    my::ModelLoader(modelDir + std::string("/home/limonubuntu/Work/Limon/other_task/driver_anomaly/test/bface/dms/c++/test/iris_test/mediapipe_face_iris_ob/models/face_detection_short.tflite")) 
+    my::ModelLoader(modelDir + std::string("../models/fd.tflite")) 
 {}
 
 

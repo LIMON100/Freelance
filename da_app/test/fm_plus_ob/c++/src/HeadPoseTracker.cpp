@@ -1,10 +1,10 @@
 #include "HeadPoseTracker.hpp"
-#include <opencv2/core/core.hpp> // Required for norm
-#include <cmath> // Required for atan2, sqrt, degrees
-#include <iomanip> // Required for setprecision
-#include <sstream> // Required for stringstream
-#include <algorithm> //Required for sorting
-#include <iostream>  // Add this line!!
+#include <opencv2/core/core.hpp> 
+#include <cmath> 
+#include <iomanip>
+#include <sstream> 
+#include <algorithm> 
+#include <iostream>  
 using namespace Eigen;
 using namespace std;
 

@@ -3,7 +3,7 @@
 #define KSSCALCULATOR_HPP
 
 #include <string>
-#include <vector> // ADD THIS LINE
+#include <vector> 
 
 class KSSCalculator {
 public:

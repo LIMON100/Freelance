@@ -30,8 +30,8 @@ bool __isIrisIndexValid(int idx) {
 
 my::IrisLandmark::IrisLandmark(std::string modelPath):
     FaceLandmark(modelPath),
-    m_leftIrisLandmarker(modelPath + std::string("/home/limonubuntu/Work/Limon/other_task/driver_anomaly/test/bface/dms/c++/test/iris_test/mediapipe_face_iris_ob/models/iris_landmark.tflite")),
-    m_rightIrisLandmarker(modelPath + std::string("/home/limonubuntu/Work/Limon/other_task/driver_anomaly/test/bface/dms/c++/test/iris_test/mediapipe_face_iris_ob/models/iris_landmark.tflite"))
+    m_leftIrisLandmarker(modelPath + std::string("../models/il.tflite")),
+    m_rightIrisLandmarker(modelPath + std::string("../models/il.tflite"))
     {}
 
 

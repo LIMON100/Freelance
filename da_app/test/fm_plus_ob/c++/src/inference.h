@@ -59,7 +59,7 @@ typedef struct _DL_RESULT
 class YOLO_V8
 {
 public:
-    YOLO_V8();
+    YOLO_V8(DL_INIT_PARAM& iParams);
 
     ~YOLO_V8();
 
@@ -91,4 +91,6 @@ private:
     float rectConfidenceThreshold;
     float iouThreshold;
     float resizeScales;//letterbox scale
+
+    float* blob; // Or half*, depending on your model - now is shared class parameter
 };

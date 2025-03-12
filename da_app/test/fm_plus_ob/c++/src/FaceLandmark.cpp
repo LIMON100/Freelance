@@ -1,11 +1,8 @@
 #include "FaceLandmark.hpp"
 #include <iostream>
 
-
 #define FACE_LANDMARKS 468
-/*
-Helper function
-*/
+
 bool __isIndexValid(int idx) {
     if (idx < 0 || idx >= FACE_LANDMARKS) {
         std::cerr << "Index " << idx << " is out of range (" \
@@ -18,7 +15,7 @@ bool __isIndexValid(int idx) {
 
 my::FaceLandmark::FaceLandmark(std::string modelPath):
     FaceDetection(modelPath),
-    m_landmarkModel(modelPath + std::string("/home/limonubuntu/Work/Limon/other_task/driver_anomaly/test/bface/dms/c++/test/iris_test/mediapipe_face_iris_ob/models/face_landmark.tflite"))
+    m_landmarkModel(modelPath + std::string("../models/fl.tflite"))
     {}
 
 

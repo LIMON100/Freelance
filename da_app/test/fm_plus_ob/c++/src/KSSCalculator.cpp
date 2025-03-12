@@ -1,8 +1,8 @@
 // KSSCalculator.cpp
 #include "KSSCalculator.hpp"
 #include <algorithm>
-#include <vector> // ADD THIS LINE
-#include <cmath>  // ADD THIS LINE
+#include <vector> 
+#include <cmath>  
 
 KSSCalculator::KSSCalculator() :
     blinkKSS(1),
