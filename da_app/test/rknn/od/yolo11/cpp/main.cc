@@ -1,69 +1,115 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "yolo11.h"
 #include "image_utils.h"
-#include "postprocess.h"
+#include "file_utils.h"
+#include "image_drawing.h"
 
-int main(int argc, char **argv) {
-    if (argc != 3) {
-        printf("Usage: %s <rknn_model_path> <image_path>\n", argv[0]);
+#if defined(RV1106_1103) 
+    #include "dma_alloc.hpp"
+#endif
+
+/*-------------------------------------------
+                  Main Function
+-------------------------------------------*/
+int main(int argc, char **argv)
+{
+    if (argc != 3)
+    {
+        printf("%s <model_path> <image_path>\n", argv[0]);
         return -1;
     }
 
-    char *model_path = argv[1];
-    char *image_path = argv[2];
+    const char *model_path = argv[1];
+    const char *image_path = argv[2];
+
+    int ret;
     rknn_app_context_t rknn_app_ctx;
-    object_detect_result_list od_results;
-    image_buffer_t src_image;
-
-    // Initialize model
     memset(&rknn_app_ctx, 0, sizeof(rknn_app_context_t));
-    int ret = init_yolo11_model(model_path, &rknn_app_ctx);
-    if (ret != 0) {
-        printf("init_yolo11_model fail! ret=%d\n", ret);
-        return -1;
+
+    init_post_process();
+
+    ret = init_yolo11_model(model_path, &rknn_app_ctx);
+    if (ret != 0)
+    {
+        printf("init_yolo11_model fail! ret=%d model_path=%s\n", ret, model_path);
+        goto out;
     }
 
-    // Load image
+    image_buffer_t src_image;
     memset(&src_image, 0, sizeof(image_buffer_t));
     ret = read_image(image_path, &src_image);
-    if (ret != 0) {
-        printf("read image fail! ret=%d\n", ret);
-        return -1;
+
+#if defined(RV1106_1103) 
+    //RV1106 rga requires that input and output bufs are memory allocated by dma
+    ret = dma_buf_alloc(RV1106_CMA_HEAP_PATH, src_image.size, &rknn_app_ctx.img_dma_buf.dma_buf_fd, 
+                       (void **) & (rknn_app_ctx.img_dma_buf.dma_buf_virt_addr));
+    memcpy(rknn_app_ctx.img_dma_buf.dma_buf_virt_addr, src_image.virt_addr, src_image.size);
+    dma_sync_cpu_to_device(rknn_app_ctx.img_dma_buf.dma_buf_fd);
+    free(src_image.virt_addr);
+    src_image.virt_addr = (unsigned char *)rknn_app_ctx.img_dma_buf.dma_buf_virt_addr;
+    src_image.fd = rknn_app_ctx.img_dma_buf.dma_buf_fd;
+    rknn_app_ctx.img_dma_buf.size = src_image.size;
+#endif
+    
+    if (ret != 0)
+    {
+        printf("read image fail! ret=%d image_path=%s\n", ret, image_path);
+        goto out;
     }
 
-    // Initialize post-process
-    ret = init_post_process();
-    if (ret != 0) {
-        printf("init_post_process fail! ret=%d\n", ret);
-        goto cleanup;
-    }
+    object_detect_result_list od_results;
 
-    // Inference
-    memset(&od_results, 0, sizeof(object_detect_result_list));
     ret = inference_yolo11_model(&rknn_app_ctx, &src_image, &od_results);
-    if (ret != 0) {
-        printf("inference_yolo11_model fail! ret=%d\n", ret);
-        goto cleanup;
+    if (ret != 0)
+    {
+        printf("init_yolo11_model fail! ret=%d\n", ret);
+        goto out;
     }
 
-    // Print detection results
-    printf("Detected %d objects\n", od_results.count);
-    for (int i = 0; i < od_results.count; i++) {
-        object_detect_result *det = &od_results.results[i];
-        printf("%s @ (%d %d %d %d) %.3f\n", coco_cls_to_name(det->cls_id),
-               det->box.left, det->box.top, det->box.right, det->box.bottom, det->prop);
+    // 画框和概率
+    char text[256];
+    for (int i = 0; i < od_results.count; i++)
+    {
+        object_detect_result *det_result = &(od_results.results[i]);
+        printf("%s @ (%d %d %d %d) %.3f\n", coco_cls_to_name(det_result->cls_id),
+               det_result->box.left, det_result->box.top,
+               det_result->box.right, det_result->box.bottom,
+               det_result->prop);
+        int x1 = det_result->box.left;
+        int y1 = det_result->box.top;
+        int x2 = det_result->box.right;
+        int y2 = det_result->box.bottom;
+
+        draw_rectangle(&src_image, x1, y1, x2 - x1, y2 - y1, COLOR_BLUE, 3);
+
+        sprintf(text, "%s %.1f%%", coco_cls_to_name(det_result->cls_id), det_result->prop * 100);
+        draw_text(&src_image, text, x1, y1 - 20, COLOR_RED, 10);
     }
 
-    // Save the original image (without drawing)
     write_image("out.png", &src_image);
 
-cleanup:
+out:
     deinit_post_process();
-    release_yolo11_model(&rknn_app_ctx);
-    if (src_image.virt_addr != nullptr) {
-        free(src_image.virt_addr);
+
+    ret = release_yolo11_model(&rknn_app_ctx);
+    if (ret != 0)
+    {
+        printf("release_yolo11_model fail! ret=%d\n", ret);
     }
-    return ret;
+
+    if (src_image.virt_addr != NULL)
+    {
+#if defined(RV1106_1103) 
+        dma_buf_free(rknn_app_ctx.img_dma_buf.size, &rknn_app_ctx.img_dma_buf.dma_buf_fd, 
+                rknn_app_ctx.img_dma_buf.dma_buf_virt_addr);
+#else
+        free(src_image.virt_addr);
+#endif
+    }
+
+    return 0;
 }
