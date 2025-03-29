@@ -93,12 +93,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/ utils.out)
 # Set the RPATH for the executable to find shared libraries
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
-if (TARGET_SOC STREQUAL "rk1808" OR TARGET_SOC STREQUAL "rv1109" OR TARGET_SOC STREQUAL "rv1126")
-    set(retinaface_file rknpu1/retinaface.cc)
-else()
-    set(retinaface_file rknpu2/retinaface.cc)
-endif()
-
 # Define the source files
 set(file_utils_file ${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/file_utils.c)
 
@@ -108,7 +102,7 @@ file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 # Define the executable
 add_executable(${PROJECT_NAME}
     main.cc
-    ${retinaface_file}
+    face_analyzer.cc 
     ${file_utils_file}  # Add file_utils.c directly to the executable
 )
 
@@ -142,11 +136,15 @@ install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/test.jpg DESTINATION model)
 
 # Install the RKNN models
-set(file_path ${CMAKE_CURRENT_SOURCE_DIR}/../model/RetinaFace.rknn)
+set(file_path ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceD.rknn)
 set(file_pathl ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceL.rknn)
+set(file_pathi ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceI.rknn)
 if (EXISTS ${file_path})
     install(FILES ${file_path} DESTINATION model)
 endif()
 if (EXISTS ${file_pathl})
     install(FILES ${file_pathl} DESTINATION model)
+endif()
+if (EXISTS ${file_pathi})
+    install(FILES ${file_pathi} DESTINATION model)
 endif()

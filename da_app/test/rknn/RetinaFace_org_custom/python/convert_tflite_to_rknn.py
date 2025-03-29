@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     # Load model (from https://www.tensorflow.org/lite/guide/hosted_models?hl=zh-cn)
     print('--> Loading model')
-    ret = rknn.load_tflite(model='fl.tflite')
+    ret = rknn.load_tflite(model='il.tflite')
     if ret != 0:
         print('Load model failed!')
         exit(ret)
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     # Export rknn model
     print('--> Export rknn model')
-    ret = rknn.export_rknn('faceL.rknn')
+    ret = rknn.export_rknn('faceI.rknn')
     if ret != 0:
         print('Export rknn model failed!')
         exit(ret)
