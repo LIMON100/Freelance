@@ -48,7 +48,7 @@ int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Re
         printf("rknn_query fail! ret=%d\n", ret);
         return -1;
     }
-    printf("model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
+    // printf("model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
 
     // Get Model Input Info
     printf("input tensors:\n");

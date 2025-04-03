@@ -29,6 +29,8 @@
 #include <gst/video/video.h>
 #include <gst/app/gstappsink.h>
 
+#include <iostream> 
+
 #include <fstream>     // For reading /proc/stat and /sys/class/thermal/...
 #include <numeric>     // For std::accumulate
 #include <deque>       // For storing frame/inference times for FPS calculation
@@ -82,23 +84,57 @@ cv::Mat image_buffer_to_mat(const image_buffer_t* image_buffer) {
     return cv::Mat(image_buffer->height, image_buffer->width, CV_8UC3, image_buffer->virt_addr);
 }
 
+// double parse_head_pose_value(const std::string& s) {
+//     try {
+//         size_t first_space = s.find_first_of(" \t");
+//         if (first_space == std::string::npos) {
+//             return std::stod(s);
+//         }
+//         size_t first_digit = s.find_first_not_of(" \t", first_space);
+//         if (first_digit == std::string::npos) {
+//             return 0.0;
+//         }
+//         std::string value_part = s.substr(first_digit);
+//         size_t value_end = value_part.find_first_not_of("0123456789.-+eE");
+//         return std::stod(value_part.substr(0, value_end));
+//     } catch (const std::exception& e) {
+    
+//         printf("WARN: Could not parse head pose value from string: '%s'. Error: %s\n", s.c_str(), e.what());
+//         return 0.0;
+//     }
+// }
+
+
 double parse_head_pose_value(const std::string& s) {
     try {
-        size_t first_space = s.find_first_of(" \t");
-        if (first_space == std::string::npos) {
-            return std::stod(s);
+        std::string numeric_part = s;
+        size_t deg_pos = numeric_part.find(" deg");
+        if (deg_pos != std::string::npos) {
+            numeric_part = numeric_part.substr(0, deg_pos);
         }
-        size_t first_digit = s.find_first_not_of(" \t", first_space);
-        if (first_digit == std::string::npos) {
-            return 0.0;
-        }
-        std::string value_part = s.substr(first_digit);
-        size_t value_end = value_part.find_first_not_of("0123456789.-+eE");
-        return std::stod(value_part.substr(0, value_end));
-    } catch (const std::exception& e) {
-    
-        printf("WARN: Could not parse head pose value from string: '%s'. Error: %s\n", s.c_str(), e.what());
+        // Optional: Trim whitespace just in case
+        size_t first_digit = numeric_part.find_first_not_of(" \t");
+        if (first_digit == std::string::npos) return 0.0; // Empty or whitespace
+        size_t last_digit = numeric_part.find_last_not_of(" \t");
+        numeric_part = numeric_part.substr(first_digit, last_digit - first_digit + 1);
+
+        if (numeric_part.empty()) return 0.0; // Handle case after trimming
+
+        return std::stod(numeric_part);
+    } catch (const std::invalid_argument& e) {
+        // More specific catch
+        printf("WARN: Could not parse head pose value from numeric part: '%s'. Error: %s\n", s.c_str(), e.what());
         return 0.0;
+    } catch (const std::out_of_range& e) {
+         // More specific catch
+        printf("WARN: Head pose value out of range from string: '%s'. Error: %s\n", s.c_str(), e.what());
+        return 0.0;
+    } catch (const std::exception& e) {
+        printf("WARN: Generic exception parsing head pose value from string: '%s'. Error: %s\n", s.c_str(), e.what());
+        return 0.0;
+    } catch (...) { // Keep generic catch just in case
+         printf("WARN: Unknown exception parsing head pose value from string: '%s'.\n", s.c_str());
+         return 0.0;
     }
 }
 
@@ -118,7 +154,7 @@ std::atomic<bool> stop_yolo_worker(false);
 const int MAX_QUEUE_SIZE = 5;
 
 void yolo_worker_thread_func(yolo11_app_context_t* yolo_ctx_ptr) {
-    printf("YOLO Worker Thread Started.\n");
+    // printf("YOLO Worker Thread Started.\n");
     while (!stop_yolo_worker.load()) {
         YoloInputData input_data;
         bool got_data = false;
@@ -134,12 +170,12 @@ void yolo_worker_thread_func(yolo11_app_context_t* yolo_ctx_ptr) {
             YoloOutputData output_data;
             output_data.frame_id = input_data.frame_id;
             memset(&output_data.results, 0, sizeof(output_data.results));
-            printf("YOLO Worker: Starting inference for frame %ld...\n", input_data.frame_id);
+            // printf("YOLO Worker: Starting inference for frame %ld...\n", input_data.frame_id);
             auto yolo_start = std::chrono::high_resolution_clock::now();
             int ret = inference_yolo11(yolo_ctx_ptr, input_data.image.get(), &output_data.results);
             auto yolo_end = std::chrono::high_resolution_clock::now();
             auto yolo_duration = std::chrono::duration_cast<std::chrono::milliseconds>(yolo_end - yolo_start);
-            printf("YOLO Worker: Finished inference for frame %ld (ret=%d, time=%ld ms).\n", input_data.frame_id, ret, yolo_duration.count());
+            // printf("YOLO Worker: Finished inference for frame %ld (ret=%d, time=%ld ms).\n", input_data.frame_id, ret, yolo_duration.count());
             if (ret != 0) {
                 printf("WARN: YOLO Worker inference failed (frame %ld), ret=%d\n", input_data.frame_id, ret);
             }
@@ -539,7 +575,7 @@ int main(int argc, char **argv) {
         auto start_time = std::chrono::high_resolution_clock::now();
 
         if (!calibration_done) {
-            printf("Attempting calibration...\n");
+            // printf("Attempting calibration...\n");
             if (face_results.count > 0 && face_results.faces[0].face_landmarks_valid) {
                 std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(face_results.faces[0].face_landmarks, NUM_FACE_LANDMARKS);
                 headPoseResults = headPoseTracker.run(faceLandmarksCv);
@@ -598,6 +634,18 @@ int main(int argc, char **argv) {
             if (face_results.count > 0 && face_results.faces[0].face_landmarks_valid) {
                 face_object_t *face = &face_results.faces[0];
                 std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(face->face_landmarks, NUM_FACE_LANDMARKS);
+
+
+                // ---> ADD THIS BLOCK <---
+                bool is_calibrated_before_run = headPoseTracker.isCalibrated();
+                headPoseResults = headPoseTracker.run(faceLandmarksCv);
+                bool is_calibrated_after_run = headPoseTracker.isCalibrated(); // Check again after run
+                printf("DEBUG Calibration Status: Before Run = %s, After Run = %s, Reference Set = %s\n",
+                    is_calibrated_before_run ? "TRUE" : "FALSE",
+                    is_calibrated_after_run ? "TRUE" : "FALSE",
+                    headPoseResults.reference_set ? "TRUE" : "FALSE");
+                // ---> END ADDED BLOCK <---
+
                 blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height);
                 yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height);
                 headPoseResults = headPoseTracker.run(faceLandmarksCv);
@@ -609,6 +657,7 @@ int main(int argc, char **argv) {
 
                 kssCalculator.setPerclos(blinkDetector.getPerclos());
                 if (calibration_done && headPoseResults.rows.size() >= 3) {
+
                     try {
                         kssCalculator.setHeadPose(parse_head_pose_value(headPoseResults.rows[0][1]),
                                                   parse_head_pose_value(headPoseResults.rows[1][1]),
@@ -678,6 +727,47 @@ int main(int argc, char **argv) {
                 draw_text(&src_image, text, x1, y1 - 15 > 0 ? y1 - 15 : y1, COLOR_ORANGE, 14);
             }
 
+            // status_color_uint = (compositeKSS >= 4) ? COLOR_RED : COLOR_GREEN;
+            // text_y = 10;
+            // draw_text(&src_image, kssStatus.c_str(), 10, text_y, status_color_uint, status_text_size);
+            // text_y += (int)(line_height * 1.4);
+            // text_stream.str("");
+            // text_stream << "PERCLOS: " << std::fixed << std::setprecision(2) << blinkDetector.getPerclos() << "%";
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Blink Count: " << blinkDetector.getBlinkCount();
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Last Blink Dur: " << std::fixed << std::setprecision(2) << blinkDetector.getLastBlinkDuration() << " s";
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // if (calibration_done && headPoseResults.rows.size() >= 3) {
+            //     std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1];
+            //     draw_text(&src_image, headpose_text.c_str(), 10, text_y, COLOR_WHITE, text_size);
+            //     text_y += line_height;
+            // } else {
+            //     draw_text(&src_image, "Head Pose: N/A", 10, text_y, COLOR_WHITE, text_size);
+            //     text_y += line_height;
+            // }
+            // text_stream.str("");
+            // text_stream << "Yawning: " << (yawnMetrics.isYawning ? "Yes" : "No");
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Yawn Freq (last min): " << static_cast<int>(yawnMetrics.yawnFrequency);
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Last Yawn Dur: " << std::fixed << std::setprecision(2) << yawnMetrics.yawnDuration << " s";
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "KSS Score: " << compositeKSS;
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, status_color_uint, text_size);
+            // text_y += line_height;
+
             status_color_uint = (compositeKSS >= 4) ? COLOR_RED : COLOR_GREEN;
             text_y = 10;
             draw_text(&src_image, kssStatus.c_str(), 10, text_y, status_color_uint, status_text_size);
@@ -707,7 +797,11 @@ int main(int argc, char **argv) {
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
             text_stream.str("");
-            text_stream << "Yawn Freq (last min): " << static_cast<int>(yawnMetrics.yawnFrequency);
+            text_stream << "Total Yawn Count: " << static_cast<int>(yawnMetrics.yawnCount);  // New: Display total yawn count
+            draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            text_y += line_height;
+            text_stream.str("");
+            text_stream << "Yawn Freq (last min): " << static_cast<int>(yawnMetrics.yawnFrequency);  // Optional: Keep frequency
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
             text_stream.str("");
@@ -792,7 +886,7 @@ int main(int argc, char **argv) {
     stop_yolo_worker.store(true);
     if (yolo_worker_thread.joinable()) {
         yolo_worker_thread.join();
-        printf("YOLO Worker Thread Joined.\n");
+        // printf("YOLO Worker Thread Joined.\n");
     }
     if (input_pipeline) {
         gst_element_set_state(input_pipeline, GST_STATE_NULL);
