@@ -29,6 +29,11 @@
 #include <gst/video/video.h>
 #include <gst/app/gstappsink.h>
 
+#include <fstream>     // For reading /proc/stat and /sys/class/thermal/...
+#include <numeric>     // For std::accumulate
+#include <deque>       // For storing frame/inference times for FPS calculation
+#include <sys/sysinfo.h> // Might be needed on some systems, though /proc/stat is usually sufficient
+
 #ifndef COLOR_MAGENTA
 #define COLOR_MAGENTA (0xFF00FF)
 #endif
@@ -204,7 +209,8 @@ void setupPipeline() {
     }
 
     GstCaps* caps = gst_caps_new_simple("video/x-raw",
-                                        "format", G_TYPE_STRING, "RGB",
+                                        // "format", G_TYPE_STRING, "RGB",
+                                        "format", G_TYPE_STRING, "BGR",
                                         "width", G_TYPE_INT, 1920,
                                         "height", G_TYPE_INT, 1080,
                                         "framerate", GST_TYPE_FRACTION, 30, 1,
@@ -260,6 +266,101 @@ void pushFrameToPipeline(GstVideoFrame* frame) {
 
     gst_buffer_unref(buffer);
 }
+
+
+// ========= Resource Monitoring Functions ==========
+
+// Stores frame duration (ms) and calculates overall FPS based on rolling average
+void calculateOverallFPS(double frame_duration_ms, std::deque<double>& times_deque, double& fps_variable, int max_records) {
+    times_deque.push_back(frame_duration_ms);
+    if (times_deque.size() > max_records) {
+        times_deque.pop_front(); // Remove the oldest time
+    }
+
+    if (!times_deque.empty()) {
+        double sum = std::accumulate(times_deque.begin(), times_deque.end(), 0.0);
+        double avg_time_ms = sum / times_deque.size();
+        if (avg_time_ms > 0) { // Avoid division by zero
+            fps_variable = 1000.0 / avg_time_ms;
+        } else {
+            fps_variable = 0.0; // Or some indicator of very fast/zero time
+        }
+    } else {
+        fps_variable = 0.0;
+    }
+}
+
+// Calculates current CPU usage based on /proc/stat differences
+void getCPUUsage(double& cpu_usage_variable, long& prev_idle, long& prev_total) {
+    std::ifstream file("/proc/stat");
+    if (!file.is_open()) {
+        // printf("WARN: Could not open /proc/stat for CPU usage.\n");
+        // cpu_usage_variable = -1.0; // Indicate error? Or keep last value?
+        return;
+    }
+    std::string line;
+    std::getline(file, line);
+    file.close(); // Close file quickly
+
+    long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
+    user = nice = system = idle = iowait = irq = softirq = steal = guest = guest_nice = 0; // Initialize
+
+    std::istringstream iss(line);
+    std::string cpu_label;
+    iss >> cpu_label; // Read "cpu" label
+
+    // Read values, handle cases where not all fields are present
+    iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal >> guest >> guest_nice;
+    // Ignore guest/guest_nice for basic calculation if needed
+
+    long currentIdleTime = idle + iowait;
+    long currentTotalTime = user + nice + system + idle + iowait + irq + softirq + steal;
+
+    long diffIdle = currentIdleTime - prev_idle;
+    long diffTotal = currentTotalTime - prev_total;
+
+    if (diffTotal > 0) { // Avoid division by zero and ensure time has passed
+        double busyTime = (double)(diffTotal - diffIdle);
+        cpu_usage_variable = 100.0 * (busyTime / diffTotal);
+    } else if (diffTotal == 0 && prev_total != 0) {
+        // No change in total time, usage is likely 0 or very low. Keep previous value or set to 0?
+        // Setting to 0 might be misleading if called too frequently. Let's keep previous value.
+        // cpu_usage_variable = 0.0;
+    } // else: prev_total was 0 (first call), keep cpu_usage_variable at its initial value (0.0)
+
+    // Update previous values for the next call
+    prev_idle = currentIdleTime;
+    prev_total = currentTotalTime;
+}
+
+// Reads temperature from sysfs
+void getTemperature(double& temp_variable) {
+    // Common paths, might need adjustment for specific hardware
+    const char* temp_paths[] = {
+        "/sys/class/thermal/thermal_zone0/temp",
+        "/sys/class/thermal/thermal_zone1/temp", // Sometimes zone 1 is CPU
+        // Add other potential paths if needed
+    };
+    bool temp_read = false;
+    for (const char* path : temp_paths) {
+        std::ifstream file(path);
+        double temperature_milliC = 0;
+        if (file >> temperature_milliC) {
+            temp_variable = temperature_milliC / 1000.0; // Convert millidegree C to degree C
+            temp_read = true;
+            file.close();
+            break; // Stop after reading the first successful one
+        }
+        file.close(); // Close even if read failed
+    }
+
+    if (!temp_read) {
+        // printf("WARN: Could not read temperature from common sysfs paths.\n");
+        // temp_variable = -1.0; // Indicate error? Or keep last value?
+    }
+}
+
+// ========= END Resource Monitoring Functions ==========
     
     /*-------------------------------------------
                       Main Function
@@ -275,14 +376,34 @@ int main(int argc, char **argv) {
     // --- Variable Declarations ---
     int ret = 0;
 
+    std::deque<double> frame_times;         // Stores total processing time for recent frames (ms)
+    std::deque<double> inference_times;     // Stores only inference time (ms) - NOTE: Need to add timing for this if desired
+    const int max_time_records = 60;        // Number of frames to average for FPS (e.g., ~2 seconds at 30fps)
+    double overallFPS = 0.0;
+    double inferenceFPS = 0.0; // Will remain 0 unless you time inference separately
+
+    // CPU Usage
+    double currentCpuUsage = 0.0;
+    long prevIdleTime = 0, prevTotalTime = 0; // Static-like storage for CPU calculation
+
+    // Temperature
+    double currentTemp = 0.0;
+
+
+
     const char *detection_model_path = "../../model/faceD.rknn";
     const char *landmark_model_path  = "../../model/faceL.rknn";
     const char *iris_model_path      = "../../model/faceI.rknn";
     const char *yolo_model_path      = "../../model/od.rknn";
 
-    const char *video_source         = "v4l2src device=/dev/video0 ! "
-                                       "queue ! videoconvert ! video/x-raw,format=BGR ! "
-                                       "appsink name=sink sync=false";
+    // const char *video_source         = "v4l2src device=/dev/video1 ! "
+    //                                    "queue ! videoconvert ! video/x-raw,format=BGR ! "
+    //                                    "appsink name=sink sync=false";
+
+    const char *video_source = "filesrc location=../../model/cut_drinking.mkv ! "
+                               "decodebin ! "
+                               "queue ! videoconvert ! video/x-raw,format=BGR ! "
+                               "appsink name=sink sync=false";
 
     setupPipeline();
 
@@ -513,6 +634,11 @@ int main(int argc, char **argv) {
                 int ry = face->box.top;
                 int rw = face->box.right - face->box.left;
                 int rh = face->box.bottom - face->box.top;
+
+                draw_rectangle(&src_image, rx, ry, rw, rh, COLOR_GREEN, 2); // Thinner box
+                char score_text[20]; snprintf(score_text, 20, "%.2f", face->score);
+                draw_text(&src_image, score_text, rx, ry - 15 > 0 ? ry - 15 : ry, COLOR_RED, 16); // Smaller score text
+                
                 if (face->face_landmarks_valid) {
                     for (int j = 0; j < NUM_FACE_LANDMARKS; j++) {
                         draw_circle(&src_image, face->face_landmarks[j].x, face->face_landmarks[j].y, 1, COLOR_ORANGE, 1);
@@ -549,7 +675,7 @@ int main(int argc, char **argv) {
                 draw_rectangle(&src_image, x1, y1, x2 - x1, y2 - y1, COLOR_MAGENTA, 2);
                 char text[256];
                 sprintf(text, "%s %.0f%%", coco_cls_to_name(det_result->cls_id), det_result->prop * 100);
-                draw_text(&src_image, text, x1, y1 - 15 > 0 ? y1 - 15 : y1, COLOR_CYAN, 14);
+                draw_text(&src_image, text, x1, y1 - 15 > 0 ? y1 - 15 : y1, COLOR_ORANGE, 14);
             }
 
             status_color_uint = (compositeKSS >= 4) ? COLOR_RED : COLOR_GREEN;
@@ -595,7 +721,40 @@ int main(int argc, char **argv) {
 
             cv::Mat display(src_image_ptr->height, src_image_ptr->width, CV_8UC3, src_image_ptr->virt_addr, src_image_ptr->width_stride);
 
+            // EXTRA CPU UPSAGE
+            auto frame_processing_end_time = std::chrono::high_resolution_clock::now(); // If start_time is at the beginning of the block
+            double frame_duration_ms = std::chrono::duration<double, std::milli>(frame_processing_end_time - start_time).count();
+
+            // Calculate FPS (Pass variables by reference)
+            calculateOverallFPS(frame_duration_ms, frame_times, overallFPS, max_time_records);
+            // Note: To calculate inferenceFPS, you need to time the inference calls
+            // separately and pass those timings to calculateOverallFPS with inference_times deque.
+            // calculateOverallFPS(inference_duration_ms, inference_times, inferenceFPS, max_time_records);
+
+            // Update CPU and Temp (Pass variables by reference)
+            getCPUUsage(currentCpuUsage, prevIdleTime, prevTotalTime);
+            getTemperature(currentTemp);
+
+            // Display Info on Frame
+            std::stringstream info_ss;
+            info_ss << "FPS: " << std::fixed << std::setprecision(1) << overallFPS
+                    // << " | Inf FPS: " << std::fixed << std::setprecision(1) << inferenceFPS // Uncomment if you calculate inferenceFPS
+                    << " | CPU: " << std::fixed << std::setprecision(1) << currentCpuUsage << "%"
+                    << " | Temp: " << std::fixed << std::setprecision(1) << currentTemp << " C";
+            std::string resource_info_text = info_ss.str();
+
+            // Choose position (e.g., bottom-left)
+            int base_line;
+            cv::Size text_size_info = cv::getTextSize(resource_info_text, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &base_line);
+            cv::Point text_origin(10, display.rows - 10); // 10 pixels from bottom-left
+
+            cv::putText(display, resource_info_text, text_origin, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1); // White text
+
+
             cv::imshow("output", display);
+
+            auto current_timestamp = std::chrono::steady_clock::now();
+
             memcpy(out_frame->data[0], src_image.virt_addr, src_image.size);
             pushFrameToPipeline(out_frame);
             if (cv::waitKey(1) == 27) break;
