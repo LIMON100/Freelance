@@ -37,28 +37,31 @@
 #include <sys/sysinfo.h> // Might be needed on some systems, though /proc/stat is usually sufficient
 
 #ifndef COLOR_MAGENTA
-#define COLOR_MAGENTA (0xFF00FF)
+#define COLOR_MAGENTA (0xFF00FF) // BGR: (255, 0, 255)
 #endif
 #ifndef COLOR_CYAN
-#define COLOR_CYAN (0x00FFFF)
+#define COLOR_CYAN (0xFFFF00)    // BGR: (0, 255, 255)
 #endif
 #ifndef COLOR_YELLOW
-#define COLOR_YELLOW (0xFFFF00)
+#define COLOR_YELLOW (0x00FFFF)  // BGR: (255, 255, 0)
 #endif
 #ifndef COLOR_BLUE
-#define COLOR_BLUE (0x0000FF)
+#define COLOR_BLUE (0x0000FF)    // BGR: (0, 0, 255) -> Blue
 #endif
 #ifndef COLOR_ORANGE
-#define COLOR_ORANGE (0xFFA500)
+#define COLOR_ORANGE (0x00A5FF)  // BGR: (255, 165, 0)
 #endif
 #ifndef COLOR_WHITE
-#define COLOR_WHITE (0xFFFFFF)
+#define COLOR_WHITE (0xFFFFFF)   // BGR: (255, 255, 255)
 #endif
 #ifndef COLOR_GREEN
-#define COLOR_GREEN (0x00FF00)
+#define COLOR_GREEN (0x00FF00)   // BGR: (0, 255, 0)
 #endif
 #ifndef COLOR_RED
-#define COLOR_RED (0xFF0000)
+#define COLOR_RED (0xFF0000)     // BGR: (255, 0, 0) -> Red
+#endif
+#ifndef COLOR_DARK_RED
+#define COLOR_DARK_RED (0x8B0000) // BGR: (139, 0, 0) -> Dark Red
 #endif
 
 typedef struct app_context_t {
@@ -83,26 +86,6 @@ std::vector<cv::Point> convert_landmarks_to_cvpoint(const point_t landmarks[], i
 cv::Mat image_buffer_to_mat(const image_buffer_t* image_buffer) {
     return cv::Mat(image_buffer->height, image_buffer->width, CV_8UC3, image_buffer->virt_addr);
 }
-
-// double parse_head_pose_value(const std::string& s) {
-//     try {
-//         size_t first_space = s.find_first_of(" \t");
-//         if (first_space == std::string::npos) {
-//             return std::stod(s);
-//         }
-//         size_t first_digit = s.find_first_not_of(" \t", first_space);
-//         if (first_digit == std::string::npos) {
-//             return 0.0;
-//         }
-//         std::string value_part = s.substr(first_digit);
-//         size_t value_end = value_part.find_first_not_of("0123456789.-+eE");
-//         return std::stod(value_part.substr(0, value_end));
-//     } catch (const std::exception& e) {
-    
-//         printf("WARN: Could not parse head pose value from string: '%s'. Error: %s\n", s.c_str(), e.what());
-//         return 0.0;
-//     }
-// }
 
 
 double parse_head_pose_value(const std::string& s) {
@@ -436,7 +419,7 @@ int main(int argc, char **argv) {
     //                                    "queue ! videoconvert ! video/x-raw,format=BGR ! "
     //                                    "appsink name=sink sync=false";
 
-    const char *video_source = "filesrc location=../../model/cut_drinking.mkv ! "
+    const char *video_source = "filesrc location=../../model/cut_yawn.mkv ! "
                                "decodebin ! "
                                "queue ! videoconvert ! video/x-raw,format=BGR ! "
                                "appsink name=sink sync=false";
@@ -631,46 +614,97 @@ int main(int argc, char **argv) {
                 }
             }
 
+            // if (face_results.count > 0 && face_results.faces[0].face_landmarks_valid) {
+            //     face_object_t *face = &face_results.faces[0];
+            //     std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(face->face_landmarks, NUM_FACE_LANDMARKS);
+
+
+            //     // ---> ADD THIS BLOCK <---
+            //     bool is_calibrated_before_run = headPoseTracker.isCalibrated();
+            //     headPoseResults = headPoseTracker.run(faceLandmarksCv);
+            //     bool is_calibrated_after_run = headPoseTracker.isCalibrated(); // Check again after run
+            //     printf("DEBUG Calibration Status: Before Run = %s, After Run = %s, Reference Set = %s\n",
+            //         is_calibrated_before_run ? "TRUE" : "FALSE",
+            //         is_calibrated_after_run ? "TRUE" : "FALSE",
+            //         headPoseResults.reference_set ? "TRUE" : "FALSE");
+            //     // ---> END ADDED BLOCK <---
+
+            //     blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height);
+            //     yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height);
+            //     headPoseResults = headPoseTracker.run(faceLandmarksCv);
+
+            //     detectedObjects.clear();
+            //     for (int j = 0; j < yolo_results.count; ++j) {
+            //         detectedObjects.push_back(coco_cls_to_name(yolo_results.results[j].cls_id));
+            //     }
+
+            //     kssCalculator.setPerclos(blinkDetector.getPerclos());
+            //     if (calibration_done && headPoseResults.rows.size() >= 3) {
+
+            //         try {
+            //             kssCalculator.setHeadPose(parse_head_pose_value(headPoseResults.rows[0][1]),
+            //                                       parse_head_pose_value(headPoseResults.rows[1][1]),
+            //                                       parse_head_pose_value(headPoseResults.rows[2][1]));
+            //         } catch (...) {
+            //             kssCalculator.setHeadPose(0.0, 0.0, 0.0);
+            //         }
+            //     } else {
+            //         kssCalculator.setHeadPose(0.0, 0.0, 0.0);
+            //     }
+            //     kssCalculator.setYawnMetrics(yawnMetrics.isYawning, yawnMetrics.yawnFrequency, yawnMetrics.yawnDuration);
+            //     kssCalculator.setDetectedObjects(detectedObjects);
+            //     compositeKSS = kssCalculator.calculateCompositeKSS();
+            //     kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
+            //     if (kssStatus == "Initializing" || kssStatus == "Low Risk (Not Calibrated)" ||
+            //         kssStatus == "Low Risk (Cal. Failed)" || kssStatus == "Low Risk (No Face)") {
+            //         kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
+            //     }
+            // }
+
             if (face_results.count > 0 && face_results.faces[0].face_landmarks_valid) {
                 face_object_t *face = &face_results.faces[0];
                 std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(face->face_landmarks, NUM_FACE_LANDMARKS);
-
-
-                // ---> ADD THIS BLOCK <---
+            
                 bool is_calibrated_before_run = headPoseTracker.isCalibrated();
                 headPoseResults = headPoseTracker.run(faceLandmarksCv);
-                bool is_calibrated_after_run = headPoseTracker.isCalibrated(); // Check again after run
+                bool is_calibrated_after_run = headPoseTracker.isCalibrated();
                 printf("DEBUG Calibration Status: Before Run = %s, After Run = %s, Reference Set = %s\n",
                     is_calibrated_before_run ? "TRUE" : "FALSE",
                     is_calibrated_after_run ? "TRUE" : "FALSE",
                     headPoseResults.reference_set ? "TRUE" : "FALSE");
-                // ---> END ADDED BLOCK <---
-
+            
                 blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height);
                 yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height);
                 headPoseResults = headPoseTracker.run(faceLandmarksCv);
-
+            
                 detectedObjects.clear();
                 for (int j = 0; j < yolo_results.count; ++j) {
                     detectedObjects.push_back(coco_cls_to_name(yolo_results.results[j].cls_id));
                 }
-
+            
                 kssCalculator.setPerclos(blinkDetector.getPerclos());
-                if (calibration_done && headPoseResults.rows.size() >= 3) {
-
-                    try {
-                        kssCalculator.setHeadPose(parse_head_pose_value(headPoseResults.rows[0][1]),
-                                                  parse_head_pose_value(headPoseResults.rows[1][1]),
-                                                  parse_head_pose_value(headPoseResults.rows[2][1]));
-                    } catch (...) {
-                        kssCalculator.setHeadPose(0.0, 0.0, 0.0);
+            
+                // Updated head pose KSS setting
+                int headPoseKSSValue = 1; // Default value if not found
+                if (calibration_done && headPoseResults.rows.size() >= 4) {
+                    for (const auto& row : headPoseResults.rows) {
+                        if (row[0] == "Head KSS") {
+                            try {
+                                headPoseKSSValue = std::stoi(row[1]);
+                            } catch (...) {
+                                printf("WARN: Failed to parse Head KSS value: %s\n", row[1].c_str());
+                                headPoseKSSValue = 1; // Fallback
+                            }
+                            break;
+                        }
                     }
-                } else {
-                    kssCalculator.setHeadPose(0.0, 0.0, 0.0);
                 }
+                kssCalculator.setHeadPose(headPoseKSSValue);
+            
                 kssCalculator.setYawnMetrics(yawnMetrics.isYawning, yawnMetrics.yawnFrequency, yawnMetrics.yawnDuration);
                 kssCalculator.setDetectedObjects(detectedObjects);
                 compositeKSS = kssCalculator.calculateCompositeKSS();
+                kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
                 if (kssStatus == "Initializing" || kssStatus == "Low Risk (Not Calibrated)" ||
                     kssStatus == "Low Risk (Cal. Failed)" || kssStatus == "Low Risk (No Face)") {
                     kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
@@ -693,6 +727,39 @@ int main(int argc, char **argv) {
                         draw_circle(&src_image, face->face_landmarks[j].x, face->face_landmarks[j].y, 1, COLOR_ORANGE, 1);
                     }
                 }
+
+
+                // ---> START: ADDED BLOCK TO DRAW KEY LANDMARKS IN CYAN <---
+                const int head_pose_key_indices[] = {
+                    1,  // Nose Tip
+                    10, // Forehead Center (approx)
+                    13, // Mouth Center (approx)
+                    33, // Left Eye Outer Corner
+                    263 // Right Eye Outer Corner
+                };
+                unsigned int key_landmark_color = COLOR_CYAN; // Define Cyan color
+                int key_landmark_radius = 4; // Make them bigger to see easily
+                int key_landmark_thickness = 3;
+
+                for (int key_idx : head_pose_key_indices) {
+                     // Safety check: Ensure index is within the bounds of your landmark array
+                     if (key_idx >= 0 && key_idx < NUM_FACE_LANDMARKS) {
+                         point_t landmark = face->face_landmarks[key_idx];
+                         draw_circle(&src_image, landmark.x, landmark.y,
+                                     key_landmark_radius, key_landmark_color, key_landmark_thickness);
+
+                         // Optional: Draw the index number next to the landmark for easy identification
+                         // char idx_text[5];
+                         // snprintf(idx_text, 5, "%d", key_idx);
+                         // draw_text(&src_image, idx_text, landmark.x + 5, landmark.y, COLOR_WHITE, 10);
+
+                     } else {
+                         printf("WARN: Key landmark index %d is out of bounds (0-%d).\n", key_idx, NUM_FACE_LANDMARKS - 1);
+                     }
+                }
+                // ---> END: ADDED BLOCK <---
+
+
                 if (face->eye_landmarks_left_valid) {
                     for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; j++) {
                         draw_circle(&src_image, face->eye_landmarks_left[j].x, face->eye_landmarks_left[j].y, 1, COLOR_BLUE, 1);
@@ -728,47 +795,22 @@ int main(int argc, char **argv) {
             }
 
             // status_color_uint = (compositeKSS >= 4) ? COLOR_RED : COLOR_GREEN;
-            // text_y = 10;
-            // draw_text(&src_image, kssStatus.c_str(), 10, text_y, status_color_uint, status_text_size);
-            // text_y += (int)(line_height * 1.4);
-            // text_stream.str("");
-            // text_stream << "PERCLOS: " << std::fixed << std::setprecision(2) << blinkDetector.getPerclos() << "%";
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            // text_y += line_height;
-            // text_stream.str("");
-            // text_stream << "Blink Count: " << blinkDetector.getBlinkCount();
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            // text_y += line_height;
-            // text_stream.str("");
-            // text_stream << "Last Blink Dur: " << std::fixed << std::setprecision(2) << blinkDetector.getLastBlinkDuration() << " s";
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            // text_y += line_height;
-            // if (calibration_done && headPoseResults.rows.size() >= 3) {
-            //     std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1];
-            //     draw_text(&src_image, headpose_text.c_str(), 10, text_y, COLOR_WHITE, text_size);
-            //     text_y += line_height;
-            // } else {
-            //     draw_text(&src_image, "Head Pose: N/A", 10, text_y, COLOR_WHITE, text_size);
-            //     text_y += line_height;
-            // }
-            // text_stream.str("");
-            // text_stream << "Yawning: " << (yawnMetrics.isYawning ? "Yes" : "No");
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            // text_y += line_height;
-            // text_stream.str("");
-            // text_stream << "Yawn Freq (last min): " << static_cast<int>(yawnMetrics.yawnFrequency);
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            // text_y += line_height;
-            // text_stream.str("");
-            // text_stream << "Last Yawn Dur: " << std::fixed << std::setprecision(2) << yawnMetrics.yawnDuration << " s";
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            // text_y += line_height;
-            // text_stream.str("");
-            // text_stream << "KSS Score: " << compositeKSS;
-            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, status_color_uint, text_size);
-            // text_y += line_height;
 
-            status_color_uint = (compositeKSS >= 4) ? COLOR_RED : COLOR_GREEN;
+            if (compositeKSS <= 3) {
+                status_color_uint = COLOR_GREEN; // Green for KSS <= 3
+            } else if (compositeKSS >= 4 && compositeKSS <= 7) {
+                status_color_uint = COLOR_BLUE;  // Blue for KSS 4-6
+            } else if (compositeKSS >= 8 && compositeKSS <= 9) {
+                status_color_uint = COLOR_YELLOW;   // Red for KSS 8-9
+            } 
+            else if (compositeKSS >= 10) {
+                status_color_uint = COLOR_YELLOW; // Dark red for KSS 10+
+            } 
+            else {
+                // This block should no longer be reached with the updated ranges
+                status_color_uint = COLOR_YELLOW; // Fallback
+            }
+
             text_y = 10;
             draw_text(&src_image, kssStatus.c_str(), 10, text_y, status_color_uint, status_text_size);
             text_y += (int)(line_height * 1.4);
@@ -785,19 +827,20 @@ int main(int argc, char **argv) {
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
             if (calibration_done && headPoseResults.rows.size() >= 3) {
-                std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1];
+                std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1] + + " KSS:" + headPoseResults.rows[3][1];
                 draw_text(&src_image, headpose_text.c_str(), 10, text_y, COLOR_WHITE, text_size);
                 text_y += line_height;
             } else {
                 draw_text(&src_image, "Head Pose: N/A", 10, text_y, COLOR_WHITE, text_size);
                 text_y += line_height;
             }
+
             text_stream.str("");
             text_stream << "Yawning: " << (yawnMetrics.isYawning ? "Yes" : "No");
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
             text_stream.str("");
-            text_stream << "Total Yawn Count: " << static_cast<int>(yawnMetrics.yawnCount);  // New: Display total yawn count
+            text_stream << "Yawn KSS: " << static_cast<int>(yawnMetrics.yawnKSS);  // New: Display total yawn count
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
             text_stream.str("");
