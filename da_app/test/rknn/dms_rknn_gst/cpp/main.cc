@@ -95,7 +95,7 @@ double parse_head_pose_value(const std::string& s) {
         if (deg_pos != std::string::npos) {
             numeric_part = numeric_part.substr(0, deg_pos);
         }
-        // Optional: Trim whitespace just in case
+
         size_t first_digit = numeric_part.find_first_not_of(" \t");
         if (first_digit == std::string::npos) return 0.0; // Empty or whitespace
         size_t last_digit = numeric_part.find_last_not_of(" \t");
@@ -209,7 +209,7 @@ void setupPipeline() {
         "h265parse ! matroskamux ! "
         "filesink location=" + filepath;
 
-    std::cout << "Pipeline: " << pipeline_str << std::endl;
+    // std::cout << "Pipeline: " << pipeline_str << std::endl;
 
     GError* error = nullptr;
     pipeline_ = gst_parse_launch(pipeline_str.c_str(), &error);
@@ -342,8 +342,7 @@ void getCPUUsage(double& cpu_usage_variable, long& prev_idle, long& prev_total) 
         double busyTime = (double)(diffTotal - diffIdle);
         cpu_usage_variable = 100.0 * (busyTime / diffTotal);
     } else if (diffTotal == 0 && prev_total != 0) {
-        // No change in total time, usage is likely 0 or very low. Keep previous value or set to 0?
-        // Setting to 0 might be misleading if called too frequently. Let's keep previous value.
+
         // cpu_usage_variable = 0.0;
     } // else: prev_total was 0 (first call), keep cpu_usage_variable at its initial value (0.0)
 
@@ -415,14 +414,14 @@ int main(int argc, char **argv) {
     const char *iris_model_path      = "../../model/faceI.rknn";
     const char *yolo_model_path      = "../../model/od.rknn";
 
-    // const char *video_source         = "v4l2src device=/dev/video1 ! "
-    //                                    "queue ! videoconvert ! video/x-raw,format=BGR ! "
-    //                                    "appsink name=sink sync=false";
+    const char *video_source         = "v4l2src device=/dev/video1 ! "
+                                       "queue ! videoconvert ! video/x-raw,format=BGR ! "
+                                       "appsink name=sink sync=false";
 
-    const char *video_source = "filesrc location=../../model/cut_yawn.mkv ! "
-                               "decodebin ! "
-                               "queue ! videoconvert ! video/x-raw,format=BGR ! "
-                               "appsink name=sink sync=false";
+    // const char *video_source = "filesrc location=../../model/interacting_with_passenger.mkv ! "
+    //                            "decodebin ! "
+    //                            "queue ! videoconvert ! video/x-raw,format=BGR ! "
+    //                            "appsink name=sink sync=false";
 
     setupPipeline();
 
@@ -506,7 +505,6 @@ int main(int argc, char **argv) {
 
     cv::namedWindow("output", cv::WINDOW_NORMAL);
     cv::resizeWindow("output", 1920, 1080);
-    // cv::resizeWindow("output", 640, 640);
     GstSample* sample;
     GstVideoFrame* in_frame = new GstVideoFrame;
     GstVideoFrame* out_frame = new GstVideoFrame;
@@ -614,53 +612,6 @@ int main(int argc, char **argv) {
                 }
             }
 
-            // if (face_results.count > 0 && face_results.faces[0].face_landmarks_valid) {
-            //     face_object_t *face = &face_results.faces[0];
-            //     std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(face->face_landmarks, NUM_FACE_LANDMARKS);
-
-
-            //     // ---> ADD THIS BLOCK <---
-            //     bool is_calibrated_before_run = headPoseTracker.isCalibrated();
-            //     headPoseResults = headPoseTracker.run(faceLandmarksCv);
-            //     bool is_calibrated_after_run = headPoseTracker.isCalibrated(); // Check again after run
-            //     printf("DEBUG Calibration Status: Before Run = %s, After Run = %s, Reference Set = %s\n",
-            //         is_calibrated_before_run ? "TRUE" : "FALSE",
-            //         is_calibrated_after_run ? "TRUE" : "FALSE",
-            //         headPoseResults.reference_set ? "TRUE" : "FALSE");
-            //     // ---> END ADDED BLOCK <---
-
-            //     blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height);
-            //     yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height);
-            //     headPoseResults = headPoseTracker.run(faceLandmarksCv);
-
-            //     detectedObjects.clear();
-            //     for (int j = 0; j < yolo_results.count; ++j) {
-            //         detectedObjects.push_back(coco_cls_to_name(yolo_results.results[j].cls_id));
-            //     }
-
-            //     kssCalculator.setPerclos(blinkDetector.getPerclos());
-            //     if (calibration_done && headPoseResults.rows.size() >= 3) {
-
-            //         try {
-            //             kssCalculator.setHeadPose(parse_head_pose_value(headPoseResults.rows[0][1]),
-            //                                       parse_head_pose_value(headPoseResults.rows[1][1]),
-            //                                       parse_head_pose_value(headPoseResults.rows[2][1]));
-            //         } catch (...) {
-            //             kssCalculator.setHeadPose(0.0, 0.0, 0.0);
-            //         }
-            //     } else {
-            //         kssCalculator.setHeadPose(0.0, 0.0, 0.0);
-            //     }
-            //     kssCalculator.setYawnMetrics(yawnMetrics.isYawning, yawnMetrics.yawnFrequency, yawnMetrics.yawnDuration);
-            //     kssCalculator.setDetectedObjects(detectedObjects);
-            //     compositeKSS = kssCalculator.calculateCompositeKSS();
-            //     kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
-            //     if (kssStatus == "Initializing" || kssStatus == "Low Risk (Not Calibrated)" ||
-            //         kssStatus == "Low Risk (Cal. Failed)" || kssStatus == "Low Risk (No Face)") {
-            //         kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
-            //     }
-            // }
-
             if (face_results.count > 0 && face_results.faces[0].face_landmarks_valid) {
                 face_object_t *face = &face_results.faces[0];
                 std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(face->face_landmarks, NUM_FACE_LANDMARKS);
@@ -702,7 +653,15 @@ int main(int argc, char **argv) {
                 kssCalculator.setHeadPose(headPoseKSSValue);
             
                 kssCalculator.setYawnMetrics(yawnMetrics.isYawning, yawnMetrics.yawnFrequency, yawnMetrics.yawnDuration);
-                kssCalculator.setDetectedObjects(detectedObjects);
+                // kssCalculator.setDetectedObjects(detectedObjects);
+                double now_seconds = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+                kssCalculator.setDetectedObjects(detectedObjects, now_seconds);
+          
+
+                int blinks_last_minute = blinkDetector.getBlinksInWindow(); 
+                kssCalculator.setBlinksLastMinute(blinks_last_minute);   
+
+
                 compositeKSS = kssCalculator.calculateCompositeKSS();
                 kssStatus = kssCalculator.getKSSAlertStatus(compositeKSS);
                 if (kssStatus == "Initializing" || kssStatus == "Low Risk (Not Calibrated)" ||
@@ -718,18 +677,8 @@ int main(int argc, char **argv) {
                 int rw = face->box.right - face->box.left;
                 int rh = face->box.bottom - face->box.top;
 
-                draw_rectangle(&src_image, rx, ry, rw, rh, COLOR_GREEN, 2); // Thinner box
                 char score_text[20]; snprintf(score_text, 20, "%.2f", face->score);
-                draw_text(&src_image, score_text, rx, ry - 15 > 0 ? ry - 15 : ry, COLOR_RED, 16); // Smaller score text
-                
-                if (face->face_landmarks_valid) {
-                    for (int j = 0; j < NUM_FACE_LANDMARKS; j++) {
-                        draw_circle(&src_image, face->face_landmarks[j].x, face->face_landmarks[j].y, 1, COLOR_ORANGE, 1);
-                    }
-                }
 
-
-                // ---> START: ADDED BLOCK TO DRAW KEY LANDMARKS IN CYAN <---
                 const int head_pose_key_indices[] = {
                     1,  // Nose Tip
                     10, // Forehead Center (approx)
@@ -740,46 +689,6 @@ int main(int argc, char **argv) {
                 unsigned int key_landmark_color = COLOR_CYAN; // Define Cyan color
                 int key_landmark_radius = 4; // Make them bigger to see easily
                 int key_landmark_thickness = 3;
-
-                for (int key_idx : head_pose_key_indices) {
-                     // Safety check: Ensure index is within the bounds of your landmark array
-                     if (key_idx >= 0 && key_idx < NUM_FACE_LANDMARKS) {
-                         point_t landmark = face->face_landmarks[key_idx];
-                         draw_circle(&src_image, landmark.x, landmark.y,
-                                     key_landmark_radius, key_landmark_color, key_landmark_thickness);
-
-                         // Optional: Draw the index number next to the landmark for easy identification
-                         // char idx_text[5];
-                         // snprintf(idx_text, 5, "%d", key_idx);
-                         // draw_text(&src_image, idx_text, landmark.x + 5, landmark.y, COLOR_WHITE, 10);
-
-                     } else {
-                         printf("WARN: Key landmark index %d is out of bounds (0-%d).\n", key_idx, NUM_FACE_LANDMARKS - 1);
-                     }
-                }
-                // ---> END: ADDED BLOCK <---
-
-
-                if (face->eye_landmarks_left_valid) {
-                    for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; j++) {
-                        draw_circle(&src_image, face->eye_landmarks_left[j].x, face->eye_landmarks_left[j].y, 1, COLOR_BLUE, 1);
-                    }
-                }
-                if (face->iris_landmarks_left_valid) {
-                    for (int j = 0; j < NUM_IRIS_LANDMARKS; j++) {
-                        draw_circle(&src_image, face->iris_landmarks_left[j].x, face->iris_landmarks_left[j].y, 2, COLOR_YELLOW, 2);
-                    }
-                }
-                if (face->eye_landmarks_right_valid) {
-                    for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; j++) {
-                        draw_circle(&src_image, face->eye_landmarks_right[j].x, face->eye_landmarks_right[j].y, 1, COLOR_BLUE, 1);
-                    }
-                }
-                if (face->iris_landmarks_right_valid) {
-                    for (int j = 0; j < NUM_IRIS_LANDMARKS; j++) {
-                        draw_circle(&src_image, face->iris_landmarks_right[j].x, face->iris_landmarks_right[j].y, 2, COLOR_YELLOW, 2);
-                    }
-                }
             }
 
             for (int i = 0; i < yolo_results.count; i++) {
@@ -818,16 +727,16 @@ int main(int argc, char **argv) {
             text_stream << "PERCLOS: " << std::fixed << std::setprecision(2) << blinkDetector.getPerclos() << "%";
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
-            text_stream.str("");
-            text_stream << "Blink Count: " << blinkDetector.getBlinkCount();
-            draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            text_y += line_height;
-            text_stream.str("");
-            text_stream << "Last Blink Dur: " << std::fixed << std::setprecision(2) << blinkDetector.getLastBlinkDuration() << " s";
-            draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Blink Count: " << blinkDetector.getBlinkCount();
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Last Blink Dur: " << std::fixed << std::setprecision(2) << blinkDetector.getLastBlinkDuration() << " s";
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
             if (calibration_done && headPoseResults.rows.size() >= 3) {
-                std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1] + + " KSS:" + headPoseResults.rows[3][1];
+                std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1]; //+ " KSS:" + headPoseResults.rows[3][1];
                 draw_text(&src_image, headpose_text.c_str(), 10, text_y, COLOR_WHITE, text_size);
                 text_y += line_height;
             } else {
@@ -839,18 +748,18 @@ int main(int argc, char **argv) {
             text_stream << "Yawning: " << (yawnMetrics.isYawning ? "Yes" : "No");
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
             text_y += line_height;
-            text_stream.str("");
-            text_stream << "Yawn KSS: " << static_cast<int>(yawnMetrics.yawnKSS);  // New: Display total yawn count
-            draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            text_y += line_height;
-            text_stream.str("");
-            text_stream << "Yawn Freq (last min): " << static_cast<int>(yawnMetrics.yawnFrequency);  // Optional: Keep frequency
-            draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            text_y += line_height;
-            text_stream.str("");
-            text_stream << "Last Yawn Dur: " << std::fixed << std::setprecision(2) << yawnMetrics.yawnDuration << " s";
-            draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
-            text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Yawn KSS: " << static_cast<int>(yawnMetrics.yawnKSS);  // New: Display total yawn count
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Yawn Freq (last min): " << static_cast<int>(yawnMetrics.yawnFrequency);  // Optional: Keep frequency
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
+            // text_stream.str("");
+            // text_stream << "Last Yawn Dur: " << std::fixed << std::setprecision(2) << yawnMetrics.yawnDuration << " s";
+            // draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size);
+            // text_y += line_height;
             text_stream.str("");
             text_stream << "KSS Score: " << compositeKSS;
             draw_text(&src_image, text_stream.str().c_str(), 10, text_y, status_color_uint, text_size);
@@ -864,10 +773,7 @@ int main(int argc, char **argv) {
 
             // Calculate FPS (Pass variables by reference)
             calculateOverallFPS(frame_duration_ms, frame_times, overallFPS, max_time_records);
-            // Note: To calculate inferenceFPS, you need to time the inference calls
-            // separately and pass those timings to calculateOverallFPS with inference_times deque.
-            // calculateOverallFPS(inference_duration_ms, inference_times, inferenceFPS, max_time_records);
-
+          
             // Update CPU and Temp (Pass variables by reference)
             getCPUUsage(currentCpuUsage, prevIdleTime, prevTotalTime);
             getTemperature(currentTemp);
@@ -929,7 +835,6 @@ int main(int argc, char **argv) {
     stop_yolo_worker.store(true);
     if (yolo_worker_thread.joinable()) {
         yolo_worker_thread.join();
-        // printf("YOLO Worker Thread Joined.\n");
     }
     if (input_pipeline) {
         gst_element_set_state(input_pipeline, GST_STATE_NULL);
