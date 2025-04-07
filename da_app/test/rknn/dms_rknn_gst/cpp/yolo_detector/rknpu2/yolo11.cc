@@ -10,11 +10,12 @@
 
 static void dump_tensor_attr(rknn_tensor_attr *attr)
 {
-    printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, "
-           "zp=%d, scale=%f\n",
-           attr->index, attr->name, attr->n_dims, attr->dims[0], attr->dims[1], attr->dims[2], attr->dims[3],
-           attr->n_elems, attr->size, get_format_string(attr->fmt), get_type_string(attr->type),
-           get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
+    printf("");
+    // printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, "
+    //        "zp=%d, scale=%f\n",
+    //        attr->index, attr->name, attr->n_dims, attr->dims[0], attr->dims[1], attr->dims[2], attr->dims[3],
+    //        attr->n_elems, attr->size, get_format_string(attr->fmt), get_type_string(attr->type),
+    //        get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
 }
 
 int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Renamed function and struct
@@ -36,7 +37,7 @@ int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Re
     free(model);
     if (ret < 0)
     {
-        printf("rknn_init fail! ret=%d\n", ret);
+        // printf("rknn_init fail! ret=%d\n", ret);
         return -1;
     }
 
@@ -45,7 +46,7 @@ int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Re
     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
     if (ret != RKNN_SUCC)
     {
-        printf("rknn_query fail! ret=%d\n", ret);
+        // printf("rknn_query fail! ret=%d\n", ret);
         return -1;
     }
     // printf("model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
@@ -76,7 +77,7 @@ int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Re
         ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(output_attrs[i]), sizeof(rknn_tensor_attr));
         if (ret != RKNN_SUCC)
         {
-            printf("rknn_query fail! ret=%d\n", ret);
+            // printf("rknn_query fail! ret=%d\n", ret);
             return -1;
         }
         dump_tensor_attr(&(output_attrs[i]));
@@ -115,8 +116,8 @@ int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Re
         app_ctx->model_width = input_attrs[0].dims[2];
         app_ctx->model_channel = input_attrs[0].dims[3];
     }
-    printf("model input height=%d, width=%d, channel=%d\n",
-           app_ctx->model_height, app_ctx->model_width, app_ctx->model_channel);
+    // printf("model input height=%d, width=%d, channel=%d\n",
+    //        app_ctx->model_height, app_ctx->model_width, app_ctx->model_channel);
 
     return 0;
 }
@@ -171,7 +172,7 @@ int inference_yolo11(yolo11_app_context_t *app_ctx, image_buffer_t *img, object_
     dst_img.virt_addr = (unsigned char *)malloc(dst_img.size);
     if (dst_img.virt_addr == NULL)
     {
-        printf("malloc buffer size:%d fail!\n", dst_img.size);
+        // printf("malloc buffer size:%d fail!\n", dst_img.size);
         return -1;
     }
 
@@ -179,7 +180,7 @@ int inference_yolo11(yolo11_app_context_t *app_ctx, image_buffer_t *img, object_
     ret = convert_image_with_letterbox(img, &dst_img, &letter_box, bg_color);
     if (ret < 0)
     {
-        printf("convert_image_with_letterbox fail! ret=%d\n", ret);
+        // printf("convert_image_with_letterbox fail! ret=%d\n", ret);
         return -1;
     }
 
@@ -193,7 +194,7 @@ int inference_yolo11(yolo11_app_context_t *app_ctx, image_buffer_t *img, object_
     ret = rknn_inputs_set(app_ctx->rknn_ctx, app_ctx->io_num.n_input, inputs);
     if (ret < 0)
     {
-        printf("rknn_input_set fail! ret=%d\n", ret);
+        // printf("rknn_input_set fail! ret=%d\n", ret);
         return -1;
     }
 
@@ -202,7 +203,7 @@ int inference_yolo11(yolo11_app_context_t *app_ctx, image_buffer_t *img, object_
     ret = rknn_run(app_ctx->rknn_ctx, nullptr);
     if (ret < 0)
     {
-        printf("rknn_run fail! ret=%d\n", ret);
+        // printf("rknn_run fail! ret=%d\n", ret);
         return -1;
     }
 
@@ -216,7 +217,7 @@ int inference_yolo11(yolo11_app_context_t *app_ctx, image_buffer_t *img, object_
     ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs, NULL);
     if (ret < 0)
     {
-        printf("rknn_outputs_get fail! ret=%d\n", ret);
+        // printf("rknn_outputs_get fail! ret=%d\n", ret);
         goto out;
     }
 
