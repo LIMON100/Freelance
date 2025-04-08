@@ -18,108 +18,228 @@ static void dump_tensor_attr(rknn_tensor_attr *attr)
     //        get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
 }
 
-int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Renamed function and struct
+// int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx) // <-- Renamed function and struct
+// {
+//     int ret;
+//     int model_len = 0;
+//     char *model;
+//     rknn_context ctx = 0;
+
+//     // Load RKNN Model
+//     model_len = read_data_from_file(model_path, &model);
+//     if (model == NULL)
+//     {
+//         printf("load_model fail!\n");
+//         return -1;
+//     }
+
+//     ret = rknn_init(&ctx, model, model_len, 0, NULL);
+//     free(model);
+//     if (ret < 0)
+//     {
+//         // printf("rknn_init fail! ret=%d\n", ret);
+//         return -1;
+//     }
+
+//     // Get Model Input Output Number
+//     rknn_input_output_num io_num;
+//     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
+//     if (ret != RKNN_SUCC)
+//     {
+//         // printf("rknn_query fail! ret=%d\n", ret);
+//         return -1;
+//     }
+//     // printf("model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
+
+//     // Get Model Input Info
+//     printf("input tensors:\n");
+//     rknn_tensor_attr input_attrs[io_num.n_input];
+//     memset(input_attrs, 0, sizeof(input_attrs));
+//     for (int i = 0; i < io_num.n_input; i++)
+//     {
+//         input_attrs[i].index = i;
+//         ret = rknn_query(ctx, RKNN_QUERY_INPUT_ATTR, &(input_attrs[i]), sizeof(rknn_tensor_attr));
+//         if (ret != RKNN_SUCC)
+//         {
+//             printf("rknn_query fail! ret=%d\n", ret);
+//             return -1;
+//         }
+//         dump_tensor_attr(&(input_attrs[i]));
+//     }
+
+//     // Get Model Output Info
+//     printf("output tensors:\n");
+//     rknn_tensor_attr output_attrs[io_num.n_output];
+//     memset(output_attrs, 0, sizeof(output_attrs));
+//     for (int i = 0; i < io_num.n_output; i++)
+//     {
+//         output_attrs[i].index = i;
+//         ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(output_attrs[i]), sizeof(rknn_tensor_attr));
+//         if (ret != RKNN_SUCC)
+//         {
+//             // printf("rknn_query fail! ret=%d\n", ret);
+//             return -1;
+//         }
+//         dump_tensor_attr(&(output_attrs[i]));
+//     }
+
+//     // Set to context
+//     app_ctx->rknn_ctx = ctx;
+
+//     // TODO
+//     if (output_attrs[0].qnt_type == RKNN_TENSOR_QNT_AFFINE_ASYMMETRIC && output_attrs[0].type == RKNN_TENSOR_INT8)
+//     {
+//         app_ctx->is_quant = true;
+//     }
+//     else
+//     {
+//         app_ctx->is_quant = false;
+//     }
+
+//     app_ctx->io_num = io_num;
+//     app_ctx->input_attrs = (rknn_tensor_attr *)malloc(io_num.n_input * sizeof(rknn_tensor_attr));
+//     memcpy(app_ctx->input_attrs, input_attrs, io_num.n_input * sizeof(rknn_tensor_attr));
+//     app_ctx->output_attrs = (rknn_tensor_attr *)malloc(io_num.n_output * sizeof(rknn_tensor_attr));
+//     memcpy(app_ctx->output_attrs, output_attrs, io_num.n_output * sizeof(rknn_tensor_attr));
+
+//     if (input_attrs[0].fmt == RKNN_TENSOR_NCHW)
+//     {
+//         printf("model is NCHW input fmt\n");
+//         app_ctx->model_channel = input_attrs[0].dims[1];
+//         app_ctx->model_height = input_attrs[0].dims[2];
+//         app_ctx->model_width = input_attrs[0].dims[3];
+//     }
+//     else
+//     {
+//         printf("model is NHWC input fmt\n");
+//         app_ctx->model_height = input_attrs[0].dims[1];
+//         app_ctx->model_width = input_attrs[0].dims[2];
+//         app_ctx->model_channel = input_attrs[0].dims[3];
+//     }
+//     // printf("model input height=%d, width=%d, channel=%d\n",
+//     //        app_ctx->model_height, app_ctx->model_width, app_ctx->model_channel);
+
+//     return 0;
+// }
+
+
+int init_yolo11(const char *model_path, yolo11_app_context_t *app_ctx)
 {
     int ret;
     int model_len = 0;
-    char *model;
+    char *model_buf = NULL; // Use char* for model buffer
     rknn_context ctx = 0;
 
+    // Ensure app_ctx is clean before starting
+    memset(app_ctx, 0, sizeof(yolo11_app_context_t));
+
     // Load RKNN Model
-    model_len = read_data_from_file(model_path, &model);
-    if (model == NULL)
-    {
-        printf("load_model fail!\n");
+    printf("Loading YOLO model: %s\n", model_path);
+    model_len = read_data_from_file(model_path, &model_buf);
+    if (model_buf == NULL) {
+        printf("ERROR: load_model fail for YOLO!\n");
         return -1;
     }
 
-    ret = rknn_init(&ctx, model, model_len, 0, NULL);
-    free(model);
-    if (ret < 0)
-    {
-        // printf("rknn_init fail! ret=%d\n", ret);
-        return -1;
+    // Initialize RKNN context
+    ret = rknn_init(&ctx, model_buf, model_len, 0, NULL);
+    free(model_buf); // Free the buffer right after init
+    model_buf = NULL;
+    if (ret < 0) {
+        printf("ERROR: rknn_init for YOLO model failed! ret=%d\n", ret);
+        return -1; // Cannot proceed
     }
 
-    // Get Model Input Output Number
+    // +++ Set Core Mask for YOLO Model +++
+    ret = rknn_set_core_mask(ctx, RKNN_NPU_CORE_1); // Assign to Core 1
+    if (ret < 0) {
+        printf("ERROR: rknn_set_core_mask(yolo, CORE_1) failed! ret=%d\n", ret);
+        rknn_destroy(ctx); // Clean up the initialized context before returning
+        return -1; // Indicate failure
+    }
+    printf("INFO: YOLO Model assigned to NPU Core 1.\n");
+    // +++++++++++++++++++++++++++++++++++++
+
+    // --- Continue with querying model info ---
+    app_ctx->rknn_ctx = ctx; // Store the context handle in our struct
+
+    // Query I/O Number
     rknn_input_output_num io_num;
     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
-    if (ret != RKNN_SUCC)
-    {
-        // printf("rknn_query fail! ret=%d\n", ret);
+    if (ret != RKNN_SUCC) {
+        printf("ERROR: rknn_query(Num) for YOLO failed! ret=%d\n", ret);
+        rknn_destroy(ctx); // Cleanup
         return -1;
     }
-    // printf("model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
-
-    // Get Model Input Info
-    printf("input tensors:\n");
-    rknn_tensor_attr input_attrs[io_num.n_input];
-    memset(input_attrs, 0, sizeof(input_attrs));
-    for (int i = 0; i < io_num.n_input; i++)
-    {
-        input_attrs[i].index = i;
-        ret = rknn_query(ctx, RKNN_QUERY_INPUT_ATTR, &(input_attrs[i]), sizeof(rknn_tensor_attr));
-        if (ret != RKNN_SUCC)
-        {
-            printf("rknn_query fail! ret=%d\n", ret);
-            return -1;
-        }
-        dump_tensor_attr(&(input_attrs[i]));
-    }
-
-    // Get Model Output Info
-    printf("output tensors:\n");
-    rknn_tensor_attr output_attrs[io_num.n_output];
-    memset(output_attrs, 0, sizeof(output_attrs));
-    for (int i = 0; i < io_num.n_output; i++)
-    {
-        output_attrs[i].index = i;
-        ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(output_attrs[i]), sizeof(rknn_tensor_attr));
-        if (ret != RKNN_SUCC)
-        {
-            // printf("rknn_query fail! ret=%d\n", ret);
-            return -1;
-        }
-        dump_tensor_attr(&(output_attrs[i]));
-    }
-
-    // Set to context
-    app_ctx->rknn_ctx = ctx;
-
-    // TODO
-    if (output_attrs[0].qnt_type == RKNN_TENSOR_QNT_AFFINE_ASYMMETRIC && output_attrs[0].type == RKNN_TENSOR_INT8)
-    {
-        app_ctx->is_quant = true;
-    }
-    else
-    {
-        app_ctx->is_quant = false;
-    }
-
+    // printf("YOLO model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
     app_ctx->io_num = io_num;
-    app_ctx->input_attrs = (rknn_tensor_attr *)malloc(io_num.n_input * sizeof(rknn_tensor_attr));
-    memcpy(app_ctx->input_attrs, input_attrs, io_num.n_input * sizeof(rknn_tensor_attr));
-    app_ctx->output_attrs = (rknn_tensor_attr *)malloc(io_num.n_output * sizeof(rknn_tensor_attr));
-    memcpy(app_ctx->output_attrs, output_attrs, io_num.n_output * sizeof(rknn_tensor_attr));
 
-    if (input_attrs[0].fmt == RKNN_TENSOR_NCHW)
-    {
-        printf("model is NCHW input fmt\n");
-        app_ctx->model_channel = input_attrs[0].dims[1];
-        app_ctx->model_height = input_attrs[0].dims[2];
-        app_ctx->model_width = input_attrs[0].dims[3];
+    // Query Input Attributes
+    // printf("YOLO input tensors:\n");
+    app_ctx->input_attrs = (rknn_tensor_attr *)malloc(io_num.n_input * sizeof(rknn_tensor_attr));
+    if (!app_ctx->input_attrs) { printf("ERROR: malloc fail for yolo input attrs\n"); rknn_destroy(ctx); return -1; }
+    memset(app_ctx->input_attrs, 0, io_num.n_input * sizeof(rknn_tensor_attr));
+    for (uint32_t i = 0; i < io_num.n_input; i++) {
+        app_ctx->input_attrs[i].index = i;
+        ret = rknn_query(ctx, RKNN_QUERY_INPUT_ATTR, &(app_ctx->input_attrs[i]), sizeof(rknn_tensor_attr));
+        if (ret != RKNN_SUCC) {
+            printf("ERROR: rknn_query(Input %d) for YOLO failed! ret=%d\n", i, ret);
+            free(app_ctx->input_attrs); // Free allocated memory
+            rknn_destroy(ctx);
+            return -1;
+        }
+        dump_tensor_attr(&(app_ctx->input_attrs[i]));
     }
-    else
-    {
-        printf("model is NHWC input fmt\n");
-        app_ctx->model_height = input_attrs[0].dims[1];
-        app_ctx->model_width = input_attrs[0].dims[2];
-        app_ctx->model_channel = input_attrs[0].dims[3];
+
+    // Query Output Attributes
+    // printf("YOLO output tensors:\n");
+    app_ctx->output_attrs = (rknn_tensor_attr *)malloc(io_num.n_output * sizeof(rknn_tensor_attr));
+    if (!app_ctx->output_attrs) { printf("ERROR: malloc fail for yolo output attrs\n"); free(app_ctx->input_attrs); rknn_destroy(ctx); return -1; }
+    memset(app_ctx->output_attrs, 0, io_num.n_output * sizeof(rknn_tensor_attr));
+    for (uint32_t i = 0; i < io_num.n_output; i++) {
+        app_ctx->output_attrs[i].index = i;
+        ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(app_ctx->output_attrs[i]), sizeof(rknn_tensor_attr));
+        if (ret != RKNN_SUCC) {
+            printf("ERROR: rknn_query(Output %d) for YOLO failed! ret=%d\n", i, ret);
+            free(app_ctx->output_attrs); // Free allocated memory
+            free(app_ctx->input_attrs);
+            rknn_destroy(ctx);
+            return -1;
+        }
+        dump_tensor_attr(&(app_ctx->output_attrs[i]));
     }
-    // printf("model input height=%d, width=%d, channel=%d\n",
+
+    // Determine quantization status (check output type and qnt_type)
+    // Adjust this logic based on your specific YOLO model's quantization details
+    if (app_ctx->output_attrs[0].qnt_type != RKNN_TENSOR_QNT_NONE &&
+        (app_ctx->output_attrs[0].type == RKNN_TENSOR_INT8 || app_ctx->output_attrs[0].type == RKNN_TENSOR_UINT8)) {
+        app_ctx->is_quant = true;
+        printf("INFO: YOLO model appears to be quantized (output 0 type: %s, qnt: %s)\n",
+               get_type_string(app_ctx->output_attrs[0].type),
+               get_qnt_type_string(app_ctx->output_attrs[0].qnt_type));
+    } else {
+        app_ctx->is_quant = false;
+         printf("INFO: YOLO model appears to be FP32/FP16 (output 0 type: %s, qnt: %s)\n",
+               get_type_string(app_ctx->output_attrs[0].type),
+               get_qnt_type_string(app_ctx->output_attrs[0].qnt_type));
+    }
+
+    // Determine input dimensions based on format
+    if (app_ctx->input_attrs[0].fmt == RKNN_TENSOR_NCHW) {
+        // printf("YOLO model is NCHW input fmt\n");
+        app_ctx->model_channel = app_ctx->input_attrs[0].dims[1];
+        app_ctx->model_height = app_ctx->input_attrs[0].dims[2];
+        app_ctx->model_width = app_ctx->input_attrs[0].dims[3];
+    } else { // Assume NHWC
+        // printf("YOLO model is NHWC input fmt\n");
+        app_ctx->model_height = app_ctx->input_attrs[0].dims[1];
+        app_ctx->model_width = app_ctx->input_attrs[0].dims[2];
+        app_ctx->model_channel = app_ctx->input_attrs[0].dims[3];
+    }
+    // printf("YOLO model input height=%d, width=%d, channel=%d\n",
     //        app_ctx->model_height, app_ctx->model_width, app_ctx->model_channel);
 
-    return 0;
+    return 0; // Success
 }
 
 int release_yolo11(yolo11_app_context_t *app_ctx) // <-- Renamed function and struct
