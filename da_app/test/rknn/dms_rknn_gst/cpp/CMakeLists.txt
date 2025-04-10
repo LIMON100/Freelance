@@ -155,6 +155,8 @@ pkg_search_module(GST_ALLOCATORS REQUIRED gstreamer-allocators-1.0)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty/ 3rdparty.out)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/ utils.out)
 
+add_definitions(-DZERO_COPY)
+
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
 # --- Select correct YOLO implementation based on SOC ---

@@ -46,13 +46,14 @@
 
 // #endif //_RKNN_DEMO_YOLO11_H_
 
+
 #ifndef _RKNN_DEMO_YOLO11_H_
 #define _RKNN_DEMO_YOLO11_H_
 
 #include "rknn_api.h"
 #include "common.h" // Make sure this includes letterbox_t
 
-// ... (rest of yolo11_app_context_t definition) ...
+// Context struct remains the same as your provided one
 typedef struct yolo11_app_context_t {
     rknn_context rknn_ctx;
     rknn_input_output_num io_num;
@@ -60,12 +61,12 @@ typedef struct yolo11_app_context_t {
     rknn_tensor_attr* output_attrs;
 #if defined(RV1106_1103)
     rknn_tensor_mem* input_mems[1];
-    rknn_tensor_mem* output_mems[9];
-    rknn_dma_buf img_dma_buf;
+    rknn_tensor_mem* output_mems[9]; // Assuming max 9 outputs
+    // rknn_dma_buf img_dma_buf; // Type 'rknn_dma_buf' might be specific, ensure defined if used
 #endif
-#if defined(ZERO_COPY) // Potentially keep zero-copy output for later
-    // rknn_tensor_mem* input_mems[1]; // We are removing zero-copy input for now
-    rknn_tensor_mem* output_mems[9];
+#if defined(ZERO_COPY) // Use Zero-Copy structures
+    rknn_tensor_mem* input_mems[1]; // Array for input mem handles
+    rknn_tensor_mem* output_mems[9]; // Array for output mem handles
     rknn_tensor_attr* input_native_attrs;
     rknn_tensor_attr* output_native_attrs;
 #endif
@@ -79,15 +80,16 @@ typedef struct yolo11_app_context_t {
 #include "postprocess.h" // Include YOLO postprocess header
 
 
-// *** RENAME functions for clarity ***
 int init_yolo11(const char* model_path, yolo11_app_context_t* app_ctx);
 
 int release_yolo11(yolo11_app_context_t* app_ctx);
 
-// *** MODIFIED Signature: Added letterbox argument ***
+// *** MODIFIED Signature: Removed img buffer, added scaling info ***
 int inference_yolo11(yolo11_app_context_t* app_ctx,
-                     image_buffer_t* img, // This is now the RGA-preprocessed buffer
                      object_detect_result_list* od_results,
-                     letterbox_t* letter_box); // Pass letterbox info
+                     float scale_w, // Scaling factor width used during preprocessing
+                     float scale_h, // Scaling factor height used during preprocessing
+                     int offset_x,  // X offset of the crop in original image
+                     int offset_y); // Y offset of the crop in original image
 
 #endif //_RKNN_DEMO_YOLO11_H_

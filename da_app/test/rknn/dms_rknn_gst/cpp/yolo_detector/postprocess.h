@@ -37,7 +37,8 @@
 // #endif //_RKNN_YOLO11_DEMO_POSTPROCESS_H_
 
 
-// File: yolo_detector/postprocess.h
+
+
 #ifndef _RKNN_YOLO11_DEMO_POSTPROCESS_H_
 #define _RKNN_YOLO11_DEMO_POSTPROCESS_H_
 
@@ -45,20 +46,16 @@
 #include <vector>
 #include "rknn_api.h"
 #include "common.h"
-#include "image_utils.h" // Keep if needed elsewhere
-
-// Keep definitions for yolo11_app_context_t forward declaration needed
-// Or include yolo11.h if postprocess.h is used independently
-// Forward declaration is generally safer if yolo11.h includes postprocess.h
-struct yolo11_app_context_t; // Forward declaration
+#include "image_utils.h"
+#include "yolo11.h" // Include yolo11 header to get yolo11_app_context_t
 
 #define OBJ_NAME_MAX_SIZE 64
 #define OBJ_NUMB_MAX_SIZE 128
-#define OBJ_CLASS_NUM 4 // Make sure this matches your model
+#define OBJ_CLASS_NUM 4 // Make sure this matches your custom_class.txt
 #define NMS_THRESH 0.5
 #define BOX_THRESH 0.6
 
-// Struct definitions remain the same
+// Structs remain the same
 typedef struct {
     image_rect_t box;
     float prop;
@@ -71,21 +68,21 @@ typedef struct {
     object_detect_result results[OBJ_NUMB_MAX_SIZE];
 } object_detect_result_list;
 
-// Function declarations
 int init_post_process();
 void deinit_post_process();
+char *coco_cls_to_name(int cls_id);
 
-// *** FIX: Change return type to const char* ***
-const char *coco_cls_to_name(int cls_id);
-
-// Signature remains the same, caller passes rknn_tensor_mem** as void*
+// *** MODIFIED Signature: Removed letter_box, added scaling info ***
 int post_process(yolo11_app_context_t *app_ctx,
-                 void *outputs, // Keep as void* for flexibility
-                 letterbox_t *letter_box, // Keep or remove based on final implementation
-                 float conf_threshold, float nms_threshold,
+                 void *outputs, // Still void* to handle rknn_output or rknn_tensor_mem**
+                 float scale_w, // Scaling factor width used during preprocessing
+                 float scale_h, // Scaling factor height used during preprocessing
+                 int offset_x,  // X offset of the crop in original image
+                 int offset_y,  // Y offset of the crop in original image
+                 float conf_threshold,
+                 float nms_threshold,
                  object_detect_result_list *od_results);
 
-// Remove redundant declaration if present:
-// void deinitPostProcess();
+// void deinitPostProcess(); // Duplicate? Use deinit_post_process()
 
 #endif //_RKNN_YOLO11_DEMO_POSTPROCESS_H_
