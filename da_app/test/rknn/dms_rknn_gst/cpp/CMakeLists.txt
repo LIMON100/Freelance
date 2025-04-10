@@ -149,10 +149,13 @@ pkg_search_module(GST_GL REQUIRED gstreamer-gl-1.0)
 pkg_search_module(GST_GL_EGL REQUIRED gstreamer-gl-egl-1.0)
 pkg_search_module(GST_APP REQUIRED gstreamer-app-1.0) # Added for appsink
 pkg_search_module(CV REQUIRED opencv4)
+pkg_search_module(GST_ALLOCATORS REQUIRED gstreamer-allocators-1.0)
 
 # --- Use relative paths from the OLD CMakeLists ---
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty/ 3rdparty.out)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/ utils.out)
+
+add_definitions(-DZERO_COPY)
 
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
@@ -199,6 +202,7 @@ target_link_libraries(${PROJECT_NAME}
     ${GST_APP_LIBRARIES}  # Added for appsink
     ${GST_GL_EGL_LIBRARIES}
     ${CV_LIBRARIES}
+    ${GST_ALLOCATORS_LIBRARIES}
 )
 
 # Platform-specific libraries
@@ -224,6 +228,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${GST_GL_EGL_INCLUDE_DIRS}  # GStreamer GL EGL include dirs
     ${CV_INCLUDE_DIRS}          # OpenCV include dirs
     ${EIGEN3_INCLUDE_DIRS}      # Eigen include path
+    ${GST_ALLOCATORS_INCLUDE_DIRS}
 )
 
 # --- Install Rules ---
