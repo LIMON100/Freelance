@@ -59,3 +59,91 @@ private:
 };
 
 #endif // YAWNDETECTOR_HPP
+
+
+
+
+
+
+
+
+
+// // YawnDetector.hpp
+// #ifndef YAWNDETECTOR_HPP
+// #define YAWNDETECTOR_HPP
+
+// #include <iostream>
+// #include <vector>
+// #include <map>
+// #include <deque>
+// #include <chrono>
+// #include <opencv2/opencv.hpp>
+
+// class YawnDetector {
+// public:
+//     YawnDetector();
+
+//     // ... (YawnMetrics struct as before) ...
+//     struct YawnMetrics {
+//         bool isYawning;
+//         double yawnCount;
+//         double yawnFrequency;
+//         double yawnDuration;
+//         int yawnKSS;
+//     };
+
+
+//     YawnMetrics run(const std::vector<cv::Point>& faceLandmarks, int frame_width, int frame_height);
+
+//     // --- New Calibration Method ---
+//     void calibrate(const std::vector<cv::Point>& faceLandmarks, int frame_width, int frame_height);
+//     bool isCalibrated() const { return is_calibrated; }
+//     // --- End New Calibration Method ---
+
+
+// private:
+//     // ... (other private methods as before) ...
+//      int calculateYawnKSS();
+//      double calculatePixelDistance(cv::Point landmark1, cv::Point landmark2, int frame_width, int frame_height);
+//      double calculateYawnFrequency(double current_time_seconds);
+
+// private:
+//     // Constants
+//     const int MOUTH_TOP;
+//     const int MOUTH_BOTTOM;
+//     // Make threshold non-const so it can be adapted
+//     double YAWN_THRESHOLD;
+//     // Threshold factors/offsets (examples, tune these)
+//     const double YAWN_THRESHOLD_FACTOR = 1.8; // e.g., Yawn if opening > 1.8 * baseline
+//     const double YAWN_THRESHOLD_OFFSET = 15.0; // e.g., Yawn if opening > baseline + 15 pixels
+//     const double MIN_YAWN_THRESHOLD = 35.0; // Don't let threshold go below this absolute minimum
+//     // Other constants
+//     const double MIN_YAWN_DURATION;
+//     const double YAWN_COOLDOWN;
+//     const double RESET_INTERVAL_SECONDS;
+
+//     // --- New Calibration Members ---
+//     std::deque<double> calibration_mouth_distances;
+//     int calibration_samples_collected;
+//     const int required_calibration_samples;
+//     double baseline_mouth_opening;
+//     bool is_calibrated;
+//     // --- End New Calibration Members ---
+
+
+//     // ... (other private members as before) ...
+//     std::deque<double> yawn_timestamps;
+//     double totalYawnCount;
+//     bool is_yawning_now;
+//     time_t yawn_start_time;
+//     double last_yawn_time;
+//     int yawn_kss;
+//     double yawn_frequency;
+//     double last_yawn_duration;
+//     bool processing_detected_yawn;
+//     double last_reset_time_seconds;
+//     int frames_below_threshold;
+//     const int FRAMES_HYSTERESIS;
+// };
+
+// #endif // YAWNDETECTOR_HPP

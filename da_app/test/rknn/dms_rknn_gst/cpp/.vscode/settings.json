@@ -1,6 +1,6 @@
 {
     "files.associations": {
-        "thread": "cpp",
+        "ratio": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -43,7 +43,6 @@
         "numeric": "cpp",
         "optional": "cpp",
         "random": "cpp",
-        "ratio": "cpp",
         "string_view": "cpp",
         "system_error": "cpp",
         "tuple": "cpp",
@@ -67,6 +66,7 @@
         "stdexcept": "cpp",
         "stop_token": "cpp",
         "streambuf": "cpp",
+        "thread": "cpp",
         "cfenv": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
