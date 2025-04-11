@@ -2,15 +2,17 @@
 #include <algorithm>
 #include <vector>
 #include <cmath>
-#include <iostream> 
-#include <set>   
+#include <iostream>
+#include <set>
+#include <chrono> // Need this for getting current time
 
+// Constructor remains the same
 KSSCalculator::KSSCalculator() :
     blinkKSS(1),
     blinkCountKSS(1),
-    headPoseKSS(1),
+    headPoseKSS(1), // Initialize headPoseKSS
     yawnKSS(1),
-    objectDetectionKSS(0), 
+    objectDetectionKSS(0),
     perclos(0.0),
     blinksLastMinute(0),
     isYawning(false),
@@ -18,26 +20,12 @@ KSSCalculator::KSSCalculator() :
     yawnDuration(0.0)
     {}
 
-void KSSCalculator::setPerclos(double perclos) {
-    this->perclos = perclos;
-}
-
-void KSSCalculator::setHeadPose(int headPoseKSS) {
-    this->headPoseKSS = std::max(1, headPoseKSS);
-}
-
-void KSSCalculator::setYawnMetrics(bool isYawning, double yawnFrequency, double yawnDuration) {
-    this->isYawning = isYawning;
-    this->yawnFrequency = yawnFrequency;
-    this->yawnDuration = yawnDuration;
-}
-
-void KSSCalculator::setBlinksLastMinute(int count) {
-    this->blinksLastMinute = count;
-}
-
-
-void KSSCalculator::setDetectedObjects(const std::vector<std::string>& currentFrameObjects, double currentTimeSeconds) {
+// Setters remain the same
+void KSSCalculator::setPerclos(double perclos) { this->perclos = perclos; }
+void KSSCalculator::setHeadPose(int headPoseKSS) { this->headPoseKSS = std::max(1, headPoseKSS); }
+void KSSCalculator::setYawnMetrics(bool isYawning, double yawnFrequency, double yawnDuration) { this->isYawning = isYawning; this->yawnFrequency = yawnFrequency; this->yawnDuration = yawnDuration; }
+void KSSCalculator::setBlinksLastMinute(int count) { this->blinksLastMinute = count; }
+void KSSCalculator::setDetectedObjects(const std::vector<std::string>& currentFrameObjects, double currentTimeSeconds) { /* ... implementation remains the same ... */
     // Use a set for efficient lookup of objects detected in *this* frame
     std::set<std::string> detectedSet(currentFrameObjects.begin(), currentFrameObjects.end());
 
@@ -118,7 +106,6 @@ void KSSCalculator::setDetectedObjects(const std::vector<std::string>& currentFr
     while (!smokeEvents.empty() && smokeEvents.front().timestamp < cleanupThreshold) smokeEvents.pop_front();
 }
 
-
 // --- Helper to count events ---
 int KSSCalculator::countEventsInWindow(const std::deque<ObjectEvent>& eventQueue, double windowSeconds, double currentTimeSeconds, int minDurationLevel) {
     int count = 0;
@@ -135,37 +122,50 @@ int KSSCalculator::countEventsInWindow(const std::deque<ObjectEvent>& eventQueue
 }
 
 
-int KSSCalculator::calculateCompositeKSS() {
-    // Get current time once for consistency within this calculation cycle
+// **** MODIFIED IMPLEMENTATION ****
+std::vector<std::vector<std::string>> KSSCalculator::calculateCompositeKSS() {
+    // Get current time once for consistency
     double now = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
 
+    // Calculate individual components (store in member variables as before)
     blinkKSS = calculateBlinkKSS();
     blinkCountKSS = calculateBlinkCountKSS();
     yawnKSS = calculateYawnKSS();
-    objectDetectionKSS = calculateObjectDetectionKSS(now); // Pass current time
+    objectDetectionKSS = calculateObjectDetectionKSS(now);
+    // headPoseKSS is assumed to be already set via setHeadPose()
 
-    // Debug output (optional)
-    // std::cout << "KSS Breakdown: PERCLOS=" << blinkKSS
-    //           << ", BlinkCount=" << blinkCountKSS
-    //           << ", HeadPose=" << headPoseKSS
-    //           << ", Yawn=" << yawnKSS
-    //           << ", Object=" << objectDetectionKSS << std::endl;
+    // Calculate the total score
+    // int totalKSS = blinkKSS + blinkCountKSS + headPoseKSS + yawnKSS + objectDetectionKSS;
+    int totalKSS = blinkKSS + headPoseKSS + yawnKSS + objectDetectionKSS;
 
-    return blinkKSS + blinkCountKSS + headPoseKSS + yawnKSS + objectDetectionKSS;
+    // Create the result vector
+    std::vector<std::vector<std::string>> kssBreakdown;
+
+    // Populate the vector
+    kssBreakdown.push_back({"PERCLOS KSS", std::to_string(blinkKSS)});
+    kssBreakdown.push_back({"Blink Count KSS", std::to_string(blinkCountKSS)});
+    kssBreakdown.push_back({"Head Pose KSS", std::to_string(headPoseKSS)});
+    kssBreakdown.push_back({"Yawn KSS", std::to_string(yawnKSS)});
+    kssBreakdown.push_back({"Object KSS", std::to_string(objectDetectionKSS)});
+    kssBreakdown.push_back({"Composite KSS", std::to_string(totalKSS)}); // Add the total
+
+    return kssBreakdown;
 }
+// **** END MODIFIED IMPLEMENTATION ****
 
 
+// Individual calculation functions remain the same
 int KSSCalculator::calculateBlinkKSS() {
     // Based on PERCLOS
     if (perclos < 5.0) {
         return 0;
-    }else if (perclos > 5.0 && perclos < 10.0) { // Use 10.0 for double comparison
+    }else if (perclos >= 5.0 && perclos < 10.0) { // Use >= for start of range
         return 1;
-    } else if (perclos > 10.0 && perclos <= 20.0) {
+    } else if (perclos >= 10.0 && perclos <= 20.0) {
         return 4;
     } else if (perclos > 20.0 && perclos <= 30.0) {
         return 7;
-    } else { // perclos > 30.0
+    } else if (perclos > 35.0){
         return 9;
     }
 }
@@ -173,11 +173,11 @@ int KSSCalculator::calculateBlinkKSS() {
 int KSSCalculator::calculateBlinkCountKSS() {
     if (blinksLastMinute > 30) {
         return 7;
-    } 
+    }
     else if (blinksLastMinute > 20 && blinksLastMinute <= 30) {
         return 4;
-    } 
-    else{
+    }
+    else {
         return 1;
     }
 }
@@ -195,6 +195,7 @@ int KSSCalculator::calculateYawnKSS() {
         return 9;
     }
 }
+
 
 int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
     int mobileKSS = 0;
@@ -246,6 +247,8 @@ int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
     return finalObjectKSS; // Return the calculated & potentially mapped score
 }
 
+
+// getKSSAlertStatus remains the same
 std::string KSSCalculator::getKSSAlertStatus(int kss) {
     if (kss <= 3) {
         return ""; // No alert text for low risk

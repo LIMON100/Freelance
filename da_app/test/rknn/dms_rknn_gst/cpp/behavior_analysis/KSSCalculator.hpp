@@ -1,10 +1,11 @@
-#ifndef KSSCALCULATOR_H
-#define KSSCALCULATOR_H
+// KSSCalculator.hpp
+#ifndef KSSCALCULATOR_HPP
+#define KSSCALCULATOR_HPP
 
 #include <string>
 #include <vector>
-#include <deque>  // <-- Include deque
-#include <chrono> // <-- Include chrono for time
+#include <deque>  // <-- Ensure deque is included if needed by ObjectEvent
+#include <chrono> // <-- Ensure chrono is included if needed by ObjectEvent
 
 class KSSCalculator {
 public:
@@ -12,15 +13,16 @@ public:
 
     // Setters for input factors
     void setPerclos(double perclos);
-    void setHeadPose(int headPoseKSS);
+    void setHeadPose(int headPoseKSS); // Setter remains the same
     void setYawnMetrics(bool isYawning, double yawnFrequency, double yawnDuration);
     void setDetectedObjects(const std::vector<std::string>& currentFrameObjects, double currentTimeSeconds);
     void setBlinksLastMinute(int count);
 
-    // Calculate the composite KSS score
-    int calculateCompositeKSS();
+    // **** MODIFIED RETURN TYPE ****
+    // Calculate the composite KSS score and return detailed breakdown
+    std::vector<std::vector<std::string>> calculateCompositeKSS();
 
-    // Get KSS alert status string
+    // Get KSS alert status string (remains the same)
     std::string getKSSAlertStatus(int compositeKSS);
 
 private:
@@ -43,7 +45,6 @@ private:
     int calculateBlinkCountKSS();
     int calculateYawnKSS();
     int calculateObjectDetectionKSS(double currentTimeSeconds); // *** MODIFIED: Needs current time
-    // Head Pose KSS is set directly
 
     // --- Event Tracking ---
     struct ObjectEvent {
@@ -72,14 +73,14 @@ private:
     // --- Helper to count events in a window ---
     int countEventsInWindow(const std::deque<ObjectEvent>& eventQueue, double windowSeconds, double currentTimeSeconds, int minDurationLevel = 1);
 
-    // Individual KSS scores
+    // Individual KSS scores (keep as member variables if needed internally)
     int blinkKSS;
     int blinkCountKSS;
-    int headPoseKSS;
+    int headPoseKSS; // Still set externally via setter
     int yawnKSS;
     int objectDetectionKSS;
 
-    // Input factors (blinksLastMinute needed for its own KSS)
+    // Input factors
     double perclos;
     int blinksLastMinute;
     bool isYawning;
@@ -88,4 +89,4 @@ private:
     // No longer need to store detectedObjects list here
 };
 
-#endif // KSSCALCULATOR_H
+#endif // KSSCALCULATOR_HPP
