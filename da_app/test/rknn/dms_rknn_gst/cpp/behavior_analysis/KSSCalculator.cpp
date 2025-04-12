@@ -10,7 +10,7 @@
 KSSCalculator::KSSCalculator() :
     blinkKSS(1),
     blinkCountKSS(1),
-    headPoseKSS(1), // Initialize headPoseKSS
+    headPoseKSS(1),
     yawnKSS(1),
     objectDetectionKSS(0),
     perclos(0.0),
@@ -163,9 +163,9 @@ int KSSCalculator::calculateBlinkKSS() {
         return 1;
     } else if (perclos >= 10.0 && perclos <= 20.0) {
         return 4;
-    } else if (perclos > 20.0 && perclos <= 30.0) {
+    } else if (perclos > 25.0 && perclos <= 35.0) {
         return 7;
-    } else if (perclos > 35.0){
+    } else if (perclos > 35.0){ // perclos > 30.0
         return 9;
     }
 }
@@ -177,24 +177,43 @@ int KSSCalculator::calculateBlinkCountKSS() {
     else if (blinksLastMinute > 20 && blinksLastMinute <= 30) {
         return 4;
     }
-    else {
+    else if (blinksLastMinute > 10 && blinksLastMinute <= 20) {
         return 1;
+    }
+    else{
+        return 0;
     }
 }
 
+
+// int KSSCalculator::calculateYawnKSS() {
+//     if (yawnFrequency < 1.0) {
+//         return 0;
+//     } else if (yawnFrequency > 1.0 && yawnFrequency < 3.0) {
+//         return 1;
+//     }else if (yawnFrequency > 3.0 && yawnFrequency < 5.0) {
+//         return 4;
+//     } else if (yawnFrequency > 5.0 && yawnFrequency < 7.0) {
+//         return 7;
+//     } else if(yawnFrequency >= 7.0) { 
+//         return 9;
+//     }
+// }
 
 int KSSCalculator::calculateYawnKSS() {
-    // Based on yawn frequency (valid yawns in last 60s)
-    if (yawnFrequency < 3.0) {
-        return 1;
-    } else if (yawnFrequency < 5.0) {
-        return 4;
-    } else if (yawnFrequency < 7.0) {
-        return 7;
-    } else { // yawnFrequency >= 7.0
+    if (yawnFrequency > 7.0) {
         return 9;
+    } else if (yawnFrequency > 5.0) {
+        return 7;
+    } else if (yawnFrequency > 3.0) {
+        return 4;
+    } else if (yawnFrequency > 1.0) {
+        return 1;
+    } else {
+        return 0;
     }
 }
+
 
 
 int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
