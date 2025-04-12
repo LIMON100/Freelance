@@ -29,11 +29,6 @@ bool HeadPoseTracker::isNearPerfectAxes(const Eigen::Matrix3f& computedAxes, flo
                         std::abs(norm_y - 1.0f) < tolerance &&
                         std::abs(norm_z - 1.0f) < tolerance;
 
-    // if (!isOrthogonal || !isUnitLength) {
-    //     std::cout << "isNearPerfectAxes failed:\n";
-    //     std::cout << "dot_xy: " << dot_xy << ", dot_yz: " << dot_yz << ", dot_zx: " << dot_zx << "\n";
-    //     std::cout << "norm_x: " << norm_x << ", norm_y: " << norm_y << ", norm_z: " << norm_z << "\n";
-    // }
 
     return isOrthogonal && isUnitLength;
 }
