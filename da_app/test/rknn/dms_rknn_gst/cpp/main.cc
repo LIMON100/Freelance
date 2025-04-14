@@ -144,14 +144,14 @@ int main(int argc, char **argv) {
     double currentCpuUsage = 0.0; long prevIdleTime = 0, prevTotalTime = 0; double currentTemp = 0.0;
 
     // Model paths 
-    const char *detection_model_path = "../../model/faceD.rknn";
+    const char *detection_model_path = "../../model/rf.rknn";
     const char *landmark_model_path  = "../../model/faceL.rknn";
     const char *iris_model_path      = "../../model/faceI.rknn";
     const char *yolo_model_path      = "../../model/od.rknn";
 
     // GStreamer input pipeline string 
-    // const char *video_source = "filesrc location=../../model/ADG_R_dms.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
-    const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
+    const char *video_source = "filesrc location=../../model/ADG_R_dms.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    // const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
 
     // --- Initialization 
@@ -201,7 +201,11 @@ int main(int argc, char **argv) {
 
     // --- Init models 
     ret = init_post_process(); if (ret != 0) { printf("Error init YOLO postprocess.\n"); return -1; }
-    ret = init_face_analyzer(detection_model_path, landmark_model_path, iris_model_path, &app_ctx.face_ctx); if (ret != 0) { printf("init_face_analyzer fail! ret=%d\n", ret); deinit_post_process(); return -1; }
+
+    // ret = init_face_analyzer(detection_model_path, landmark_model_path, iris_model_path, &app_ctx.face_ctx); 
+    ret = init_face_analyzer(detection_model_path, landmark_model_path, iris_model_path, &app_ctx.face_ctx);
+    
+    if (ret != 0) { printf("init_face_analyzer fail! ret=%d\n", ret); deinit_post_process(); return -1; }
     ret = init_yolo11(yolo_model_path, &app_ctx.yolo_ctx); if (ret != 0) { printf("init_yolo11 fail! ret=%d\n", ret); release_face_analyzer(&app_ctx.face_ctx); deinit_post_process(); return -1; }
     yolo_worker_thread = std::thread(yolo_worker_thread_func, &app_ctx.yolo_ctx);
 
@@ -236,6 +240,7 @@ int main(int argc, char **argv) {
         src_image.virt_addr = map_info.data; src_image.size = map_info.size; src_image.fd = -1;
 
         // --- Run Face Analysis (Always needed) ---
+        // ret = inference_face_analyzer(&app_ctx.face_ctx, &src_image, &face_results);
         ret = inference_face_analyzer(&app_ctx.face_ctx, &src_image, &face_results);
         // Handle face analysis error if necessary
 

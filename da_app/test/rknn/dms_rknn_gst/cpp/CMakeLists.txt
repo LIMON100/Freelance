@@ -155,7 +155,7 @@ pkg_search_module(GST_ALLOCATORS REQUIRED gstreamer-allocators-1.0)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty/ 3rdparty.out)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/ utils.out)
 
-add_definitions(-DZERO_COPY)
+# add_definitions(-DZERO_COPY)
 
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
@@ -235,7 +235,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/test.jpg ${CMAKE_CURRENT_SOURCE_DIR}/../model/5.jpg DESTINATION model)
 install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceD.rknn
+    ${CMAKE_CURRENT_SOURCE_DIR}/../model/rf.rknn
+    # ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceD.rknn
     ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceL.rknn
     ${CMAKE_CURRENT_SOURCE_DIR}/../model/faceI.rknn
     ${CMAKE_CURRENT_SOURCE_DIR}/../model/od.rknn
