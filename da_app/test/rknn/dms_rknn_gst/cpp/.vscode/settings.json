@@ -1,6 +1,5 @@
 {
     "files.associations": {
-        "ratio": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -43,6 +42,7 @@
         "numeric": "cpp",
         "optional": "cpp",
         "random": "cpp",
+        "ratio": "cpp",
         "string_view": "cpp",
         "system_error": "cpp",
         "tuple": "cpp",
