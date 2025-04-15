@@ -144,14 +144,14 @@ int main(int argc, char **argv) {
     double currentCpuUsage = 0.0; long prevIdleTime = 0, prevTotalTime = 0; double currentTemp = 0.0;
 
     // Model paths 
-    const char *detection_model_path = "../../model/rf.rknn";
+    const char *detection_model_path = "../../model/faceD.rknn";
     const char *landmark_model_path  = "../../model/faceL.rknn";
     const char *iris_model_path      = "../../model/faceI.rknn";
     const char *yolo_model_path      = "../../model/od.rknn";
 
     // GStreamer input pipeline string 
-    const char *video_source = "filesrc location=../../model/ADG_R_dms.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
-    // const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
+    // const char *video_source = "filesrc location=../../model/drowsy.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    const char *video_source = "v4l2src device=/dev/video1 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
 
     // --- Initialization 
