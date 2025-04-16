@@ -144,14 +144,15 @@ int main(int argc, char **argv) {
     double currentCpuUsage = 0.0; long prevIdleTime = 0, prevTotalTime = 0; double currentTemp = 0.0;
 
     // Model paths 
-    const char *detection_model_path = "../../model/faceD.rknn";
+    // const char *detection_model_path = "../../model/faceD.rknn";
+    const char *detection_model_path = "../../model/rf.rknn";
     const char *landmark_model_path  = "../../model/faceL.rknn";
     const char *iris_model_path      = "../../model/faceI.rknn";
     const char *yolo_model_path      = "../../model/od.rknn";
 
     // GStreamer input pipeline string 
-    // const char *video_source = "filesrc location=../../model/drowsy.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
-    const char *video_source = "v4l2src device=/dev/video1 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
+    const char *video_source = "filesrc location=../../model/using_phone.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    // const char *video_source = "v4l2src device=/dev/video1 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
 
     // --- Initialization 
@@ -282,6 +283,53 @@ int main(int argc, char **argv) {
                 blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height);
                 yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height);
 
+                // +++++++++++++++ START INSERTED CODE +++++++++++++++
+                // Draw Landmarks for all detected faces (after calibration)
+                for (int face_idx = 0; face_idx < face_results.count; ++face_idx) {
+                    face_object_t *current_display_face = &face_results.faces[face_idx];
+                    if (current_display_face->face_landmarks_valid) {
+                            // Draw bounding box (Green for consistency)
+                            draw_rectangle(&src_image, current_display_face->box.left, current_display_face->box.top,
+                                            current_display_face->box.right - current_display_face->box.left,
+                                            current_display_face->box.bottom - current_display_face->box.top,
+                                            COLOR_GREEN, 2);
+
+                        // Draw Face Landmarks (468 points) - Yellow
+                        for (int j = 0; j < NUM_FACE_LANDMARKS; ++j) {
+                            draw_circle(&src_image,
+                                        current_display_face->face_landmarks[j].x,
+                                        current_display_face->face_landmarks[j].y,
+                                        1,              // radius
+                                        COLOR_YELLOW,   // color
+                                        1);             // thickness
+                        }
+
+                        // Optionally draw Eye Contour and Iris Landmarks
+                        if (current_display_face->eye_landmarks_left_valid) {
+                            for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; ++j) {
+                                draw_circle(&src_image, current_display_face->eye_landmarks_left[j].x, current_display_face->eye_landmarks_left[j].y, 1, COLOR_BLUE, 1);
+                            }
+                        }
+                        if (current_display_face->iris_landmarks_left_valid) {
+                            for (int j = 0; j < NUM_IRIS_LANDMARKS; ++j) {
+                                draw_circle(&src_image, current_display_face->iris_landmarks_left[j].x, current_display_face->iris_landmarks_left[j].y, 1, COLOR_ORANGE, 1);
+                            }
+                        }
+                        if (current_display_face->eye_landmarks_right_valid) {
+                            for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; ++j) {
+                                draw_circle(&src_image, current_display_face->eye_landmarks_right[j].x, current_display_face->eye_landmarks_right[j].y, 1, COLOR_BLUE, 1);
+                            }
+                        }
+                        if (current_display_face->iris_landmarks_right_valid) {
+                            for (int j = 0; j < NUM_IRIS_LANDMARKS; ++j) {
+                                draw_circle(&src_image, current_display_face->iris_landmarks_right[j].x, current_display_face->iris_landmarks_right[j].y, 1, COLOR_ORANGE, 1);
+                            }
+                        }
+                    }
+                }
+                // +++++++++++++++ END INSERTED CODE +++++++++++++++
+
+
                 // --- Set KSS inputs ---
                 kssCalculator.setPerclos(blinkDetector.getPerclos());
                 int headPoseKSSValue = 1;
@@ -298,6 +346,40 @@ int main(int argc, char **argv) {
                 auto kssBreakdownResults = kssCalculator.calculateCompositeKSS();
                 if (kssBreakdownResults.size() > 5 && kssBreakdownResults[5].size() == 2) { try { perclosKSS = std::stoi(kssBreakdownResults[0][1]); blinkKSS = std::stoi(kssBreakdownResults[1][1]); headposeKSS = std::stoi(kssBreakdownResults[2][1]); yawnKSS = std::stoi(kssBreakdownResults[3][1]); objdectdetectionKSS = std::stoi(kssBreakdownResults[4][1]); extractedTotalKSS = std::stoi(kssBreakdownResults[5][1]); } catch (...) { extractedTotalKSS = 1; } } else { extractedTotalKSS = 1; }
                 kssStatus = kssCalculator.getKSSAlertStatus(extractedTotalKSS);
+                
+
+                // EYE TRACKING 
+
+                const int LEFT_EYE_TEXT_ANCHOR_IDX = 33;  // Left outer corner
+                const int RIGHT_EYE_TEXT_ANCHOR_IDX = 263; // Right outer corner
+
+                if (face->face_landmarks_valid) { // Check if landmarks are valid before accessing
+                    // Left Eye Status
+                    if (LEFT_EYE_TEXT_ANCHOR_IDX < NUM_FACE_LANDMARKS) {
+                        point_t left_anchor = face->face_landmarks[LEFT_EYE_TEXT_ANCHOR_IDX];
+                        std::string left_status = blinkDetector.isLeftEyeClosed() ? "CLOSED" : "OPEN";
+                        unsigned int left_color = blinkDetector.isLeftEyeClosed() ? COLOR_RED : COLOR_GREEN;
+                        // Position text above the anchor point
+                        draw_text(&src_image, left_status.c_str(), left_anchor.x - 30, left_anchor.y - 25, left_color, 14);
+                        // Optionally draw the EAR value too
+                        text_stream.str(""); text_stream << "L:" << std::fixed << std::setprecision(2) << blinkDetector.getLeftEARValue();
+                        draw_text(&src_image, text_stream.str().c_str(), left_anchor.x - 30, left_anchor.y - 10, COLOR_WHITE, 10);
+                    }
+
+                    // Right Eye Status
+                    if (RIGHT_EYE_TEXT_ANCHOR_IDX < NUM_FACE_LANDMARKS) {
+                        point_t right_anchor = face->face_landmarks[RIGHT_EYE_TEXT_ANCHOR_IDX];
+                        std::string right_status = blinkDetector.isRightEyeClosed() ? "CLOSED" : "OPEN";
+                        unsigned int right_color = blinkDetector.isRightEyeClosed() ? COLOR_RED : COLOR_GREEN;
+                        // Position text above the anchor point
+                        draw_text(&src_image, right_status.c_str(), right_anchor.x - 30, right_anchor.y - 25, right_color, 14);
+                         // Optionally draw the EAR value too
+                        text_stream.str(""); text_stream << "R:" << std::fixed << std::setprecision(2) << blinkDetector.getRightEARValue();
+                        draw_text(&src_image, text_stream.str().c_str(), right_anchor.x - 30, right_anchor.y - 10, COLOR_WHITE, 10);
+                    }
+                }
+
+                // END HERE
                 
 
             }

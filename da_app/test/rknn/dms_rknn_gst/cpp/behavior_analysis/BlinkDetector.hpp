@@ -21,7 +21,7 @@ public:
         RIGHT_EYE_POINTS({ 362, 385, 387, 263, 380, 373 }),
         // ++ Define separate thresholds ++
         left_ear_threshold(0.20),  // Default/observed threshold for left eye
-        right_ear_threshold(0.42), // Observed threshold for right eye (adjust based on testing!)
+        right_ear_threshold(0.40), // Observed threshold for right eye (adjust based on testing!)
         blink_rate(0.0),
         last_blink_time(0.0)
     {
