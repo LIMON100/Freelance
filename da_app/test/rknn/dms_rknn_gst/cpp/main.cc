@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
     const char *yolo_model_path      = "../../model/od.rknn";
 
     // GStreamer input pipeline string 
-    const char *video_source = "filesrc location=../../model/using_phone.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    const char *video_source = "filesrc location=../../model/drowsy.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
     // const char *video_source = "v4l2src device=/dev/video1 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
 
