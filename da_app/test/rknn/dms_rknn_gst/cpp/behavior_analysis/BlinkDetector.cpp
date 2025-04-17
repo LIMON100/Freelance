@@ -35,8 +35,8 @@ void my::BlinkDetector::run(const std::vector<cv::Point>& faceLandmarks, int fra
     isRightEyeClosedFlag = isEyeClosed(rightEAR, right_ear_threshold);
 
     // Determine combined eye closure state using OR logic
-    bool areEyesClosedNow = isLeftEyeClosedFlag || isRightEyeClosedFlag;
-    // bool areEyesClosedNow = isLeftEyeClosedFlag && isRightEyeClosedFlag;
+    // bool areEyesClosedNow = isLeftEyeClosedFlag || isRightEyeClosedFlag;
+    bool areEyesClosedNow = isLeftEyeClosedFlag && isRightEyeClosedFlag;
 
     // --- Blink Detection Logic (using combined state - remains the same) ---
     if (areEyesClosedNow) {

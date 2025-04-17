@@ -1501,9 +1501,20 @@
 // Option 1: Try Symmetric Scaling first
 #define BOX_SCALE_X 1.6f // Increased slightly from 1.5
 #define BOX_SCALE_Y 1.6f // Make Y symmetric with X
-// Option 2: Keep Asymmetric but potentially adjust Y
-// #define BOX_SCALE_X 1.5f
-// #define BOX_SCALE_Y 1.8f // Increase Y scale further?
+
+
+// *** Landmark Crop Scaling (Use SYMMETRIC Scaling) ***
+#define LANDMARK_CROP_SCALE 1.6f // Symmetric scale factor (Tune this: 1.5 - 1.8)
+
+// *** RetinaFace Box Adjustment Factors (TUNE THESE) ***
+// How much to reduce the height of the RetinaFace box, as a fraction (0.0 to ~0.3)
+#define BOX_HEIGHT_REDUCTION_FACTOR 0.15f
+// How much of the height reduction applies to the top (0.0 to 1.0)
+// 0.5 = reduce top and bottom equally
+// 1.0 = reduce only from the top (move top boundary down)
+// 0.0 = reduce only from the bottom (move bottom boundary up)
+#define BOX_TOP_SHIFT_FACTOR 0.75f // Try values between 0.5 and 1.0 first
+
 
 // *** Iris Crop Scaling (Keep default for now) ***
 #define EYE_CROP_SCALE 1.8f
