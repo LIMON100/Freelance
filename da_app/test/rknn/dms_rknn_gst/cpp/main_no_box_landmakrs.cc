@@ -220,15 +220,14 @@ int main(int argc, char **argv) {
     double currentCpuUsage = 0.0; long prevIdleTime = 0, prevTotalTime = 0; double currentTemp = 0.0;
 
     // --- Model paths ---
-    const char *detection_model_path = "../../model/faceD.rknn";
-    // const char *detection_model_path = "../../model/rf.rknn";
+    const char *detection_model_path = "../../model/rf.rknn";
     const char *landmark_model_path  = "../../model/faceL.rknn";
     const char *iris_model_path      = "../../model/faceI.rknn";
     const char *yolo_model_path      = "../../model/od.rknn";
 
     // --- GStreamer input pipeline string ---
-    const char *video_source = "filesrc location=../../model/ADG_R_dms.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
-    // const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
+    // const char *video_source = "filesrc location=../../model/2.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
     // --- Initialization ---
     setupPipeline();
@@ -453,80 +452,6 @@ int main(int argc, char **argv) {
 
             } // End if(driver_roi_defined) / else
 
-
-            // --- Drawing (Normal Processing Phase - Full Frame Coords) ---
-            // ... (Drawing logic using current_tracked_driver_idx, absolute face_results coords, and updated kssStatus) ...
-            // if (driver_tracked_this_frame && current_tracked_driver_idx != -1) { face_object_t *driver_face = &face_results.faces[current_tracked_driver_idx]; draw_rectangle(&src_image, driver_face->box.left, driver_face->box.top, driver_face->box.right - driver_face->box.left, driver_face->box.bottom - driver_face->box.top, COLOR_GREEN, 2); if (driver_face->face_landmarks_valid) { /* COMMENTED OUT LANDMARK DRAWING */ const int LEFT_EYE_TEXT_ANCHOR_IDX = 33; const int RIGHT_EYE_TEXT_ANCHOR_IDX = 263; if (LEFT_EYE_TEXT_ANCHOR_IDX < NUM_FACE_LANDMARKS) { point_t la=driver_face->face_landmarks[LEFT_EYE_TEXT_ANCHOR_IDX]; std::string ls=blinkDetector.isLeftEyeClosed()?"CLOSED":"OPEN"; unsigned int lc=blinkDetector.isLeftEyeClosed()?COLOR_RED:COLOR_GREEN; draw_text(&src_image, ls.c_str(), la.x - 30, la.y - 25, lc, 14); text_stream.str(""); text_stream << "L:" << std::fixed << std::setprecision(2) << blinkDetector.getLeftEARValue(); draw_text(&src_image, text_stream.str().c_str(), la.x - 30, la.y - 10, COLOR_WHITE, 10); } if (RIGHT_EYE_TEXT_ANCHOR_IDX < NUM_FACE_LANDMARKS) { point_t ra=driver_face->face_landmarks[RIGHT_EYE_TEXT_ANCHOR_IDX]; std::string rs=blinkDetector.isRightEyeClosed()?"CLOSED":"OPEN"; unsigned int rc=blinkDetector.isRightEyeClosed()?COLOR_RED:COLOR_GREEN; draw_text(&src_image, rs.c_str(), ra.x - 30, ra.y - 25, rc, 14); text_stream.str(""); text_stream << "R:" << std::fixed << std::setprecision(2) << blinkDetector.getRightEARValue(); draw_text(&src_image, text_stream.str().c_str(), ra.x - 30, ra.y - 10, COLOR_WHITE, 10); } } }
-
-            if (driver_tracked_this_frame && current_tracked_driver_idx != -1) {
-                face_object_t *driver_face = &face_results.faces[current_tracked_driver_idx];
-
-                // 1. Draw Green bounding box for tracked driver
-                draw_rectangle(&src_image,
-                               driver_face->box.left,
-                               driver_face->box.top,
-                               driver_face->box.right - driver_face->box.left,
-                               driver_face->box.bottom - driver_face->box.top,
-                               COLOR_GREEN, 2);
-
-                if (driver_face->face_landmarks_valid) { // Check if landmarks are valid before drawing them
-
-                    // 2. Draw Cyan Face Landmarks for tracked driver
-                    for (int j = 0; j < NUM_FACE_LANDMARKS; ++j) {
-                        draw_circle(&src_image,
-                                    driver_face->face_landmarks[j].x,
-                                    driver_face->face_landmarks[j].y,
-                                    1,          // radius
-                                    COLOR_CYAN, // color
-                                    1);         // thickness
-                    }
-
-                    // 3. Draw Eye Contour Landmarks (Blue)
-                    if (driver_face->eye_landmarks_left_valid) {
-                        for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; ++j) {
-                            draw_circle(&src_image,
-                                        driver_face->eye_landmarks_left[j].x,
-                                        driver_face->eye_landmarks_left[j].y,
-                                        1,          // radius
-                                        COLOR_BLUE, // color
-                                        1);         // thickness
-                        }
-                    }
-                    if (driver_face->eye_landmarks_right_valid) {
-                        for (int j = 0; j < NUM_EYE_CONTOUR_LANDMARKS; ++j) {
-                            draw_circle(&src_image,
-                                        driver_face->eye_landmarks_right[j].x,
-                                        driver_face->eye_landmarks_right[j].y,
-                                        1,          // radius
-                                        COLOR_BLUE, // color
-                                        1);         // thickness
-                        }
-                    }
-
-                    // 4. Draw Iris Landmarks (Orange)
-                    if (driver_face->iris_landmarks_left_valid) {
-                        for (int j = 0; j < NUM_IRIS_LANDMARKS; ++j) {
-                            draw_circle(&src_image,
-                                        driver_face->iris_landmarks_left[j].x,
-                                        driver_face->iris_landmarks_left[j].y,
-                                        1,            // radius
-                                        COLOR_ORANGE, // color
-                                        1);           // thickness
-                        }
-                    }
-                    if (driver_face->iris_landmarks_right_valid) {
-                        for (int j = 0; j < NUM_IRIS_LANDMARKS; ++j) {
-                            draw_circle(&src_image,
-                                        driver_face->iris_landmarks_right[j].x,
-                                        driver_face->iris_landmarks_right[j].y,
-                                        1,            // radius
-                                        COLOR_ORANGE, // color
-                                        1);           // thickness
-                        }
-                    }
-
-                } // End if (driver_face->face_landmarks_valid)
-            } 
              #ifdef DEBUG_DRAW_ROIS
              for (int i = 0; i < face_results.count; ++i) { if (i != current_tracked_driver_idx) { draw_rectangle(&src_image, face_results.faces[i].box.left, face_results.faces[i].box.top, face_results.faces[i].box.right - face_results.faces[i].box.left, face_results.faces[i].box.bottom - face_results.faces[i].box.top, COLOR_YELLOW, 1); } }
              #endif
