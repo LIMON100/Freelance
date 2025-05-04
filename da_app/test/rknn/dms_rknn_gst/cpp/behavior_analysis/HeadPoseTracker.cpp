@@ -231,6 +231,14 @@ int HeadPoseTracker::calculateHeadMovementKSS(int timeWindow, int minDuration) {
         head_movement_kss = 1; // Default KSS if no criteria are met
     }
 
+
+    // ADDED: Store counts for getters
+    // NEW UI
+    this->count_15_last_calc = count_15;
+    this->count_30_last_calc = count_30;
+    this->count_45_last_calc = count_45;
+    // END ADDED
+
     return head_movement_kss;
 }
 

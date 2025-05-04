@@ -216,6 +216,7 @@ int KSSCalculator::calculateYawnKSS() {
 
 
 
+
 int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
     int mobileKSS = 0;
     int eatDrinkKSS = 0;
@@ -225,6 +226,14 @@ int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
     int mobileCountL3_10m = countEventsInWindow(mobileEvents, WINDOW_10_MIN, currentTimeSeconds, 3); // ≥3s events in 10min
     int mobileCountL2_5m  = countEventsInWindow(mobileEvents, WINDOW_5_MIN, currentTimeSeconds, 2);  // ≥2s events in 5min
     int mobileCountL1_1m  = countEventsInWindow(mobileEvents, WINDOW_1_MIN, currentTimeSeconds, 1);   // ≥1s events in 1min
+
+
+    // ADDED: Store counts
+    // NEW UI
+    this->mobile_event_count_L3_10m = mobileCountL3_10m;
+    this->mobile_event_count_L2_5m = mobileCountL2_5m;
+    this->mobile_event_count_L1_1m = mobileCountL1_1m;
+    // END ADDED
 
     if (mobileCountL3_10m >= 5) mobileKSS = KSS_LEVEL_3; // Highest priority
     else if (mobileCountL2_5m >= 3) mobileKSS = KSS_LEVEL_2;
@@ -236,6 +245,10 @@ int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
     int eatDrinkCountL3_10m = countEventsInWindow(eatDrinkEvents, WINDOW_10_MIN, currentTimeSeconds, 3); // ≥3s events in 10min
     int eatDrinkCountL2_10m = countEventsInWindow(eatDrinkEvents, WINDOW_10_MIN, currentTimeSeconds, 2); // ≥2s events in 10min
     int eatDrinkCountL1_5m  = countEventsInWindow(eatDrinkEvents, WINDOW_5_MIN, currentTimeSeconds, 1);  // ≥1s events in 5min
+
+    // ADDED: Store counts
+    this->eat_drink_event_count_L3_10m = eatDrinkCountL3_10m;
+    // ... store others if needed ...
 
     if (eatDrinkCountL3_10m >= 3) eatDrinkKSS = KSS_LEVEL_3;
     else if (eatDrinkCountL2_10m >= 2) eatDrinkKSS = KSS_LEVEL_2;
@@ -263,8 +276,63 @@ int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
     else if (combinedObjectKSS == KSS_LEVEL_1) finalObjectKSS = 2; // Level 1 maps to 2 KSS points
     else finalObjectKSS = 0; // No object criteria met
 
+    // Update the member variable before returning
+    this->objectDetectionKSS = finalObjectKSS; 
+    // Ensure member is updated if needed elsewhere
+
     return finalObjectKSS; // Return the calculated & potentially mapped score
 }
+
+
+// int KSSCalculator::calculateObjectDetectionKSS(double currentTimeSeconds) {
+//     int mobileKSS = 0;
+//     int eatDrinkKSS = 0;
+//     int smokeKSS = 0;
+
+//     // --- Mobile Phone Scoring ---
+//     int mobileCountL3_10m = countEventsInWindow(mobileEvents, WINDOW_10_MIN, currentTimeSeconds, 3); // ≥3s events in 10min
+//     int mobileCountL2_5m  = countEventsInWindow(mobileEvents, WINDOW_5_MIN, currentTimeSeconds, 2);  // ≥2s events in 5min
+//     int mobileCountL1_1m  = countEventsInWindow(mobileEvents, WINDOW_1_MIN, currentTimeSeconds, 1);   // ≥1s events in 1min
+
+//     if (mobileCountL3_10m >= 5) mobileKSS = KSS_LEVEL_3; // Highest priority
+//     else if (mobileCountL2_5m >= 3) mobileKSS = KSS_LEVEL_2;
+//     else if (mobileCountL1_1m >= 2) mobileKSS = KSS_LEVEL_1;
+//     // printf("DEBUG Mobile KSS: L3_10m=%d, L2_5m=%d, L1_1m=%d -> KSS=%d\n", mobileCountL3_10m, mobileCountL2_5m, mobileCountL1_1m, mobileKSS);
+
+
+//     // --- Eating/Drinking Scoring ---
+//     int eatDrinkCountL3_10m = countEventsInWindow(eatDrinkEvents, WINDOW_10_MIN, currentTimeSeconds, 3); // ≥3s events in 10min
+//     int eatDrinkCountL2_10m = countEventsInWindow(eatDrinkEvents, WINDOW_10_MIN, currentTimeSeconds, 2); // ≥2s events in 10min
+//     int eatDrinkCountL1_5m  = countEventsInWindow(eatDrinkEvents, WINDOW_5_MIN, currentTimeSeconds, 1);  // ≥1s events in 5min
+
+//     if (eatDrinkCountL3_10m >= 3) eatDrinkKSS = KSS_LEVEL_3;
+//     else if (eatDrinkCountL2_10m >= 2) eatDrinkKSS = KSS_LEVEL_2;
+//     else if (eatDrinkCountL1_5m >= 1) eatDrinkKSS = KSS_LEVEL_1;
+//     // printf("DEBUG Eat/Drink KSS: L3_10m=%d, L2_10m=%d, L1_5m=%d -> KSS=%d\n", eatDrinkCountL3_10m, eatDrinkCountL2_10m, eatDrinkCountL1_5m, eatDrinkKSS);
+
+
+//     // --- Smoking Scoring ---
+//     int smokeCountL3_10m = countEventsInWindow(smokeEvents, WINDOW_10_MIN, currentTimeSeconds, 3); // ≥3s events in 10min
+//     int smokeCountL2_10m = countEventsInWindow(smokeEvents, WINDOW_10_MIN, currentTimeSeconds, 2); // ≥2s events in 10min
+//     int smokeCountL1_5m  = countEventsInWindow(smokeEvents, WINDOW_5_MIN, currentTimeSeconds, 1);  // ≥1s events in 5min
+
+//     if (smokeCountL3_10m >= 3) smokeKSS = KSS_LEVEL_3;
+//     else if (smokeCountL2_10m >= 2) smokeKSS = KSS_LEVEL_2;
+//     else if (smokeCountL1_5m >= 1) smokeKSS = KSS_LEVEL_1;
+//      // printf("DEBUG Smoke KSS: L3_10m=%d, L2_10m=%d, L1_5m=%d -> KSS=%d\n", smokeCountL3_10m, smokeCountL2_10m, smokeCountL1_5m, smokeKSS);
+
+
+//     // --- Combine and Cap ---
+//     // Take the MAXIMUM KSS score from any of the object categories
+//     int combinedObjectKSS = std::max({mobileKSS, eatDrinkKSS, smokeKSS});
+//     int finalObjectKSS = 0;
+//     if (combinedObjectKSS == KSS_LEVEL_3) finalObjectKSS = 6; // Level 3 maps to 6 KSS points (max)
+//     else if (combinedObjectKSS == KSS_LEVEL_2) finalObjectKSS = 4; // Level 2 maps to 4 KSS points
+//     else if (combinedObjectKSS == KSS_LEVEL_1) finalObjectKSS = 2; // Level 1 maps to 2 KSS points
+//     else finalObjectKSS = 0; // No object criteria met
+
+//     return finalObjectKSS; // Return the calculated & potentially mapped score
+// }
 
 
 // getKSSAlertStatus remains the same
