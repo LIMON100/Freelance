@@ -58,6 +58,12 @@ public:
     HeadPoseResults run(const std::vector<cv::Point>& faceLandmarks);
     bool isCalibrated() const { return calibration_state.reference_set; }
 
+
+    // FOR NEW UI
+    int getHeadTurnCount15() const { return count_15_last_calc; }
+    int getHeadTurnCount30() const { return count_30_last_calc; }
+    int getHeadTurnCount45() const { return count_45_last_calc; }
+
 private:
     bool isNearPerfectAxes(const Eigen::Matrix3f& computedAxes, float tolerance = 0.2);
     Eigen::Matrix3f calculateAxes(const std::vector<cv::Point>& faceLandmarks);
@@ -94,6 +100,12 @@ private:
     float clamp(float value, float min, float max) {
         return std::max(min, std::min(max, value));
     }
+
+    // ADDED: Member variables to store last calculated counts
+    // FOR NEW UI
+    int count_15_last_calc = 0;
+    int count_30_last_calc = 0;
+    int count_45_last_calc = 0;
 };
 
 } // namespace my

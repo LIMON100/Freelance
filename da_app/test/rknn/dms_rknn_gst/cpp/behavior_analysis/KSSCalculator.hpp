@@ -11,6 +11,27 @@ class KSSCalculator {
 public:
     KSSCalculator();
 
+
+    // FOR UI
+    // ADDED: Getters for consecutive frame counts
+    int getConsecutiveMobileFrames() const { return consecutiveMobileFrames; }
+    int getConsecutiveEatDrinkFrames() const { return consecutiveEatDrinkFrames; }
+    int getConsecutiveSmokeFrames() const { return consecutiveSmokeFrames; }
+
+    // ADDED: Getters for event counts (optional, might be complex to show all)
+    // Example: Get count of level 3 mobile events in last 10 mins
+    int getMobileEventsL3_10m(double currentTimeSeconds) {
+        // Note: Need to call countEventsInWindow here or store result from calculateObjectDetectionKSS
+        // For simplicity, let's just return the stored value if calculateObjectDetectionKSS updates it.
+        // Alternatively, KSSCalculator could store the last calculated counts.
+        // Let's assume calculateObjectDetectionKSS stores these internally for now.
+        // We'll add placeholder members and getters.
+         return mobile_event_count_L3_10m; // Need to compute and store this in calculateObjectDetectionKSS
+    }
+
+    // UNTIL THIS
+
+
     // Setters for input factors
     void setPerclos(double perclos);
     void setHeadPose(int headPoseKSS); // Setter remains the same
@@ -87,6 +108,15 @@ private:
     double yawnFrequency;
     double yawnDuration;
     // No longer need to store detectedObjects list here
+
+
+
+
+    // FOR UI
+    int mobile_event_count_L3_10m = 0;
+    int mobile_event_count_L2_5m = 0;
+    int mobile_event_count_L1_1m = 0;
+    int eat_drink_event_count_L3_10m = 0;
 };
 
 #endif // KSSCALCULATOR_HPP

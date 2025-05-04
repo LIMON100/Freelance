@@ -1,3 +1,4 @@
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <cmath>
-#include <opencv2/core/types.hpp> // Needed for cv::Rect, cv::Point
+#include <opencv2/core/types.hpp> 
 #include <opencv2/opencv.hpp>
 #include <thread>
 #include <queue>
@@ -21,14 +22,13 @@
 #include <unistd.h>
 #include <dirent.h>
 
-// Include project headers
 #include "face_analyzer/face_analyzer.h"
 #include "yolo_detector/yolo11.h"
 #include "behavior_analysis/BlinkDetector.hpp"
 #include "behavior_analysis/YawnDetector.hpp"
 #include "behavior_analysis/HeadPoseTracker.hpp"
 #include "behavior_analysis/KSSCalculator.hpp"
-#include "image_utils.h"         // Make sure crop_image_simple is declared here or implement it
+#include "image_utils.h"         
 #include "file_utils.h"
 #include "image_drawing.h"
 
@@ -37,6 +37,7 @@
 #include <gst/video/video.h>
 #include <gst/app/gstappsink.h>
 #include <gst/allocators/gstdmabuf.h>
+#include <gst/app/gstappsrc.h> 
 
 // Resource Monitoring Includes
 #include <fstream>
@@ -161,10 +162,6 @@ static int crop_image_simple(image_buffer_t *src_img, image_buffer_t *dst_img, b
     } else if (dst_img->size < (size_t)(crop_w * crop_h * channels)) {
         // Optional: Realloc if needed, or return error
         printf("ERROR: Dest buffer size %d too small for crop %d.\n", dst_img->size, crop_w * crop_h * channels);
-        // Consider reallocating:
-        // void* new_addr = realloc(dst_img->virt_addr, dst_img->size);
-        // if (!new_addr) { /* handle realloc failure */ return -1; }
-        // dst_img->virt_addr = (unsigned char*)new_addr;
         return -1; // Current behavior is error
     }
 
@@ -195,8 +192,93 @@ void yolo_worker_thread_func(yolo11_app_context_t* yolo_ctx_ptr) { while (!stop_
 
 
 // --- GStreamer Saving Pipeline Setup ---
-// ... (Keep GStreamer setup as is) ...
-void setupPipeline() { gst_init(nullptr, nullptr); std::string dir = "/userdata/test_cpp/dms_gst"; if (access(dir.c_str(), W_OK) != 0) { std::cerr << "Directory " << dir << " is not writable or does not exist" << std::endl; return; } DIR* directory = opendir(dir.c_str()); if (!directory) { std::cerr << "Failed to open directory " << dir << std::endl; return; } int mkv_count = 0; struct dirent* entry; while ((entry = readdir(directory)) != nullptr) { std::string filename = entry->d_name; if (filename.find(".mkv") != std::string::npos) mkv_count++; } closedir(directory); std::string filepath = dir + "/dms_multi_" + std::to_string(mkv_count + 1) + ".mkv"; std::string pipeline_str = "appsrc name=source ! queue ! videoconvert ! video/x-raw,format=NV12 ! mpph265enc rc-mode=cbr bps=4000000 gop=30 qp-min=10 qp-max=51 ! h265parse ! matroskamux ! filesink location=" + filepath; std::cout << "Saving Pipeline: " << pipeline_str << std::endl; GError* error = nullptr; pipeline_ = gst_parse_launch(pipeline_str.c_str(), &error); if (!pipeline_ || error) { std::cerr << "Failed to create saving pipeline: " << (error ? error->message : "Unknown error") << std::endl; if (error) g_error_free(error); return; } appsrc_ = gst_bin_get_by_name(GST_BIN(pipeline_), "source"); if (!appsrc_) { std::cerr << "Failed to get appsrc" << std::endl; gst_object_unref(pipeline_); pipeline_ = nullptr; return; } GstCaps* caps = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "BGR", "width", G_TYPE_INT, 1920, "height", G_TYPE_INT, 1080, "framerate", GST_TYPE_FRACTION, 60, 1, nullptr); g_object_set(G_OBJECT(appsrc_), "caps", caps, "format", GST_FORMAT_TIME, nullptr); gst_caps_unref(caps); if (gst_element_set_state(pipeline_, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) { std::cerr << "Failed to set saving pipeline to playing" << std::endl; gst_object_unref(appsrc_); gst_object_unref(pipeline_); pipeline_ = nullptr; appsrc_ = nullptr; } }
+// void setupPipeline() { gst_init(nullptr, nullptr); std::string dir = "/userdata/test_cpp/dms_gst"; if (access(dir.c_str(), W_OK) != 0) { std::cerr << "Directory " << dir << " is not writable or does not exist" << std::endl; return; } DIR* directory = opendir(dir.c_str()); if (!directory) { std::cerr << "Failed to open directory " << dir << std::endl; return; } int mkv_count = 0; struct dirent* entry; while ((entry = readdir(directory)) != nullptr) { std::string filename = entry->d_name; if (filename.find(".mkv") != std::string::npos) mkv_count++; } closedir(directory); std::string filepath = dir + "/dms_multi_" + std::to_string(mkv_count + 1) + ".mkv"; std::string pipeline_str = "appsrc name=source ! queue ! videoconvert ! video/x-raw,format=NV12 ! mpph265enc rc-mode=cbr bps=4000000 gop=30 qp-min=10 qp-max=51 ! h265parse ! matroskamux ! filesink location=" + filepath; std::cout << "Saving Pipeline: " << pipeline_str << std::endl; GError* error = nullptr; pipeline_ = gst_parse_launch(pipeline_str.c_str(), &error); if (!pipeline_ || error) { std::cerr << "Failed to create saving pipeline: " << (error ? error->message : "Unknown error") << std::endl; if (error) g_error_free(error); return; } appsrc_ = gst_bin_get_by_name(GST_BIN(pipeline_), "source"); if (!appsrc_) { std::cerr << "Failed to get appsrc" << std::endl; gst_object_unref(pipeline_); pipeline_ = nullptr; return; } GstCaps* caps = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "BGR", "width", G_TYPE_INT, 1920, "height", G_TYPE_INT, 1080, "framerate", GST_TYPE_FRACTION, 60, 1, nullptr); g_object_set(G_OBJECT(appsrc_), "caps", caps, "format", GST_FORMAT_TIME, nullptr); gst_caps_unref(caps); if (gst_element_set_state(pipeline_, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) { std::cerr << "Failed to set saving pipeline to playing" << std::endl; gst_object_unref(appsrc_); gst_object_unref(pipeline_); pipeline_ = nullptr; appsrc_ = nullptr; } }
+
+void setupPipeline() {
+    gst_init(nullptr, nullptr);
+    const std::string dir = "/userdata/test_cpp/dms_gst"; // Or your desired path
+
+    // Check if directory exists and is writable
+    struct stat st = {0};
+    if (stat(dir.c_str(), &st) == -1) {
+        if (mkdir(dir.c_str(), 0700) == -1) { // Create if it doesn't exist
+             std::cerr << "Error: Cannot create directory " << dir << ": " << strerror(errno) << std::endl;
+             return;
+        }
+        std::cout << "INFO: Created directory " << dir << std::endl;
+    } else if (access(dir.c_str(), W_OK) != 0) {
+        std::cerr << "Error: Directory " << dir << " is not writable." << std::endl;
+        return;
+    }
+
+
+    // Open directory and count .mkv files
+    DIR* directory = opendir(dir.c_str());
+    if (!directory) {
+        std::cerr << "Failed to open directory " << dir << "\n";
+        return;
+    }
+
+    int mkv_count = 0;
+    struct dirent* entry; // Use struct dirent*
+    while ((entry = readdir(directory)) != nullptr) { // Correct loop condition
+        if (std::string_view(entry->d_name).find(".mkv") != std::string_view::npos) {
+            ++mkv_count;
+        }
+    }
+    closedir(directory);
+
+    // Construct pipeline string
+    const std::string filepath = dir + "/dms_multi_" + std::to_string(mkv_count + 1) + ".mkv";
+    const std::string pipeline_str =
+        "appsrc name=source ! queue ! videoconvert ! video/x-raw,format=NV12 ! " // Assuming NV12 for encoder
+        "mpph265enc rc-mode=cbr bps=4000000 gop=30 qp-min=10 qp-max=51 ! "
+        "h265parse ! matroskamux ! filesink location=" + filepath;
+
+    std::cout << "Saving Pipeline: " << pipeline_str << "\n";
+
+    // Create pipeline
+    GError* error = nullptr;
+    pipeline_ = gst_parse_launch(pipeline_str.c_str(), &error);
+    if (!pipeline_ || error) {
+        std::cerr << "Failed to create saving pipeline: " << (error ? error->message : "Unknown error") << "\n";
+        if (error) {
+            g_error_free(error);
+        }
+        return;
+    }
+
+    // Get appsrc
+    appsrc_ = gst_bin_get_by_name(GST_BIN(pipeline_), "source");
+    if (!appsrc_) {
+        std::cerr << "Failed to get appsrc\n";
+        gst_object_unref(pipeline_);
+        pipeline_ = nullptr;
+        return;
+    }
+
+
+     // Set appsrc properties needed BEFORE setting caps later
+     g_object_set(G_OBJECT(appsrc_),
+                  "stream-type", GST_APP_STREAM_TYPE_STREAM, // GST_APP_STREAM_TYPE_SEEKABLE if needed
+                  "format", GST_FORMAT_TIME,
+                  "is-live", FALSE, // Set to TRUE if it's a live source
+                  NULL);
+
+
+    // Start pipeline playing (it will wait for data and caps)
+    if (gst_element_set_state(pipeline_, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+        std::cerr << "Failed to set saving pipeline to playing state\n";
+        gst_object_unref(appsrc_);
+        gst_object_unref(pipeline_);
+        appsrc_ = nullptr;
+        pipeline_ = nullptr;
+    } else {
+        std::cout << "INFO: Saving pipeline created and set to PLAYING (waiting for caps/data).\n";
+    }
+}
+
+
 void pushFrameToPipeline(unsigned char* data, int size, int width, int height, GstClockTime duration) { if (!appsrc_) return; GstBuffer* buffer = gst_buffer_new_allocate(nullptr, size, nullptr); GstMapInfo map; if (!gst_buffer_map(buffer, &map, GST_MAP_WRITE)) { std::cerr << "Failed map buffer" << std::endl; gst_buffer_unref(buffer); return; } if (map.size != (guint)size) { std::cerr << "Buffer size mismatch: " << map.size << " vs " << size << std::endl; gst_buffer_unmap(buffer, &map); gst_buffer_unref(buffer); return; } memcpy(map.data, data, size); gst_buffer_unmap(buffer, &map); static GstClockTime timestamp = 0; GST_BUFFER_PTS(buffer) = timestamp; GST_BUFFER_DURATION(buffer) = duration; timestamp += GST_BUFFER_DURATION(buffer); GstFlowReturn ret; g_signal_emit_by_name(appsrc_, "push-buffer", buffer, &ret); if (ret != GST_FLOW_OK) std::cerr << "Failed push buffer, ret=" << ret << std::endl; gst_buffer_unref(buffer); }
 
 
@@ -212,59 +294,38 @@ void getTemperature(double& temp_variable) { const char* temp_paths[] = {"/sys/c
 -------------------------------------------*/
 int main(int argc, char **argv) {
 
-    int ret = 0;
-    long current_frame_id = 0;
+    // ... (Variable declarations: ret, frame_id, monitoring vars, model paths, video source) ...
+    int ret = 0; long current_frame_id = 0; std::deque<double> frame_times; const int max_time_records = 60; double overallFPS = 0.0; double currentCpuUsage = 0.0; long prevIdleTime = 0, prevTotalTime = 0; double currentTemp = 0.0;
 
-    // --- Resource Monitoring Vars ---
-    std::deque<double> frame_times; const int max_time_records = 60; double overallFPS = 0.0;
-    double currentCpuUsage = 0.0; long prevIdleTime = 0, prevTotalTime = 0; double currentTemp = 0.0;
-
-    // --- Model paths ---
+    // const char *detection_model_path = "../../model/faceD.rknn";
     const char *detection_model_path = "../../model/rf.rknn";
     const char *landmark_model_path  = "../../model/faceL.rknn";
-    const char *iris_model_path      = "../../model/faceI.rknn";
-    const char *yolo_model_path      = "../../model/od.rknn";
+    const char *iris_model_path = "../../model/faceI.rknn";
+    const char *yolo_model_path = "../../model/od.rknn";
 
-    // --- GStreamer input pipeline string ---
-    // const char *video_source = "filesrc location=../../model/2.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    // const char *video_source = "filesrc location=../../model/gunsan6.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
     const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
     // --- Initialization ---
-    setupPipeline();
-    app_context_t app_ctx; memset(&app_ctx, 0, sizeof(app_context_t));
-    image_buffer_t src_image; memset(&src_image, 0, sizeof(image_buffer_t)); // Full original frame
-    face_analyzer_result_t face_results; memset(&face_results, 0, sizeof(face_results));
-    object_detect_result_list yolo_results; memset(&yolo_results, 0, sizeof(yolo_results));
-    my::BlinkDetector blinkDetector; YawnDetector yawnDetector; my::HeadPoseTracker headPoseTracker; KSSCalculator kssCalculator;
+    setupPipeline(); // Setup saving pipeline (without caps)
+    // ... (Init contexts, buffers, behavior modules) ...
+    app_context_t app_ctx; memset(&app_ctx, 0, sizeof(app_context_t)); image_buffer_t src_image; memset(&src_image, 0, sizeof(image_buffer_t)); face_analyzer_result_t face_results; memset(&face_results, 0, sizeof(face_results)); object_detect_result_list yolo_results; memset(&yolo_results, 0, sizeof(yolo_results)); my::BlinkDetector blinkDetector; YawnDetector yawnDetector; my::HeadPoseTracker headPoseTracker; KSSCalculator kssCalculator;
 
     // --- Calibration State Variables ---
-    bool calibration_done = false; std::chrono::steady_clock::time_point calibration_start_time; bool calibration_timer_started = false; int consecutive_valid_eyes_frames = 0; const int REQUIRED_VALID_EYES_FRAMES = 60; bool ear_calibrated = false; bool mouth_calibrated = false; std::deque<float> calib_left_ears; std::deque<float> calib_right_ears; std::deque<double> calib_mouth_dists; int consecutive_stable_ear_frames = 0; int consecutive_stable_mouth_frames = 0; const int CALIB_WINDOW_SIZE = 30; const float EAR_STDDEV_THRESHOLD = 0.04; const double MOUTH_DIST_STDDEV_THRESHOLD = 15.0; const int REQUIRED_STABLE_FRAMES = CALIB_WINDOW_SIZE + 5; const double CALIBRATION_TIMEOUT_SECONDS = 10.0;
+    // ... (Calibration vars) ...
+     bool calibration_done = false; std::chrono::steady_clock::time_point calibration_start_time; bool calibration_timer_started = false; int consecutive_valid_eyes_frames = 0; const int REQUIRED_VALID_EYES_FRAMES = 60; bool ear_calibrated = false; bool mouth_calibrated = false; std::deque<float> calib_left_ears; std::deque<float> calib_right_ears; std::deque<double> calib_mouth_dists; int consecutive_stable_ear_frames = 0; int consecutive_stable_mouth_frames = 0; const int CALIB_WINDOW_SIZE = 30; const float EAR_STDDEV_THRESHOLD = 0.04; const double MOUTH_DIST_STDDEV_THRESHOLD = 15.0; const int REQUIRED_STABLE_FRAMES = CALIB_WINDOW_SIZE + 5; const double CALIBRATION_TIMEOUT_SECONDS = 10.0;
+
 
     // --- Driver ID & Tracking State ---
-    // No longer need driver_identification_zone here
-    bool driver_identified_ever = false;
-    bool driver_tracked_this_frame = false;
-    int current_tracked_driver_idx = -1;
-    cv::Point prev_driver_centroid = cv::Point(-1, -1);
-    const double MAX_CENTROID_DISTANCE = 150.0;
-    int driver_search_timeout_frames = 0;
-    const int DRIVER_SEARCH_MAX_FRAMES = 60;
+     bool driver_identified_ever = false; bool driver_tracked_this_frame = false; int current_tracked_driver_idx = -1; cv::Point prev_driver_centroid = cv::Point(-1, -1); const double MAX_CENTROID_DISTANCE = 150.0; int driver_search_timeout_frames = 0; const int DRIVER_SEARCH_MAX_FRAMES = 60;
 
     // --- Fixed Driver Object ROI ---
-    cv::Rect driver_object_roi;
-    bool driver_roi_defined = false;
-    bool valid_object_roi = false; // Reset each frame
+    // ... (Fixed ROI vars) ...
+     cv::Rect driver_object_roi; bool driver_roi_defined = false; bool valid_object_roi = false;
 
     // --- State variables for KSS and display ---
-    std::string kssStatus = "Initializing"; // Start with Initializing
-    YawnDetector::YawnMetrics yawnMetrics = {};
-    my::HeadPoseTracker::HeadPoseResults headPoseResults = {};
-    std::vector<std::string> detectedObjects; // Holds filtered objects for display
-    int extractedTotalKSS = 1;
-    int perclosKSS = 1, blinkKSS = 1, headposeKSS = 1, yawnKSS = 1, objdectdetectionKSS = 1;
+     std::string kssStatus = "Initializing"; YawnDetector::YawnMetrics yawnMetrics = {}; my::HeadPoseTracker::HeadPoseResults headPoseResults = {}; std::vector<std::string> detectedObjects; int extractedTotalKSS = 1; int perclosKSS = 1, blinkKSS = 1, headposeKSS = 1, yawnKSS = 1, objdectdetectionKSS = 1; std::stringstream text_stream; int text_y = 0; const int line_height = 22; const int text_size = 12; const int status_text_size = 16; unsigned int status_color_uint = COLOR_GREEN;
 
-    // --- Drawing helpers ---
-    std::stringstream text_stream; int text_y = 0; const int line_height = 22; const int text_size = 12; const int status_text_size = 16; unsigned int status_color_uint = COLOR_GREEN;
 
     // --- YOLO thread handle ---
     std::thread yolo_worker_thread;
@@ -279,12 +340,12 @@ int main(int argc, char **argv) {
     cv::namedWindow("DMS Output", cv::WINDOW_NORMAL); cv::resizeWindow("DMS Output", 1920, 1080);
 
     GstSample* sample; GstVideoInfo video_info; GstBuffer* gst_buffer; GstMapInfo map_info;
-    bool first_frame = true;
+    // bool first_frame = true; // Can remove this if only used for ROI def
+    bool saving_pipeline_caps_set = false; // <<< Flag to track if saving caps are set
 
     // --- Buffer for the FIXED ROI Crop ---
     image_buffer_t fixed_roi_crop_img;
     memset(&fixed_roi_crop_img, 0, sizeof(image_buffer_t));
-
 
     // --- Main Processing Loop ---
     while (true) {
@@ -294,180 +355,136 @@ int main(int argc, char **argv) {
         auto frame_start_time = std::chrono::high_resolution_clock::now();
         current_frame_id++;
 
-        // --- Wrap GStreamer Data ---
-        src_image.width = GST_VIDEO_INFO_WIDTH(&video_info); src_image.height = GST_VIDEO_INFO_HEIGHT(&video_info); src_image.width_stride = GST_VIDEO_INFO_PLANE_STRIDE(&video_info, 0); src_image.height_stride = src_image.height;
-        #ifdef IMAGE_FORMAT_BGR888
-            src_image.format = IMAGE_FORMAT_BGR888;
-        #else
-            src_image.format = IMAGE_FORMAT_RGB888;
-        #endif
-        src_image.virt_addr = map_info.data; src_image.size = map_info.size; src_image.fd = -1;
+        // --- Wrap GStreamer Data for the *full source image* ---
+        src_image.width = GST_VIDEO_INFO_WIDTH(&video_info);
+        src_image.height = GST_VIDEO_INFO_HEIGHT(&video_info);
+        src_image.width_stride = GST_VIDEO_INFO_PLANE_STRIDE(&video_info, 0);
+        src_image.height_stride = src_image.height;
+        // Determine format based on GStreamer info if possible, otherwise default
+        GstVideoFormat gst_format = GST_VIDEO_INFO_FORMAT(&video_info);
 
-        if (first_frame) { first_frame = false; }
 
-        // --- Run Face Analysis on FULL FRAME ---
+        src_image.format = IMAGE_FORMAT_RGB888;
+        src_image.virt_addr = map_info.data;
+        src_image.size = map_info.size;
+        src_image.fd = -1;
+
+
+        // --- Set Saving Pipeline Caps (on first valid frame) ---
+        if (pipeline_ && appsrc_ && !saving_pipeline_caps_set) {
+             GstCaps* save_caps = gst_caps_new_simple("video/x-raw",
+                                             "format", G_TYPE_STRING, "BGR", // Input to saving pipeline is BGR
+                                             "width", G_TYPE_INT, src_image.width,
+                                             "height", G_TYPE_INT, src_image.height,
+                                             "framerate", GST_TYPE_FRACTION, GST_VIDEO_INFO_FPS_N(&video_info), GST_VIDEO_INFO_FPS_D(&video_info),
+                                             NULL);
+             if (save_caps) {
+                  printf("INFO: Setting saving pipeline caps to: %s\n", gst_caps_to_string(save_caps));
+                  g_object_set(G_OBJECT(appsrc_), "caps", save_caps, NULL);
+                  gst_caps_unref(save_caps);
+                  saving_pipeline_caps_set = true;
+             } else {
+                  std::cerr << "ERROR: Failed to create caps for saving pipeline!\n";
+                  // Consider stopping or disabling saving
+             }
+        }
+        // --- End Set Saving Caps ---
+
+
+        // --- Run Face Analysis on the FULL FRAME ---
         ret = inference_face_analyzer(&app_ctx.face_ctx, &src_image, &face_results);
         if (ret != 0) { printf("WARN: Face Analyzer Inference failed frame %ld, ret=%d\n", current_frame_id, ret); face_results.count = 0; }
 
         // --- Reset frame-specific flags ---
         driver_tracked_this_frame = false;
         current_tracked_driver_idx = -1;
-        valid_object_roi = false; // Reset valid object ROI flag
+        valid_object_roi = false; // Reset each frame
 
         // --- Driver Identification and Tracking (Based on Full Frame Results) ---
-        if (!driver_identified_ever) {
-            // Phase 1: Initial Identification
-            int best_candidate_idx = -1; float max_area = 0.0f;
-             // Define the identification zone dynamically based on frame size
-             cv::Rect temp_id_zone((int)(src_image.width * 0.40),(int)(src_image.height * 0.1),(int)(src_image.width * 0.55),(int)(src_image.height * 0.8)); temp_id_zone &= cv::Rect(0, 0, src_image.width, src_image.height);
-            for (int i = 0; i < face_results.count; ++i) { cv::Point face_center((face_results.faces[i].box.left + face_results.faces[i].box.right) / 2, (face_results.faces[i].box.top + face_results.faces[i].box.bottom) / 2); if (temp_id_zone.contains(face_center) && face_results.faces[i].face_landmarks_valid) { float area = (float)(face_results.faces[i].box.right - face_results.faces[i].box.left) * (face_results.faces[i].box.bottom - face_results.faces[i].box.top); if (area > max_area) { max_area = area; best_candidate_idx = i; } } }
-            if (best_candidate_idx != -1) { driver_identified_ever = true; driver_tracked_this_frame = true; current_tracked_driver_idx = best_candidate_idx; prev_driver_centroid = calculate_centroid(face_results.faces[best_candidate_idx].face_landmarks, NUM_FACE_LANDMARKS); driver_search_timeout_frames = 0; printf("INFO: Driver Identified (Index %d) at frame %ld\n", current_tracked_driver_idx, current_frame_id); kssStatus = "Calibrating..."; } // Start calibration status
-            else { kssStatus = "Searching Driver..."; }
-        } else {
-            // Phase 2: Tracking
-            int best_match_idx = -1; double min_dist = MAX_CENTROID_DISTANCE;
-            for (int i = 0; i < face_results.count; ++i) { if (face_results.faces[i].face_landmarks_valid) { cv::Point current_centroid = calculate_centroid(face_results.faces[i].face_landmarks, NUM_FACE_LANDMARKS); if (prev_driver_centroid.x >= 0 && current_centroid.x >= 0) { double dist = cv::norm(current_centroid - prev_driver_centroid); if (dist < min_dist) { min_dist = dist; best_match_idx = i; } } } }
-            if (best_match_idx != -1) { // Found match
-                driver_tracked_this_frame = true; current_tracked_driver_idx = best_match_idx; prev_driver_centroid = calculate_centroid(face_results.faces[best_match_idx].face_landmarks, NUM_FACE_LANDMARKS); driver_search_timeout_frames = 0;
-                 // If calibration isn't done yet, status remains "Calibrating..."
-                 if (!calibration_done) kssStatus = "Calibrating...";
-                 // If calibration IS done, status will be set later based on KSS
-            } else { // Lost track
-                driver_tracked_this_frame = false; current_tracked_driver_idx = -1; prev_driver_centroid = cv::Point(-1, -1); driver_search_timeout_frames++;
-                kssStatus = "Driver Lost..."; // Set status immediately
-                if (driver_search_timeout_frames > DRIVER_SEARCH_MAX_FRAMES) { driver_identified_ever = false; driver_search_timeout_frames = 0; printf("INFO: Driver track lost for %d frames. Reverting to search.\n", DRIVER_SEARCH_MAX_FRAMES); kssStatus = "Searching Driver..."; }
-            }
-        }
+        if (!driver_identified_ever) { /* Identification */ int best_candidate_idx = -1; float max_area = 0.0f; cv::Rect temp_id_zone((int)(src_image.width * 0.40),(int)(src_image.height * 0.1),(int)(src_image.width * 0.55),(int)(src_image.height * 0.8)); temp_id_zone &= cv::Rect(0, 0, src_image.width, src_image.height); for (int i = 0; i < face_results.count; ++i) { cv::Point face_center((face_results.faces[i].box.left + face_results.faces[i].box.right) / 2, (face_results.faces[i].box.top + face_results.faces[i].box.bottom) / 2); if (temp_id_zone.contains(face_center) && face_results.faces[i].face_landmarks_valid) { float area = (float)(face_results.faces[i].box.right - face_results.faces[i].box.left) * (face_results.faces[i].box.bottom - face_results.faces[i].box.top); if (area > max_area) { max_area = area; best_candidate_idx = i; } } } if (best_candidate_idx != -1) { driver_identified_ever = true; driver_tracked_this_frame = true; current_tracked_driver_idx = best_candidate_idx; prev_driver_centroid = calculate_centroid(face_results.faces[best_candidate_idx].face_landmarks, NUM_FACE_LANDMARKS); driver_search_timeout_frames = 0; printf("INFO: Driver Identified (Index %d) at frame %ld\n", current_tracked_driver_idx, current_frame_id); kssStatus = "Calibrating..."; } else { kssStatus = "Searching Driver..."; } } else { /* Tracking */ int best_match_idx = -1; double min_dist = MAX_CENTROID_DISTANCE; for (int i = 0; i < face_results.count; ++i) { if (face_results.faces[i].face_landmarks_valid) { cv::Point current_centroid = calculate_centroid(face_results.faces[i].face_landmarks, NUM_FACE_LANDMARKS); if (prev_driver_centroid.x >= 0 && current_centroid.x >= 0) { double dist = cv::norm(current_centroid - prev_driver_centroid); if (dist < min_dist) { min_dist = dist; best_match_idx = i; } } } } if (best_match_idx != -1) { driver_tracked_this_frame = true; current_tracked_driver_idx = best_match_idx; prev_driver_centroid = calculate_centroid(face_results.faces[best_match_idx].face_landmarks, NUM_FACE_LANDMARKS); driver_search_timeout_frames = 0; if (!calibration_done) kssStatus = "Calibrating..."; } else { driver_tracked_this_frame = false; current_tracked_driver_idx = -1; prev_driver_centroid = cv::Point(-1, -1); driver_search_timeout_frames++; kssStatus = "Driver Lost..."; if (driver_search_timeout_frames > DRIVER_SEARCH_MAX_FRAMES) { driver_identified_ever = false; driver_search_timeout_frames = 0; printf("INFO: Driver track lost for %d frames. Reverting to search.\n", DRIVER_SEARCH_MAX_FRAMES); kssStatus = "Searching Driver..."; } } }
+
 
         // --- Calibration or Normal Processing ---
         if (!calibration_done) {
             // --- Calibration Logic ---
-             bool head_pose_calibrated = false; bool eyes_consistently_valid = false; double elapsed_calib_seconds = 0.0; std::string calib_status_detail = "";
-
-             if (driver_tracked_this_frame && current_tracked_driver_idx != -1) {
-                 face_object_t *calib_face = &face_results.faces[current_tracked_driver_idx];
-                 if (calib_face->face_landmarks_valid) {
-                    if (!calibration_timer_started) { /* Start timer and reset state */ calibration_start_time = std::chrono::steady_clock::now(); calibration_timer_started = true; printf("INFO: Calibration timer started (Driver Index %d).\n", current_tracked_driver_idx); consecutive_valid_eyes_frames = 0; consecutive_stable_ear_frames = 0; consecutive_stable_mouth_frames = 0; calib_left_ears.clear(); calib_right_ears.clear(); calib_mouth_dists.clear(); ear_calibrated = false; mouth_calibrated = false; }
-                 
-                    std::vector<cv::Point> calib_faceLandmarks = convert_landmarks_to_cvpoint(calib_face->face_landmarks, NUM_FACE_LANDMARKS); headPoseTracker.run(calib_faceLandmarks); head_pose_calibrated = headPoseTracker.isCalibrated(); if (!head_pose_calibrated) calib_status_detail += " (Head)"; bool eyes_valid_this_frame = calib_face->eye_landmarks_left_valid && calib_face->eye_landmarks_right_valid; if (eyes_valid_this_frame) consecutive_valid_eyes_frames++; else consecutive_valid_eyes_frames = 0; eyes_consistently_valid = (consecutive_valid_eyes_frames >= REQUIRED_VALID_EYES_FRAMES); if (!eyes_consistently_valid) calib_status_detail += " (Eyes Valid)"; if (!ear_calibrated && eyes_valid_this_frame) { const std::vector<int> L={33,160,158,133,153,144}, R={362,385,387,263,380,373}; float lE=calculate_ear_simple(calib_faceLandmarks,L), rE=calculate_ear_simple(calib_faceLandmarks,R); calib_left_ears.push_back(lE); calib_right_ears.push_back(rE); if (calib_left_ears.size()>CALIB_WINDOW_SIZE) calib_left_ears.pop_front(); if (calib_right_ears.size()>CALIB_WINDOW_SIZE) calib_right_ears.pop_front(); if (calib_left_ears.size()>=CALIB_WINDOW_SIZE) { float lS=calculate_stddev(calib_left_ears), rS=calculate_stddev(calib_right_ears); if (lS<EAR_STDDEV_THRESHOLD && rS<EAR_STDDEV_THRESHOLD) consecutive_stable_ear_frames++; else consecutive_stable_ear_frames=0; } else consecutive_stable_ear_frames=0; ear_calibrated=(consecutive_stable_ear_frames>=REQUIRED_STABLE_FRAMES); } else if(!eyes_valid_this_frame){ consecutive_stable_ear_frames=0; ear_calibrated=false; calib_left_ears.clear(); calib_right_ears.clear(); } if(!ear_calibrated) calib_status_detail+=" (EAR Stable)"; if (!mouth_calibrated) { double cM=calculate_mouth_dist_simple(calib_faceLandmarks); calib_mouth_dists.push_back(cM); if(calib_mouth_dists.size()>CALIB_WINDOW_SIZE) calib_mouth_dists.pop_front(); if(calib_mouth_dists.size()>=CALIB_WINDOW_SIZE){ double mS=calculate_stddev(calib_mouth_dists); if(mS<MOUTH_DIST_STDDEV_THRESHOLD) consecutive_stable_mouth_frames++; else consecutive_stable_mouth_frames=0; } else consecutive_stable_mouth_frames=0; mouth_calibrated=(consecutive_stable_mouth_frames>=REQUIRED_STABLE_FRAMES); } if(!mouth_calibrated) calib_status_detail+=" (Mouth Stable)";
-
-                    auto now = std::chrono::steady_clock::now(); elapsed_calib_seconds = std::chrono::duration<double>(now - calibration_start_time).count();
-
-                    if (elapsed_calib_seconds >= CALIBRATION_TIMEOUT_SECONDS) {
-                        if (head_pose_calibrated && eyes_consistently_valid && ear_calibrated && mouth_calibrated) {
-                            calibration_done = true;
-                            printf("INFO: Calibration Complete!\n");
-                            // Define Fixed ROI based on this calibrated position
-                            face_object_t *calib_driver_face = &face_results.faces[current_tracked_driver_idx]; box_rect_t calib_driver_box = calib_driver_face->box; int calib_box_w = calib_driver_box.right - calib_driver_box.left; int calib_box_h = calib_driver_box.bottom - calib_driver_box.top;
-                            if(calib_box_w > 0 && calib_box_h > 0) { int box_center_x = (calib_driver_box.left + calib_driver_box.right) / 2; int box_center_y = (calib_driver_box.top + calib_driver_box.bottom) / 2; const float width_expansion = 2.2f; const float height_expansion_up = 0.8f; const float height_expansion_down = 3.0f; int roi_width = static_cast<int>(calib_box_w * width_expansion); int roi_height = static_cast<int>(calib_box_h * (height_expansion_up + height_expansion_down)); if (roi_width < 640) roi_width = 640; int roi_x = box_center_x - roi_width / 2; int roi_y = box_center_y - static_cast<int>(calib_box_h * height_expansion_up); driver_object_roi.x = std::max(0, roi_x); driver_object_roi.y = std::max(0, roi_y); driver_object_roi.width = std::min(roi_width, src_image.width - driver_object_roi.x); driver_object_roi.height = std::min(roi_height, src_image.height - driver_object_roi.y); driver_roi_defined = (driver_object_roi.width > 0 && driver_object_roi.height > 0); printf("INFO: Fixed Driver Object ROI defined: [%d, %d, %d x %d]\n", driver_object_roi.x, driver_object_roi.y, driver_object_roi.width, driver_object_roi.height); } else { driver_roi_defined = false; printf("WARN: Could not define fixed ROI due to invalid calibration box.\n"); }
-                        } else { // Calibration timed out
-                            calibration_timer_started = false; driver_identified_ever = false; driver_tracked_this_frame = false; current_tracked_driver_idx = -1; prev_driver_centroid = cv::Point(-1, -1); consecutive_valid_eyes_frames = 0; consecutive_stable_ear_frames = 0; consecutive_stable_mouth_frames = 0; ear_calibrated = false; mouth_calibrated = false; calib_left_ears.clear(); calib_right_ears.clear(); calib_mouth_dists.clear(); printf("WARN: Calibration time expired, criteria not met (H:%d, EV:%d, ES:%d, MS:%d). Retrying identification.\n", head_pose_calibrated, eyes_consistently_valid, ear_calibrated, mouth_calibrated); kssStatus = "Searching Driver..."; // Reset status
-                        }
-                    }
-                 } else { calibration_timer_started = false; printf("WARN: Tracked driver landmarks not valid during calibration.\n"); kssStatus = "Calibration: Landmark Invalid"; } // Update status
-                 // Update calibration text to draw
-                 if (calibration_timer_started && !calibration_done) {
-                    kssStatus = "Calibrating... " + std::to_string(static_cast<int>(elapsed_calib_seconds)) + "s" + calib_status_detail;
-                 }
-                 // Draw yellow box around the face being calibrated
-                 if (driver_tracked_this_frame && current_tracked_driver_idx != -1) {
-                    draw_rectangle(&src_image, face_results.faces[current_tracked_driver_idx].box.left, face_results.faces[current_tracked_driver_idx].box.top, face_results.faces[current_tracked_driver_idx].box.right - face_results.faces[current_tracked_driver_idx].box.left, face_results.faces[current_tracked_driver_idx].box.bottom - face_results.faces[current_tracked_driver_idx].box.top, COLOR_YELLOW, 2);
-                 }
-             } else { // No driver tracked during calibration phase
-                  // ... (Reset calibration state variables) ...
-                  calibration_timer_started = false; consecutive_valid_eyes_frames = 0; consecutive_stable_ear_frames = 0; consecutive_stable_mouth_frames = 0; ear_calibrated = false; mouth_calibrated = false; calib_left_ears.clear(); calib_right_ears.clear(); calib_mouth_dists.clear();
-                 if (driver_identified_ever) { kssStatus = "Calibration: Waiting for Driver Track..."; } else { kssStatus = "Calibration: Searching Driver..."; }
-                 // Draw boxes for all detected faces during search
-                 for (int i = 0; i < face_results.count; ++i) { draw_rectangle(&src_image, face_results.faces[i].box.left, face_results.faces[i].box.top, face_results.faces[i].box.right - face_results.faces[i].box.left, face_results.faces[i].box.bottom - face_results.faces[i].box.top, COLOR_YELLOW, 1); }
-             }
-             // Draw the calibration status text determined above
-             draw_text(&src_image, kssStatus.c_str(), 10, 10, COLOR_YELLOW, status_text_size); // Draw calibration status at top-left
-
+            // ... (Calibration checks and ROI definition remain the same) ...
+             bool head_pose_calibrated = false; bool eyes_consistently_valid = false; double elapsed_calib_seconds = 0.0; std::string calib_status_detail = ""; if (driver_tracked_this_frame && current_tracked_driver_idx != -1) { face_object_t *calib_face = &face_results.faces[current_tracked_driver_idx]; if (calib_face->face_landmarks_valid) { if (!calibration_timer_started) { /* Start timer, reset state */ calibration_start_time = std::chrono::steady_clock::now(); calibration_timer_started = true; printf("INFO: Calibration timer started (Driver Index %d).\n", current_tracked_driver_idx); consecutive_valid_eyes_frames = 0; consecutive_stable_ear_frames = 0; consecutive_stable_mouth_frames = 0; calib_left_ears.clear(); calib_right_ears.clear(); calib_mouth_dists.clear(); ear_calibrated = false; mouth_calibrated = false; } /* ... Run checks ... */ std::vector<cv::Point> calib_faceLandmarks = convert_landmarks_to_cvpoint(calib_face->face_landmarks, NUM_FACE_LANDMARKS); headPoseTracker.run(calib_faceLandmarks); head_pose_calibrated = headPoseTracker.isCalibrated(); if (!head_pose_calibrated) calib_status_detail += " (Head)"; bool eyes_valid_this_frame = calib_face->eye_landmarks_left_valid && calib_face->eye_landmarks_right_valid; if (eyes_valid_this_frame) consecutive_valid_eyes_frames++; else consecutive_valid_eyes_frames = 0; eyes_consistently_valid = (consecutive_valid_eyes_frames >= REQUIRED_VALID_EYES_FRAMES); if (!eyes_consistently_valid) calib_status_detail += " (Eyes Valid)"; if (!ear_calibrated && eyes_valid_this_frame) { const std::vector<int> L={33,160,158,133,153,144}, R={362,385,387,263,380,373}; float lE=calculate_ear_simple(calib_faceLandmarks,L), rE=calculate_ear_simple(calib_faceLandmarks,R); calib_left_ears.push_back(lE); calib_right_ears.push_back(rE); if (calib_left_ears.size()>CALIB_WINDOW_SIZE) calib_left_ears.pop_front(); if (calib_right_ears.size()>CALIB_WINDOW_SIZE) calib_right_ears.pop_front(); if (calib_left_ears.size()>=CALIB_WINDOW_SIZE) { float lS=calculate_stddev(calib_left_ears), rS=calculate_stddev(calib_right_ears); if (lS<EAR_STDDEV_THRESHOLD && rS<EAR_STDDEV_THRESHOLD) consecutive_stable_ear_frames++; else consecutive_stable_ear_frames=0; } else consecutive_stable_ear_frames=0; ear_calibrated=(consecutive_stable_ear_frames>=REQUIRED_STABLE_FRAMES); } else if(!eyes_valid_this_frame){ consecutive_stable_ear_frames=0; ear_calibrated=false; calib_left_ears.clear(); calib_right_ears.clear(); } if(!ear_calibrated) calib_status_detail+=" (EAR Stable)"; if (!mouth_calibrated) { double cM=calculate_mouth_dist_simple(calib_faceLandmarks); calib_mouth_dists.push_back(cM); if(calib_mouth_dists.size()>CALIB_WINDOW_SIZE) calib_mouth_dists.pop_front(); if(calib_mouth_dists.size()>=CALIB_WINDOW_SIZE){ double mS=calculate_stddev(calib_mouth_dists); if(mS<MOUTH_DIST_STDDEV_THRESHOLD) consecutive_stable_mouth_frames++; else consecutive_stable_mouth_frames=0; } else consecutive_stable_mouth_frames=0; mouth_calibrated=(consecutive_stable_mouth_frames>=REQUIRED_STABLE_FRAMES); } if(!mouth_calibrated) calib_status_detail+=" (Mouth Stable)"; auto now = std::chrono::steady_clock::now(); elapsed_calib_seconds = std::chrono::duration<double>(now - calibration_start_time).count(); if (elapsed_calib_seconds >= CALIBRATION_TIMEOUT_SECONDS) { if (head_pose_calibrated && eyes_consistently_valid && ear_calibrated && mouth_calibrated) { calibration_done = true; printf("INFO: Calibration Complete!\n"); /* Define Fixed ROI */ face_object_t *calib_driver_face = &face_results.faces[current_tracked_driver_idx]; box_rect_t calib_driver_box = calib_driver_face->box; int calib_box_w = calib_driver_box.right - calib_driver_box.left; int calib_box_h = calib_driver_box.bottom - calib_driver_box.top; if(calib_box_w > 0 && calib_box_h > 0) { int box_center_x = (calib_driver_box.left + calib_driver_box.right) / 2; int box_center_y = (calib_driver_box.top + calib_driver_box.bottom) / 2; const float width_expansion = 2.2f; const float height_expansion_up = 0.8f; const float height_expansion_down = 3.0f; int roi_width = static_cast<int>(calib_box_w * width_expansion); int roi_height = static_cast<int>(calib_box_h * (height_expansion_up + height_expansion_down)); int roi_size = std::max(roi_width, roi_height); roi_width = roi_size; roi_height = roi_size; if (roi_width < 640) roi_width = 640; int roi_x = box_center_x - roi_width / 2; int roi_y = box_center_y - static_cast<int>(calib_box_h * height_expansion_up); driver_object_roi.x = std::max(0, roi_x); driver_object_roi.y = std::max(0, roi_y); driver_object_roi.width = std::min(roi_width, src_image.width - driver_object_roi.x); driver_object_roi.height = std::min(roi_height, src_image.height - driver_object_roi.y); driver_roi_defined = (driver_object_roi.width > 0 && driver_object_roi.height > 0); printf("INFO: Fixed Driver Object ROI defined: [%d, %d, %d x %d]\n", driver_object_roi.x, driver_object_roi.y, driver_object_roi.width, driver_object_roi.height); } else { driver_roi_defined = false; printf("WARN: Could not define fixed ROI due to invalid calibration box.\n"); } } else { /* Timeout Failed */ calibration_timer_started = false; driver_identified_ever = false; driver_tracked_this_frame = false; current_tracked_driver_idx = -1; prev_driver_centroid = cv::Point(-1, -1); consecutive_valid_eyes_frames = 0; consecutive_stable_ear_frames = 0; consecutive_stable_mouth_frames = 0; ear_calibrated = false; mouth_calibrated = false; calib_left_ears.clear(); calib_right_ears.clear(); calib_mouth_dists.clear(); printf("WARN: Calibration time expired, criteria not met (H:%d, EV:%d, ES:%d, MS:%d). Retrying identification.\n", head_pose_calibrated, eyes_consistently_valid, ear_calibrated, mouth_calibrated); } } } else { calibration_timer_started = false; printf("WARN: Tracked driver landmarks not valid during calibration.\n"); } kssStatus = "Calibrating... " + std::to_string(static_cast<int>(elapsed_calib_seconds)) + "s" + calib_status_detail; if(driver_tracked_this_frame && current_tracked_driver_idx != -1) draw_rectangle(&src_image, face_results.faces[current_tracked_driver_idx].box.left, face_results.faces[current_tracked_driver_idx].box.top, face_results.faces[current_tracked_driver_idx].box.right - face_results.faces[current_tracked_driver_idx].box.left, face_results.faces[current_tracked_driver_idx].box.bottom - face_results.faces[current_tracked_driver_idx].box.top, COLOR_YELLOW, 2); } else { /* No driver tracked */ calibration_timer_started = false; consecutive_valid_eyes_frames = 0; consecutive_stable_ear_frames = 0; consecutive_stable_mouth_frames = 0; ear_calibrated = false; mouth_calibrated = false; calib_left_ears.clear(); calib_right_ears.clear(); calib_mouth_dists.clear(); if (driver_identified_ever) { kssStatus = "Calibration: Waiting for Driver Track..."; } else { kssStatus = "Calibration: Searching Driver..."; } for (int i = 0; i < face_results.count; ++i) { draw_rectangle(&src_image, face_results.faces[i].box.left, face_results.faces[i].box.top, face_results.faces[i].box.right - face_results.faces[i].box.left, face_results.faces[i].box.bottom - face_results.faces[i].box.top, COLOR_YELLOW, 1); } }
+            // Draw Calibration Status Text
+             draw_text(&src_image, kssStatus.c_str(), 10, 10, COLOR_YELLOW, status_text_size);
 
         } else { // --- Normal Processing Phase (Calibration is Done) ---
 
-            // --- Check if Fixed ROI is defined ---
+            // Default Status for this phase
+            kssStatus = "Normal"; // Assume normal unless KSS says otherwise or driver lost
+
             if (!driver_roi_defined) {
                 kssStatus = "ROI Error";
-                printf("ERROR: Driver Object ROI was not defined. Skipping processing.\n");
-                extractedTotalKSS = 1; // Reset KSS score
-                // Reset behavior states
-                yawnMetrics = {}; headPoseResults = {}; detectedObjects.clear();
+                // ... (Reset KSS values) ...
+                printf("ERROR: Driver Object ROI was not defined. Skipping processing.\n"); extractedTotalKSS = 1; perclosKSS = 1; blinkKSS = 1; headposeKSS = 1; yawnKSS = 1; objdectdetectionKSS = 1; yawnMetrics = {}; headPoseResults = {}; detectedObjects.clear();
             } else {
-                 // Crop to Fixed ROI and Queue for YOLO
-                 // ... (cropping and queuing logic) ...
-                  if (fixed_roi_crop_img.virt_addr) { free(fixed_roi_crop_img.virt_addr); fixed_roi_crop_img.virt_addr = nullptr; } memset(&fixed_roi_crop_img, 0, sizeof(image_buffer_t)); box_rect_t fixed_roi_as_box = { driver_object_roi.x, driver_object_roi.y, driver_object_roi.x + driver_object_roi.width, driver_object_roi.y + driver_object_roi.height}; ret = crop_image_simple(&src_image, &fixed_roi_crop_img, fixed_roi_as_box); if (ret == 0 && fixed_roi_crop_img.virt_addr) { auto yolo_input_image = std::make_shared<image_buffer_t>(); yolo_input_image->width = fixed_roi_crop_img.width; yolo_input_image->height = fixed_roi_crop_img.height; yolo_input_image->format = fixed_roi_crop_img.format; yolo_input_image->size = fixed_roi_crop_img.size; yolo_input_image->virt_addr = (unsigned char*)malloc(yolo_input_image->size); if (yolo_input_image->virt_addr) { memcpy(yolo_input_image->virt_addr, fixed_roi_crop_img.virt_addr, yolo_input_image->size); yolo_input_image->width_stride = 0; yolo_input_image->height_stride = 0; yolo_input_image->fd = -1; { std::unique_lock<std::mutex> lock(yolo_input_mutex); if (yolo_input_queue.size() < MAX_QUEUE_SIZE) yolo_input_queue.push({current_frame_id, yolo_input_image}); else { free(yolo_input_image->virt_addr); yolo_input_image->virt_addr = nullptr; } } } else { printf("ERROR: Failed alloc YOLO input copy (fixed roi crop).\n"); } } else { printf("ERROR: Failed to crop to FIXED ROI for YOLO frame %ld.\n", current_frame_id); }
+                // --- Crop to the FIXED Driver Object ROI ---
+                // ... (Crop logic) ...
+                 if (fixed_roi_crop_img.virt_addr) { free(fixed_roi_crop_img.virt_addr); fixed_roi_crop_img.virt_addr = nullptr; } memset(&fixed_roi_crop_img, 0, sizeof(image_buffer_t)); box_rect_t fixed_roi_as_box = { driver_object_roi.x, driver_object_roi.y, driver_object_roi.x + driver_object_roi.width, driver_object_roi.y + driver_object_roi.height}; ret = crop_image_simple(&src_image, &fixed_roi_crop_img, fixed_roi_as_box);
 
-                // Get YOLO Results
+                if (ret == 0 && fixed_roi_crop_img.virt_addr) {
+                    // --- Queue FIXED ROI CROP for YOLO ---
+                    // ... (YOLO queuing logic) ...
+                    auto yolo_input_image = std::make_shared<image_buffer_t>(); yolo_input_image->width = fixed_roi_crop_img.width; yolo_input_image->height = fixed_roi_crop_img.height; yolo_input_image->format = fixed_roi_crop_img.format; yolo_input_image->size = fixed_roi_crop_img.size; yolo_input_image->virt_addr = (unsigned char*)malloc(yolo_input_image->size); if (yolo_input_image->virt_addr) { memcpy(yolo_input_image->virt_addr, fixed_roi_crop_img.virt_addr, yolo_input_image->size); yolo_input_image->width_stride = 0; yolo_input_image->height_stride = 0; yolo_input_image->fd = -1; { std::unique_lock<std::mutex> lock(yolo_input_mutex); if (yolo_input_queue.size() < MAX_QUEUE_SIZE) yolo_input_queue.push({current_frame_id, yolo_input_image}); else { free(yolo_input_image->virt_addr); yolo_input_image->virt_addr = nullptr; } } } else { printf("ERROR: Failed alloc YOLO input copy (fixed roi crop).\n"); }
+                } else { printf("ERROR: Failed to crop to FIXED ROI for YOLO frame %ld.\n", current_frame_id); }
+
+                // --- Get YOLO Results ---
                  bool yolo_result_received = false; { std::unique_lock<std::mutex> lock(yolo_output_mutex); if (!yolo_output_queue.empty()) { YoloOutputData data = yolo_output_queue.front(); yolo_output_queue.pop(); yolo_results = data.results; yolo_result_received = true; } }
 
                 // --- Run Behavior Analysis & KSS (Conditional on Driver Tracked & In ROI) ---
                 detectedObjects.clear();
                 std::vector<std::string> driver_detectedObjects_final;
-                valid_object_roi = driver_roi_defined; // If ROI is defined, assume valid for filtering unless proven otherwise
+                valid_object_roi = driver_roi_defined;
 
                 if (driver_tracked_this_frame && current_tracked_driver_idx != -1) {
                     face_object_t *driver_face = &face_results.faces[current_tracked_driver_idx];
                     cv::Point driver_center_full_frame( (driver_face->box.left + driver_face->box.right) / 2, (driver_face->box.top + driver_face->box.bottom) / 2 );
 
-                    if (driver_object_roi.contains(driver_center_full_frame)) {
-                        kssStatus = "Normal"; // Start with Normal if tracked and in ROI
-                        // Filter YOLO results (relative to fixed ROI)
+                    if (driver_object_roi.contains(driver_center_full_frame)) { // Driver IN ROI
+                        // Filter YOLO results
                         if (yolo_results.count > 0) { for (int j = 0; j < yolo_results.count; ++j) { object_detect_result* det = &yolo_results.results[j]; if (det->prop > 0.4) { driver_detectedObjects_final.push_back(coco_cls_to_name(det->cls_id)); } } }
                         detectedObjects = driver_detectedObjects_final;
 
-                        // Run Behavior Modules (landmarks relative to full frame)
+                        // Run Behavior Modules
                         if (driver_face->face_landmarks_valid) {
-                
-                             std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(driver_face->face_landmarks, NUM_FACE_LANDMARKS); if (!faceLandmarksCv.empty()) { headPoseResults = headPoseTracker.run(faceLandmarksCv); blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height); yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height); kssCalculator.setPerclos(blinkDetector.getPerclos()); int headPoseKSSValue = 1; if (headPoseResults.rows.size() >= 4) { for (const auto& row : headPoseResults.rows) { if (row.size() >= 2 && row[0] == "Head KSS") { try { headPoseKSSValue = std::stoi(row[1]); } catch (...) { headPoseKSSValue = 1; } break; } } } kssCalculator.setHeadPose(headPoseKSSValue); kssCalculator.setYawnMetrics(yawnMetrics.isYawning, yawnMetrics.yawnFrequency_5min, yawnMetrics.yawnDuration); kssCalculator.setBlinksLastMinute(blinkDetector.getBlinksInWindow()); } else { kssStatus = "Landmark Error"; headPoseResults = {}; yawnMetrics = {}; kssCalculator.setPerclos(0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0); }
-                        } else {
-                            kssStatus = "Driver Data Invalid";
-                            // ... (Reset KSS inputs if landmarks invalid) ...
-                             headPoseResults = {}; yawnMetrics = {}; kssCalculator.setPerclos(0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0);
-                        }
+                            std::vector<cv::Point> faceLandmarksCv = convert_landmarks_to_cvpoint(driver_face->face_landmarks, NUM_FACE_LANDMARKS);
+                            if (!faceLandmarksCv.empty()) {
+                                 headPoseResults = headPoseTracker.run(faceLandmarksCv); blinkDetector.run(faceLandmarksCv, src_image.width, src_image.height); yawnMetrics = yawnDetector.run(faceLandmarksCv, src_image.width, src_image.height); kssCalculator.setPerclos(blinkDetector.getPerclos()); int headPoseKSSValue = 1; if (headPoseResults.rows.size() >= 4) { for (const auto& row : headPoseResults.rows) { if (row.size() >= 2 && row[0] == "Head KSS") { try { headPoseKSSValue = std::stoi(row[1]); } catch (...) { headPoseKSSValue = 1; } break; } } } kssCalculator.setHeadPose(headPoseKSSValue); kssCalculator.setYawnMetrics(yawnMetrics.isYawning, yawnMetrics.yawnFrequency_5min, yawnMetrics.yawnDuration); kssCalculator.setBlinksLastMinute(blinkDetector.getBlinksInWindow());
+                            } else { kssStatus = "Landmark Error"; /* Reset Inputs */ headPoseResults = {}; yawnMetrics = {}; kssCalculator.setPerclos(0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0); }
+                        } else { kssStatus = "Driver Data Invalid"; /* Reset Inputs */ headPoseResults = {}; yawnMetrics = {}; kssCalculator.setPerclos(0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0); }
+
+                        // Calculate KSS
+                         double now_seconds = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count(); kssCalculator.setDetectedObjects(driver_detectedObjects_final, now_seconds); auto kssBreakdownResults = kssCalculator.calculateCompositeKSS(); if (kssBreakdownResults.size() > 5 && kssBreakdownResults[5].size() == 2) { try { perclosKSS = std::stoi(kssBreakdownResults[0][1]); blinkKSS = std::stoi(kssBreakdownResults[1][1]); headposeKSS = std::stoi(kssBreakdownResults[2][1]); yawnKSS = std::stoi(kssBreakdownResults[3][1]); objdectdetectionKSS = std::stoi(kssBreakdownResults[4][1]); extractedTotalKSS = std::stoi(kssBreakdownResults[5][1]); } catch (...) { extractedTotalKSS = 1; } } else { extractedTotalKSS = 1; }
+                        std::string alertStatus = kssCalculator.getKSSAlertStatus(extractedTotalKSS);
+                        // Update status only if not already an error, or if there's an alert
+                        if (kssStatus == "Normal" || !alertStatus.empty()) { kssStatus = alertStatus.empty() ? "Normal" : alertStatus; }
+
                     } else { // Driver tracked BUT outside fixed ROI
-                        kssStatus = "Driver Outside ROI";
-                         // Reset state
-                        driver_tracked_this_frame = false; current_tracked_driver_idx = -1; extractedTotalKSS = 1; yawnMetrics = {}; headPoseResults = {}; kssCalculator.setPerclos(0.0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0);
+                         kssStatus = "Driver Outside ROI";
+                         driver_tracked_this_frame = false; current_tracked_driver_idx = -1; extractedTotalKSS = 1; yawnMetrics = {}; headPoseResults = {}; kssCalculator.setPerclos(0.0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0); double now_seconds = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count(); kssCalculator.setDetectedObjects({}, now_seconds); auto kssBreakdownResults = kssCalculator.calculateCompositeKSS(); if (kssBreakdownResults.size() > 5 && kssBreakdownResults[5].size() == 2) { extractedTotalKSS = std::stoi(kssBreakdownResults[5][1]); } else { extractedTotalKSS = 1;}
                     }
                 } else { // Driver NOT tracked in this frame
                     kssStatus = "Driver Not Tracked";
-                    // Reset KSS inputs
-                    extractedTotalKSS = 1; yawnMetrics = {}; headPoseResults = {}; kssCalculator.setPerclos(0.0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0);
+                    extractedTotalKSS = 1; yawnMetrics = {}; headPoseResults = {}; kssCalculator.setPerclos(0.0); kssCalculator.setHeadPose(1); kssCalculator.setYawnMetrics(false, 0, 0); kssCalculator.setBlinksLastMinute(0); double now_seconds = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count(); kssCalculator.setDetectedObjects({}, now_seconds); auto kssBreakdownResults = kssCalculator.calculateCompositeKSS(); if (kssBreakdownResults.size() > 5 && kssBreakdownResults[5].size() == 2) { extractedTotalKSS = std::stoi(kssBreakdownResults[5][1]); } else { extractedTotalKSS = 1;}
                 }
-
-                // Calculate KSS (Common part)
-                double now_seconds = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
-                kssCalculator.setDetectedObjects(driver_detectedObjects_final, now_seconds); // Use filtered list
-                auto kssBreakdownResults = kssCalculator.calculateCompositeKSS();
-                 if (kssBreakdownResults.size() > 5 && kssBreakdownResults[5].size() == 2) { try { perclosKSS = std::stoi(kssBreakdownResults[0][1]); blinkKSS = std::stoi(kssBreakdownResults[1][1]); headposeKSS = std::stoi(kssBreakdownResults[2][1]); yawnKSS = std::stoi(kssBreakdownResults[3][1]); objdectdetectionKSS = std::stoi(kssBreakdownResults[4][1]); extractedTotalKSS = std::stoi(kssBreakdownResults[5][1]); } catch (...) { extractedTotalKSS = 1; } } else { extractedTotalKSS = 1; }
-
-                // Update status ONLY if not already set to an error/lost state
-                 if (kssStatus == "Normal") { // Only check for alerts if currently normal
-                     std::string alertStatus = kssCalculator.getKSSAlertStatus(extractedTotalKSS);
-                     if (!alertStatus.empty()) {
-                         kssStatus = alertStatus;
-                     }
-                 }
-
             } // End if(driver_roi_defined) / else
 
-             #ifdef DEBUG_DRAW_ROIS
-             for (int i = 0; i < face_results.count; ++i) { if (i != current_tracked_driver_idx) { draw_rectangle(&src_image, face_results.faces[i].box.left, face_results.faces[i].box.top, face_results.faces[i].box.right - face_results.faces[i].box.left, face_results.faces[i].box.bottom - face_results.faces[i].box.top, COLOR_YELLOW, 1); } }
-             #endif
-             // Determine final status color
-             if (kssStatus == "Normal") status_color_uint = COLOR_GREEN; else if (extractedTotalKSS <= 7) status_color_uint = COLOR_BLUE; else status_color_uint = COLOR_RED;
-             text_y = 10; if (!kssStatus.empty()) { draw_text(&src_image, kssStatus.c_str(), 10, text_y, status_color_uint, status_text_size); text_y += (int)(line_height * 1.4); }
-             // Draw rest of the text info...
-             text_stream.str(""); text_stream << "PERCLOS: " << std::fixed << std::setprecision(2) << blinkDetector.getPerclos() << "%"; draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; text_stream.str(""); text_stream << "Blinks (Last Min): " << blinkDetector.getBlinksInWindow(); draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; if (headPoseResults.rows.size() >= 3) { std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1]; draw_text(&src_image, headpose_text.c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; } else { draw_text(&src_image, "Head Pose: N/A", 10, text_y, COLOR_WHITE, text_size); text_y += line_height; } text_stream.str(""); text_stream << "Yawning: " << (yawnMetrics.isYawning ? "Yes" : "No"); draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; text_stream.str(""); text_stream << "Yawn Freq(5m): " << static_cast<int>(yawnMetrics.yawnFrequency_5min); draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; std::string detected_objects_text = ""; if (!detectedObjects.empty()) { detected_objects_text = "Detected: "; for (size_t j = 0; j < detectedObjects.size(); ++j) { detected_objects_text += detectedObjects[j]; if (j < detectedObjects.size() - 1) detected_objects_text += ", "; } draw_text(&src_image, detected_objects_text.c_str(), 10, text_y, COLOR_ORANGE, text_size); text_y += line_height; } text_stream.str(""); text_stream << "KSS Breakdown: P" << perclosKSS << " H" << headposeKSS << " Y" << yawnKSS << " O" << objdectdetectionKSS; draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_GREEN, text_size); text_y += line_height; text_stream.str(""); text_stream << "Composite KSS: " << extractedTotalKSS; draw_text(&src_image, text_stream.str().c_str(), 10, text_y, status_color_uint, text_size); text_y += line_height;
-
+            // Draw Status Text (Common)
+             // ... (Draw status text, KSS breakdown, etc. using the final kssStatus) ...
+             if (kssStatus == "Normal") status_color_uint = COLOR_GREEN; else if (extractedTotalKSS <= 7) status_color_uint = COLOR_BLUE; else status_color_uint = COLOR_RED; text_y = 10; if (!kssStatus.empty()) { draw_text(&src_image, kssStatus.c_str(), 10, text_y, status_color_uint, status_text_size); text_y += (int)(line_height * 1.4); } text_stream.str(""); text_stream << "PERCLOS: " << std::fixed << std::setprecision(2) << blinkDetector.getPerclos() << "%"; draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; text_stream.str(""); text_stream << "Blinks (Last Min): " << blinkDetector.getBlinksInWindow(); draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; if (headPoseResults.rows.size() >= 3) { std::string headpose_text = "Yaw:" + headPoseResults.rows[0][1] + " Pitch:" + headPoseResults.rows[1][1] + " Roll:" + headPoseResults.rows[2][1]; draw_text(&src_image, headpose_text.c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; } else { draw_text(&src_image, "Head Pose: N/A", 10, text_y, COLOR_WHITE, text_size); text_y += line_height; } text_stream.str(""); text_stream << "Yawning: " << (yawnMetrics.isYawning ? "Yes" : "No"); draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; text_stream.str(""); text_stream << "Yawn Freq(5m): " << static_cast<int>(yawnMetrics.yawnFrequency_5min); draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_WHITE, text_size); text_y += line_height; std::string detected_objects_text = ""; if (!detectedObjects.empty()) { detected_objects_text = "Detected: "; for (size_t j = 0; j < detectedObjects.size(); ++j) { detected_objects_text += detectedObjects[j]; if (j < detectedObjects.size() - 1) detected_objects_text += ", "; } draw_text(&src_image, detected_objects_text.c_str(), 10, text_y, COLOR_ORANGE, text_size); text_y += line_height; } text_stream.str(""); text_stream << "KSS Breakdown: P" << perclosKSS << " H" << headposeKSS << " Y" << yawnKSS << " O" << objdectdetectionKSS; draw_text(&src_image, text_stream.str().c_str(), 10, text_y, COLOR_GREEN, text_size); text_y += line_height; text_stream.str(""); text_stream << "Composite KSS: " << extractedTotalKSS; draw_text(&src_image, text_stream.str().c_str(), 10, text_y, status_color_uint, text_size); text_y += line_height;
 
         } // End if (!calibration_done) / else
 
         // --- Draw ROIs (Optional Debugging - FIXED ROI) ---
         #ifdef DEBUG_DRAW_ROIS
-        if (driver_roi_defined) { /* Draw Fixed ROI */ draw_rectangle(&src_image, driver_object_roi.x, driver_object_roi.y, driver_object_roi.width, driver_object_roi.height, COLOR_MAGENTA, 1); draw_text(&src_image, "Driver ROI", driver_object_roi.x + 5, driver_object_roi.y + 15, COLOR_MAGENTA, 10); }
-        // Optional: Draw non-tracked faces
+        if (driver_roi_defined) { // Draw the FIXED ROI if it has been defined
+             draw_rectangle(&src_image, driver_object_roi.x, driver_object_roi.y, driver_object_roi.width, driver_object_roi.height, COLOR_MAGENTA, 1); draw_text(&src_image, "Fixed Driver ROI", driver_object_roi.x + 5, driver_object_roi.y + 15, COLOR_MAGENTA, 10);
+        }
+        // Draw non-tracked faces (yellow box) - ALWAYS based on full frame results
          for (int i = 0; i < face_results.count; ++i) { if (i != current_tracked_driver_idx) { draw_rectangle(&src_image, face_results.faces[i].box.left, face_results.faces[i].box.top, face_results.faces[i].box.right - face_results.faces[i].box.left, face_results.faces[i].box.bottom - face_results.faces[i].box.top, COLOR_YELLOW, 1); } }
         #endif
 
@@ -492,8 +509,7 @@ int main(int argc, char **argv) {
     } // End main loop
 
     // --- Final Cleanup ---
-    if (fixed_roi_crop_img.virt_addr) { free(fixed_roi_crop_img.virt_addr); }
-    printf("INFO: Cleaning up resources...\n"); cv::destroyAllWindows(); stop_yolo_worker.store(true); if (yolo_worker_thread.joinable()) yolo_worker_thread.join(); printf("INFO: YOLO thread joined.\n"); if (input_pipeline) { gst_element_set_state(input_pipeline, GST_STATE_NULL); gst_object_unref(appsink_); gst_object_unref(input_pipeline); printf("INFO: Input pipeline released.\n"); } if (pipeline_) { gst_element_send_event(pipeline_, gst_event_new_eos()); GstBus* bus = gst_element_get_bus(pipeline_); gst_bus_poll(bus, GST_MESSAGE_EOS, GST_CLOCK_TIME_NONE); gst_object_unref(bus); gst_element_set_state(pipeline_, GST_STATE_NULL); gst_object_unref(appsrc_); gst_object_unref(pipeline_); printf("INFO: Saving pipeline released.\n"); } gst_deinit(); printf("INFO: GStreamer deinitialized.\n"); release_face_analyzer(&app_ctx.face_ctx); release_yolo11(&app_ctx.yolo_ctx); deinit_post_process(); printf("INFO: RKNN models released.\n");
+     if (fixed_roi_crop_img.virt_addr) { free(fixed_roi_crop_img.virt_addr); } printf("INFO: Cleaning up resources...\n"); cv::destroyAllWindows(); stop_yolo_worker.store(true); if (yolo_worker_thread.joinable()) yolo_worker_thread.join(); printf("INFO: YOLO thread joined.\n"); if (input_pipeline) { gst_element_set_state(input_pipeline, GST_STATE_NULL); gst_object_unref(appsink_); gst_object_unref(input_pipeline); printf("INFO: Input pipeline released.\n"); } if (pipeline_) { gst_element_send_event(pipeline_, gst_event_new_eos()); GstBus* bus = gst_element_get_bus(pipeline_); gst_bus_poll(bus, GST_MESSAGE_EOS, GST_CLOCK_TIME_NONE); gst_object_unref(bus); gst_element_set_state(pipeline_, GST_STATE_NULL); gst_object_unref(appsrc_); gst_object_unref(pipeline_); printf("INFO: Saving pipeline released.\n"); } gst_deinit(); printf("INFO: GStreamer deinitialized.\n"); release_face_analyzer(&app_ctx.face_ctx); release_yolo11(&app_ctx.yolo_ctx); deinit_post_process(); printf("INFO: RKNN models released.\n");
 
     printf("Exiting main (ret = %d)\n", ret);
     return ret;
