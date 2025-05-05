@@ -96,6 +96,7 @@
 #include <numeric>   // For std::accumulate
 #include <algorithm> // For std::sort
 
+double calculate_median(std::deque<double>& data);
 
 class YawnDetector {
 public:
