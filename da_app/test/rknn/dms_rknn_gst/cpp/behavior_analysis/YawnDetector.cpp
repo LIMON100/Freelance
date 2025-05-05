@@ -184,13 +184,15 @@
 #include <opencv2/imgproc.hpp>
 #include <chrono>
 #include <cmath>
-#include <numeric>
-#include <algorithm> // For std::count_if, std::sort, std::vector
+#include <numeric>     // For std::accumulate
+#include <algorithm>   // For std::sort, std::count_if
+#include <vector>      // Needed for sorting in calculate_median
 
+// +++ ADDED: Helper function definition HERE +++
 // Helper to calculate median from a deque
-double calculate_median(std::deque<double>& data) {
+double calculate_median(std::deque<double>& data) { // Takes non-const ref as it needs sorting copy
     if (data.empty()) {
-        return 0.0; // Or handle error appropriately
+        return 0.0; // Return 0 or some default for empty data
     }
     // Copy deque to vector for sorting
     std::vector<double> vec(data.begin(), data.end());
@@ -204,7 +206,7 @@ double calculate_median(std::deque<double>& data) {
         return vec[n / 2];
     }
 }
-
+// ++++++++++++++++++++++++++++++++++++++++++++++++
 
 YawnDetector::YawnDetector() :
     MOUTH_TOP(13),
@@ -226,18 +228,46 @@ YawnDetector::YawnDetector() :
     // completed_yawns_history initialized implicitly
 }
 
-// +++ ADDED: Implementation of the setter +++
 void YawnDetector::setPersonalizedYawnThreshold(double threshold) {
     this->personalized_yawn_threshold = threshold;
     printf("INFO: Personalized Yawn threshold set: %.2f\n", this->personalized_yawn_threshold);
 }
-// +++++++++++++++++++++++++++++++++++++++++++++
 
-// --- calculateYawnKSS remains the same ---
-int YawnDetector::calculateYawnKSS(double current_time_seconds) { /* ... keep as is ... */ double window_start_time = current_time_seconds - KSS_TIME_WINDOW_SECONDS; while (!completed_yawns_history.empty() && completed_yawns_history.front().timestamp < window_start_time) { completed_yawns_history.pop_front(); } int count_ge_2_sec = 0; int count_ge_3_sec = 0; int count_ge_4_sec = 0; for (const auto& yawn : completed_yawns_history) { if (yawn.duration >= 4.0) { count_ge_4_sec++; count_ge_3_sec++; count_ge_2_sec++; } else if (yawn.duration >= 3.0) { count_ge_3_sec++; count_ge_2_sec++; } else if (yawn.duration >= 2.0) { count_ge_2_sec++; } } int calculated_kss = 0; if (count_ge_4_sec >= 5) { calculated_kss = 7; } else if (count_ge_3_sec >= 3) { calculated_kss = 4; } else if (count_ge_2_sec >= 3) { calculated_kss = 1; } this->count_ge_2_sec_last_calc = count_ge_2_sec; this->count_ge_3_sec_last_calc = count_ge_3_sec; this->count_ge_4_sec_last_calc = count_ge_4_sec; this->yawn_kss = calculated_kss; return this->yawn_kss; }
+int YawnDetector::calculateYawnKSS(double current_time_seconds) {
+    // 1. Filter history for the last 5 minutes
+    double window_start_time = current_time_seconds - KSS_TIME_WINDOW_SECONDS;
+    while (!completed_yawns_history.empty() && completed_yawns_history.front().timestamp < window_start_time) {
+        completed_yawns_history.pop_front();
+    }
 
-// --- calculatePixelDistance remains the same ---
-double YawnDetector::calculatePixelDistance(cv::Point landmark1, cv::Point landmark2, int frame_width, int frame_height) { return std::hypot((double)landmark1.x - landmark2.x, (double)landmark1.y - landmark2.y); }
+    // 2. Count yawns meeting different duration criteria
+    int count_ge_2_sec = 0;
+    int count_ge_3_sec = 0;
+    int count_ge_4_sec = 0;
+    for (const auto& yawn : completed_yawns_history) {
+        if (yawn.duration >= 4.0) { count_ge_4_sec++; count_ge_3_sec++; count_ge_2_sec++; }
+        else if (yawn.duration >= 3.0) { count_ge_3_sec++; count_ge_2_sec++; }
+        else if (yawn.duration >= 2.0) { count_ge_2_sec++; }
+    }
+
+    // 3. Apply KSS rules
+    int calculated_kss = 0;
+    if (count_ge_4_sec >= 5) { calculated_kss = 7; }
+    else if (count_ge_3_sec >= 3) { calculated_kss = 4; }
+    else if (count_ge_2_sec >= 3) { calculated_kss = 1; }
+
+    // Store counts for getters
+    this->count_ge_2_sec_last_calc = count_ge_2_sec;
+    this->count_ge_3_sec_last_calc = count_ge_3_sec;
+    this->count_ge_4_sec_last_calc = count_ge_4_sec;
+
+    this->yawn_kss = calculated_kss;
+    return this->yawn_kss;
+}
+
+double YawnDetector::calculatePixelDistance(cv::Point landmark1, cv::Point landmark2, int frame_width, int frame_height) {
+    return std::hypot((double)landmark1.x - landmark2.x, (double)landmark1.y - landmark2.y);
+}
 
 
 YawnDetector::YawnMetrics YawnDetector::run(const std::vector<cv::Point>& faceLandmarks, int frame_width, int frame_height) {
@@ -251,8 +281,7 @@ YawnDetector::YawnMetrics YawnDetector::run(const std::vector<cv::Point>& faceLa
         cv::Point mouth_bottom = faceLandmarks[MOUTH_BOTTOM];
         double mouth_distance = calculatePixelDistance(mouth_top, mouth_bottom, frame_width, frame_height);
 
-        // *** MODIFIED: Use personalized member threshold ***
-        if (mouth_distance > this->personalized_yawn_threshold) {
+        if (mouth_distance > this->personalized_yawn_threshold) { // Use personalized threshold
             frames_below_threshold = 0;
             if (!is_yawning_now) {
                 is_yawning_now = true;
