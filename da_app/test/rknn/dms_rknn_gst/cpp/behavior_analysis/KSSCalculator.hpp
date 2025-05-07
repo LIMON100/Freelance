@@ -13,21 +13,13 @@ public:
 
 
     // FOR UI
-    // ADDED: Getters for consecutive frame counts
-    int getConsecutiveMobileFrames() const { return consecutiveMobileFrames; }
-    int getConsecutiveEatDrinkFrames() const { return consecutiveEatDrinkFrames; }
-    int getConsecutiveSmokeFrames() const { return consecutiveSmokeFrames; }
+    // int getConsecutiveMobileFrames() const { return consecutiveMobileFrames; }
+    // int getConsecutiveEatDrinkFrames() const { return consecutiveEatDrinkFrames; }
+    // int getConsecutiveSmokeFrames() const { return consecutiveSmokeFrames; }
 
-    // ADDED: Getters for event counts (optional, might be complex to show all)
-    // Example: Get count of level 3 mobile events in last 10 mins
-    int getMobileEventsL3_10m(double currentTimeSeconds) {
-        // Note: Need to call countEventsInWindow here or store result from calculateObjectDetectionKSS
-        // For simplicity, let's just return the stored value if calculateObjectDetectionKSS updates it.
-        // Alternatively, KSSCalculator could store the last calculated counts.
-        // Let's assume calculateObjectDetectionKSS stores these internally for now.
-        // We'll add placeholder members and getters.
-         return mobile_event_count_L3_10m; // Need to compute and store this in calculateObjectDetectionKSS
-    }
+    // int getMobileEventsL3_10m(double currentTimeSeconds) {
+    //      return mobile_event_count_L3_10m; // Need to compute and store this in calculateObjectDetectionKSS
+    // }
 
     // UNTIL THIS
 
@@ -45,6 +37,26 @@ public:
 
     // Get KSS alert status string (remains the same)
     std::string getKSSAlertStatus(int compositeKSS);
+
+
+    // FOR UI / Display
+    int getConsecutiveMobileFrames() const { return consecutiveMobileFrames; }
+    int getConsecutiveEatDrinkFrames() const { return consecutiveEatDrinkFrames; }
+    int getConsecutiveSmokeFrames() const { return consecutiveSmokeFrames; }
+
+    // +++ ADDED: Getters for event counts +++
+    int getMobileEventsL1_1m() const { return mobile_event_count_L1_1m; }
+    int getMobileEventsL2_5m() const { return mobile_event_count_L2_5m; }
+    int getMobileEventsL3_10m() const { return mobile_event_count_L3_10m; }
+
+    int getEatDrinkEventsL1_5m() const { return eat_drink_event_count_L1_5m; }
+    int getEatDrinkEventsL2_10m() const { return eat_drink_event_count_L2_10m; }
+    int getEatDrinkEventsL3_10m() const { return eat_drink_event_count_L3_10m; }
+
+    int getSmokeEventsL1_5m() const { return smoke_event_count_L1_5m; }
+    int getSmokeEventsL2_10m() const { return smoke_event_count_L2_10m; }
+    int getSmokeEventsL3_10m() const { return smoke_event_count_L3_10m; }
+    // +++++++++++++++++++++++++++++++++++++++
 
 private:
     // --- Constants ---
@@ -111,12 +123,17 @@ private:
 
 
 
-
-    // FOR UI
-    int mobile_event_count_L3_10m = 0;
-    int mobile_event_count_L2_5m = 0;
+    // +++ ADDED: Member variables to store calculated event counts +++
     int mobile_event_count_L1_1m = 0;
+    int mobile_event_count_L2_5m = 0;
+    int mobile_event_count_L3_10m = 0;
+    int eat_drink_event_count_L1_5m = 0;
+    int eat_drink_event_count_L2_10m = 0;
     int eat_drink_event_count_L3_10m = 0;
+    int smoke_event_count_L1_5m = 0;
+    int smoke_event_count_L2_10m = 0;
+    int smoke_event_count_L3_10m = 0;
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 };
 
 #endif // KSSCALCULATOR_HPP
