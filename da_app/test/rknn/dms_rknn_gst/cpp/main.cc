@@ -193,6 +193,12 @@ struct YoloInputData { long frame_id; std::shared_ptr<image_buffer_t> image; }; 
 void yolo_worker_thread_func(yolo11_app_context_t* yolo_ctx_ptr) { while (!stop_yolo_worker.load()) { YoloInputData input_data; bool got_data = false; { std::unique_lock<std::mutex> lock(yolo_input_mutex); if (!yolo_input_queue.empty()) { input_data = yolo_input_queue.front(); yolo_input_queue.pop(); got_data = true; } } if (got_data && input_data.image) { YoloOutputData output_data; output_data.frame_id = input_data.frame_id; memset(&output_data.results, 0, sizeof(output_data.results)); int ret = inference_yolo11(yolo_ctx_ptr, input_data.image.get(), &output_data.results); if (ret != 0) printf("WARN: YOLO Worker inference failed (frame %ld), ret=%d\n", input_data.frame_id, ret); { std::unique_lock<std::mutex> lock(yolo_output_mutex); if (yolo_output_queue.size() >= MAX_QUEUE_SIZE) yolo_output_queue.pop(); yolo_output_queue.push(output_data); } if (input_data.image->virt_addr) { free(input_data.image->virt_addr); input_data.image->virt_addr = nullptr; } } else { std::this_thread::sleep_for(std::chrono::milliseconds(5)); } } printf("YOLO Worker Thread Exiting.\n");}
 
 
+
+// void setupPipeline() { /* ... (keep as is) ... */ gst_init(nullptr, nullptr); const std::string dir = "/userdata/test_cpp/dms_gst"; struct stat st = {0}; if (stat(dir.c_str(), &st) == -1) { if (mkdir(dir.c_str(), 0700) == -1) { std::cerr << "Error: Cannot create directory " << dir << ": " << strerror(errno) << std::endl; return; } std::cout << "INFO: Created directory " << dir << std::endl; } else if (access(dir.c_str(), W_OK) != 0) { std::cerr << "Error: Directory " << dir << " is not writable." << std::endl; return; } DIR* directory = opendir(dir.c_str()); if (!directory) { std::cerr << "Failed to open directory " << dir << "\n"; return; } int mkv_count = 0; struct dirent* entry; while ((entry = readdir(directory)) != nullptr) { if (std::string_view(entry->d_name).find(".mkv") != std::string_view::npos) { ++mkv_count; } } closedir(directory); const std::string filepath = dir + "/dms_multi_" + std::to_string(mkv_count + 1) + ".mkv"; const std::string pipeline_str = "appsrc name=source ! queue ! videoconvert ! video/x-raw,format=NV12 ! mpph265enc rc-mode=cbr bps=4000000 gop=30 qp-min=10 qp-max=51 ! h265parse ! matroskamux ! filesink location=" + filepath; std::cout << "Saving Pipeline: " << pipeline_str << "\n"; GError* error = nullptr; pipeline_ = gst_parse_launch(pipeline_str.c_str(), &error); if (!pipeline_ || error) { std::cerr << "Failed to create saving pipeline: " << (error ? error->message : "Unknown error") << "\n"; if (error) { g_error_free(error); } return; } appsrc_ = gst_bin_get_by_name(GST_BIN(pipeline_), "source"); if (!appsrc_) { std::cerr << "Failed to get appsrc\n"; gst_object_unref(pipeline_); pipeline_ = nullptr; return; } g_object_set(G_OBJECT(appsrc_), "stream-type", GST_APP_STREAM_TYPE_STREAM, "format", GST_FORMAT_TIME, "is-live", FALSE, NULL); if (gst_element_set_state(pipeline_, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) { std::cerr << "Failed to set saving pipeline to playing state\n"; gst_object_unref(appsrc_); gst_object_unref(pipeline_); appsrc_ = nullptr; pipeline_ = nullptr; } else { std::cout << "INFO: Saving pipeline created and set to PLAYING (waiting for caps/data).\n"; } }
+
+// void pushFrameToPipeline(unsigned char* data, int size, int width, int height, GstClockTime duration) { if (!appsrc_) return; GstBuffer* buffer = gst_buffer_new_allocate(nullptr, size, nullptr); GstMapInfo map; if (!gst_buffer_map(buffer, &map, GST_MAP_WRITE)) { std::cerr << "Failed map buffer" << std::endl; gst_buffer_unref(buffer); return; } if (map.size != (guint)size) { std::cerr << "Buffer size mismatch: " << map.size << " vs " << size << std::endl; gst_buffer_unmap(buffer, &map); gst_buffer_unref(buffer); return; } memcpy(map.data, data, size); gst_buffer_unmap(buffer, &map); static GstClockTime timestamp = 0; GST_BUFFER_PTS(buffer) = timestamp; GST_BUFFER_DURATION(buffer) = duration; timestamp += GST_BUFFER_DURATION(buffer); GstFlowReturn ret; g_signal_emit_by_name(appsrc_, "push-buffer", buffer, &ret); if (ret != GST_FLOW_OK) std::cerr << "Failed push buffer, ret=" << ret << std::endl; gst_buffer_unref(buffer); }
+
+
 void setupPipeline() {
     gst_init(nullptr, nullptr);
     const std::string dir = "/userdata/test_cpp/dms_gst";
@@ -271,7 +277,6 @@ void pushFrameToPipeline(unsigned char* data, int size, int width, int height, G
 }
 
 // --- Resource Monitoring Functions ---
-// ... (Keep resource monitoring functions as is) ...
 void calculateOverallFPS(double frame_duration_ms, std::deque<double>& times_deque, double& fps_variable, int max_records) { times_deque.push_back(frame_duration_ms); if (times_deque.size() > max_records) times_deque.pop_front(); if (!times_deque.empty()) { double sum = std::accumulate(times_deque.begin(), times_deque.end(), 0.0); double avg_time_ms = sum / times_deque.size(); fps_variable = (avg_time_ms > 0) ? (1000.0 / avg_time_ms) : 0.0; } else { fps_variable = 0.0; } }
 void getCPUUsage(double& cpu_usage_variable, long& prev_idle, long& prev_total) { std::ifstream file("/proc/stat"); if (!file.is_open()) return; std::string line; std::getline(file, line); file.close(); long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice; user = nice = system = idle = iowait = irq = softirq = steal = guest = guest_nice = 0; std::istringstream iss(line); std::string cpu_label; iss >> cpu_label >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal >> guest >> guest_nice; long currentIdleTime = idle + iowait; long currentTotalTime = user + nice + system + idle + iowait + irq + softirq + steal; long diffIdle = currentIdleTime - prev_idle; long diffTotal = currentTotalTime - prev_total; if (diffTotal > 0) cpu_usage_variable = 100.0 * (double)(diffTotal - diffIdle) / diffTotal; prev_idle = currentIdleTime; prev_total = currentTotalTime; }
 void getTemperature(double& temp_variable) { const char* temp_paths[] = {"/sys/class/thermal/thermal_zone0/temp", "/sys/class/thermal/thermal_zone1/temp"}; bool temp_read = false; for (const char* path : temp_paths) { std::ifstream file(path); double temp_milliC = 0; if (file >> temp_milliC) { temp_variable = temp_milliC / 1000.0; temp_read = true; file.close(); break; } file.close(); } }
@@ -291,7 +296,10 @@ int main(int argc, char **argv) {
     const char *iris_model_path = "../../model/faceI.rknn";
     const char *yolo_model_path = "../../model/od.rknn";
 
-    const char *video_source = "filesrc location=../../model/wingbody4.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    const char *video_source = "filesrc location=../../model/wingbody1.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    
+    // const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
+
 
     // --- Initialization ---
     setupPipeline(); // Setup saving pipeline (without caps)
@@ -300,7 +308,6 @@ int main(int argc, char **argv) {
 
     // ... (Calibration vars) ...
      bool calibration_done = false; std::chrono::steady_clock::time_point calibration_start_time; bool calibration_timer_started = false; int consecutive_valid_eyes_frames = 0; const int REQUIRED_VALID_EYES_FRAMES = 60; bool ear_calibrated = false; bool mouth_calibrated = false; std::deque<float> calib_left_ears; std::deque<float> calib_right_ears; std::deque<double> calib_mouth_dists; int consecutive_stable_ear_frames = 0; int consecutive_stable_mouth_frames = 0; const int CALIB_WINDOW_SIZE = 30; const float EAR_STDDEV_THRESHOLD = 0.04; const double MOUTH_DIST_STDDEV_THRESHOLD = 15.0; const int REQUIRED_STABLE_FRAMES = CALIB_WINDOW_SIZE + 5; const double CALIBRATION_TIMEOUT_SECONDS = 10.0;
-
 
     // ... (Driver ID vars) ...
      bool driver_identified_ever = false; bool driver_tracked_this_frame = false; int current_tracked_driver_idx = -1; cv::Point prev_driver_centroid = cv::Point(-1, -1); const double MAX_CENTROID_DISTANCE = 150.0; int driver_search_timeout_frames = 0; const int DRIVER_SEARCH_MAX_FRAMES = 60;
@@ -562,6 +569,89 @@ int main(int argc, char **argv) {
                  }
             }
 
+            // +++++++++++++++ MODIFIED: Object Detection Event Count Display (Top-Right) +++++++++++++++
+            const int obj_text_size_new = 16; // <--- YOUR DESIRED NEW FONT SIZE
+            const int obj_line_height_new = obj_text_size_new + 6; // Adjust line height based on new font size
+            const int top_right_margin = 10; // Margin from the top and right edges
+
+            std::vector<std::string> object_event_lines;
+            std::string temp_line;
+
+            // Build the lines of text first to calculate their widths
+            object_event_lines.push_back("--- Object Events ---"); // Title
+
+            text_stream.str(""); text_stream << "Mobile (1s/1m): " << kssCalculator.getMobileEventsL1_1m();
+            object_event_lines.push_back(text_stream.str());
+
+            text_stream.str(""); text_stream << "Mobile (2s/5m): " << kssCalculator.getMobileEventsL2_5m();
+            object_event_lines.push_back(text_stream.str());
+
+            text_stream.str(""); text_stream << "Mobile (3s/10m): " << kssCalculator.getMobileEventsL3_10m();
+            object_event_lines.push_back(text_stream.str());
+
+            object_event_lines.push_back(""); // Spacer line
+
+            text_stream.str(""); text_stream << "Eat/Drink (1s/5m): " << kssCalculator.getEatDrinkEventsL1_5m();
+            object_event_lines.push_back(text_stream.str());
+
+            text_stream.str(""); text_stream << "Eat/Drink (2s/10m): " << kssCalculator.getEatDrinkEventsL2_10m();
+            object_event_lines.push_back(text_stream.str());
+
+            text_stream.str(""); text_stream << "Eat/Drink (3s/10m): " << kssCalculator.getEatDrinkEventsL3_10m();
+            object_event_lines.push_back(text_stream.str());
+
+            object_event_lines.push_back(""); // Spacer line
+
+            text_stream.str(""); text_stream << "Smoking (1s/5m): " << kssCalculator.getSmokeEventsL1_5m();
+            object_event_lines.push_back(text_stream.str());
+
+            text_stream.str(""); text_stream << "Smoking (2s/10m): " << kssCalculator.getSmokeEventsL2_10m();
+            object_event_lines.push_back(text_stream.str());
+
+            text_stream.str(""); text_stream << "Smoking (3s/10m): " << kssCalculator.getSmokeEventsL3_10m();
+            object_event_lines.push_back(text_stream.str());
+
+            // Calculate the maximum width of these lines with the new font size
+            int max_text_width = 0;
+            cv::Mat temp_mat_for_text_size(src_image.height, src_image.width, CV_8UC3); // Dummy mat for text size calculation
+
+            for (const auto& line : object_event_lines) {
+                if (line.empty()) continue; // Skip empty spacer lines for width calculation
+                // Use OpenCV to get text size for accurate width
+                int baseline = 0;
+                cv::Size textSize = cv::getTextSize(line, cv::FONT_HERSHEY_SIMPLEX, // Or your preferred font
+                                                   (double)obj_text_size_new / 20.0, // OpenCV font scale is different
+                                                   1,                               // Thickness
+                                                   &baseline);
+                if (textSize.width > max_text_width) {
+                    max_text_width = textSize.width;
+                }
+            }
+       
+
+
+            int obj_text_x_dynamic = src_image.width - max_text_width - top_right_margin;
+            int obj_text_y = top_right_margin;
+
+            // Now draw the lines using the dynamically calculated starting X
+            bool is_title = true;
+            for (const auto& line : object_event_lines) {
+                if (line.empty()) { // Handle spacer lines
+                    obj_text_y += obj_line_height_new / 2; // Smaller gap for spacers
+                    continue;
+                }
+                if (is_title) {
+                    draw_text(&src_image, line.c_str(), obj_text_x_dynamic, obj_text_y, COLOR_ORANGE, obj_text_size_new + 2);
+                    is_title = false;
+                } else {
+                    draw_text(&src_image, line.c_str(), obj_text_x_dynamic, obj_text_y, COLOR_WHITE, obj_text_size_new);
+                }
+                obj_text_y += obj_line_height_new;
+            }
+            // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
             // Draw Status Text (Common)
             if (kssStatus == "Normal") status_color_uint = COLOR_GREEN; else if (extractedTotalKSS <= 7) status_color_uint = COLOR_BLUE; else status_color_uint = COLOR_RED;
 
@@ -650,7 +740,8 @@ int main(int argc, char **argv) {
         // cv::imshow("DMS Output", display_frame);
 
         // --- Push Frame to Saving Pipeline ---
-        //  if (pipeline_ && appsrc_ && saving_pipeline_caps_set) { GstClockTime duration = gst_util_uint64_scale_int(1, GST_SECOND, video_info.fps_n > 0 ? video_info.fps_d * video_info.fps_n : 30); pushFrameToPipeline(map_info.data, map_info.size, src_image.width, src_image.height, duration); }
+        // if (pipeline_ && appsrc_ && saving_pipeline_caps_set) { GstClockTime duration = gst_util_uint64_scale_int(1, GST_SECOND, video_info.fps_n > 0 ? video_info.fps_d * video_info.fps_n : 30); pushFrameToPipeline(map_info.data, map_info.size, src_image.width, src_image.height, duration); }
+
         if (pipeline_ && appsrc_ && saving_pipeline_caps_set) { // Check flag
             // Calculate duration based on INPUT video info
             GstClockTime duration = gst_util_uint64_scale_int(GST_SECOND, video_info.fps_d, video_info.fps_n);
