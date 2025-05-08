@@ -11,19 +11,6 @@ class KSSCalculator {
 public:
     KSSCalculator();
 
-
-    // FOR UI
-    // int getConsecutiveMobileFrames() const { return consecutiveMobileFrames; }
-    // int getConsecutiveEatDrinkFrames() const { return consecutiveEatDrinkFrames; }
-    // int getConsecutiveSmokeFrames() const { return consecutiveSmokeFrames; }
-
-    // int getMobileEventsL3_10m(double currentTimeSeconds) {
-    //      return mobile_event_count_L3_10m; // Need to compute and store this in calculateObjectDetectionKSS
-    // }
-
-    // UNTIL THIS
-
-
     // Setters for input factors
     void setPerclos(double perclos);
     void setHeadPose(int headPoseKSS); // Setter remains the same

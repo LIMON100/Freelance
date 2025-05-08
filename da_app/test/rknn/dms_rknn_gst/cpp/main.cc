@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
     const char *iris_model_path = "../../model/faceI.rknn";
     const char *yolo_model_path = "../../model/od.rknn";
 
-    const char *video_source = "filesrc location=../../model/wingbody1.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    const char *video_source = "filesrc location=../../model/ADG_R_dms.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
     
     // const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
      cv::Rect driver_object_roi; bool driver_roi_defined = false; bool valid_object_roi = false;
 
     // ... (KSS/Display vars) ...
-     std::string kssStatus = "Initializing"; YawnDetector::YawnMetrics yawnMetrics = {}; my::HeadPoseTracker::HeadPoseResults headPoseResults = {}; std::vector<std::string> detectedObjects; int extractedTotalKSS = 1; int perclosKSS = 1, blinkKSS = 1, headposeKSS = 1, yawnKSS = 1, objdectdetectionKSS = 1; std::stringstream text_stream; int text_y = 0; const int line_height = 22; const int text_size = 12; const int status_text_size = 16; unsigned int status_color_uint = COLOR_GREEN;
+     std::string kssStatus = "Initializing"; YawnDetector::YawnMetrics yawnMetrics = {}; my::HeadPoseTracker::HeadPoseResults headPoseResults = {}; std::vector<std::string> detectedObjects; int extractedTotalKSS = 1; int perclosKSS = 1, blinkKSS = 1, headposeKSS = 1, yawnKSS = 1, objdectdetectionKSS = 1; std::stringstream text_stream; int text_y = 0; const int line_height = 22; const int text_size = 14; const int status_text_size = 16; unsigned int status_color_uint = COLOR_GREEN;
 
     // --- YOLO thread handle ---
     std::thread yolo_worker_thread;
@@ -570,83 +570,88 @@ int main(int argc, char **argv) {
             }
 
             // +++++++++++++++ MODIFIED: Object Detection Event Count Display (Top-Right) +++++++++++++++
-            const int obj_text_size_new = 16; // <--- YOUR DESIRED NEW FONT SIZE
-            const int obj_line_height_new = obj_text_size_new + 6; // Adjust line height based on new font size
-            const int top_right_margin = 10; // Margin from the top and right edges
+            const int obj_text_size_new = 16;
+            const int obj_line_height_new = obj_text_size_new + 13;
+            const int top_right_margin = 10;
+            const unsigned int text_bg_color = 0x000000; // Black background for text area
+                                                       // For semi-transparent: 0x80000000 (black with 50% alpha if RGBA)
+                                                       // If your draw_rectangle supports alpha, otherwise use solid.
 
             std::vector<std::string> object_event_lines;
-            std::string temp_line;
+            // ... (Build object_event_lines vector as before) ...
+            object_event_lines.push_back("Object Events ");
+            text_stream.str(""); 
+            
+            text_stream << "Mobile (1s/1m): " << kssCalculator.getMobileEventsL1_1m(); 
+            object_event_lines.push_back(text_stream.str()); 
+            
+            text_stream.str(""); 
+            text_stream << "Mobile (2s/5m): " << kssCalculator.getMobileEventsL2_5m(); 
+            object_event_lines.push_back(text_stream.str()); 
+            
+            text_stream.str(""); 
+            text_stream << "Mobile (3s/10m): " << kssCalculator.getMobileEventsL3_10m(); 
+            object_event_lines.push_back(text_stream.str()); 
+            object_event_lines.push_back(""); text_stream.str(""); 
+            text_stream << "E/D (1s/5m): " << kssCalculator.getEatDrinkEventsL1_5m(); 
+            object_event_lines.push_back(text_stream.str()); 
+            text_stream.str(""); 
+            text_stream << "E/D (2s/10m): " << kssCalculator.getEatDrinkEventsL2_10m();
+            object_event_lines.push_back(text_stream.str()); 
+            text_stream.str(""); 
+            text_stream << "E/D (3s/10m): " << kssCalculator.getEatDrinkEventsL3_10m(); 
+            object_event_lines.push_back(text_stream.str()); 
+            object_event_lines.push_back(""); text_stream.str(""); text_stream << "Smoking (1s/5m): " << kssCalculator.getSmokeEventsL1_5m(); object_event_lines.push_back(text_stream.str()); text_stream.str(""); text_stream << "Smoking (2s/10m): " << kssCalculator.getSmokeEventsL2_10m(); object_event_lines.push_back(text_stream.str()); text_stream.str(""); text_stream << "Smoking (3s/10m): " << kssCalculator.getSmokeEventsL3_10m(); object_event_lines.push_back(text_stream.str());
 
-            // Build the lines of text first to calculate their widths
-            object_event_lines.push_back("--- Object Events ---"); // Title
 
-            text_stream.str(""); text_stream << "Mobile (1s/1m): " << kssCalculator.getMobileEventsL1_1m();
-            object_event_lines.push_back(text_stream.str());
-
-            text_stream.str(""); text_stream << "Mobile (2s/5m): " << kssCalculator.getMobileEventsL2_5m();
-            object_event_lines.push_back(text_stream.str());
-
-            text_stream.str(""); text_stream << "Mobile (3s/10m): " << kssCalculator.getMobileEventsL3_10m();
-            object_event_lines.push_back(text_stream.str());
-
-            object_event_lines.push_back(""); // Spacer line
-
-            text_stream.str(""); text_stream << "Eat/Drink (1s/5m): " << kssCalculator.getEatDrinkEventsL1_5m();
-            object_event_lines.push_back(text_stream.str());
-
-            text_stream.str(""); text_stream << "Eat/Drink (2s/10m): " << kssCalculator.getEatDrinkEventsL2_10m();
-            object_event_lines.push_back(text_stream.str());
-
-            text_stream.str(""); text_stream << "Eat/Drink (3s/10m): " << kssCalculator.getEatDrinkEventsL3_10m();
-            object_event_lines.push_back(text_stream.str());
-
-            object_event_lines.push_back(""); // Spacer line
-
-            text_stream.str(""); text_stream << "Smoking (1s/5m): " << kssCalculator.getSmokeEventsL1_5m();
-            object_event_lines.push_back(text_stream.str());
-
-            text_stream.str(""); text_stream << "Smoking (2s/10m): " << kssCalculator.getSmokeEventsL2_10m();
-            object_event_lines.push_back(text_stream.str());
-
-            text_stream.str(""); text_stream << "Smoking (3s/10m): " << kssCalculator.getSmokeEventsL3_10m();
-            object_event_lines.push_back(text_stream.str());
-
-            // Calculate the maximum width of these lines with the new font size
             int max_text_width = 0;
-            cv::Mat temp_mat_for_text_size(src_image.height, src_image.width, CV_8UC3); // Dummy mat for text size calculation
-
-            for (const auto& line : object_event_lines) {
-                if (line.empty()) continue; // Skip empty spacer lines for width calculation
-                // Use OpenCV to get text size for accurate width
-                int baseline = 0;
-                cv::Size textSize = cv::getTextSize(line, cv::FONT_HERSHEY_SIMPLEX, // Or your preferred font
-                                                   (double)obj_text_size_new / 20.0, // OpenCV font scale is different
-                                                   1,                               // Thickness
-                                                   &baseline);
-                if (textSize.width > max_text_width) {
-                    max_text_width = textSize.width;
-                }
-            }
-       
+            // ... (Calculate max_text_width using cv::getTextSize or your util's equivalent) ...
+            // (Using the simplified character count for brevity here, replace with your actual width calculation)
+            int max_char_count = 0; for (const auto& line : object_event_lines) { if (line.length() > max_char_count) max_char_count = line.length(); } max_text_width = max_char_count * obj_text_size_new; // Approximate
 
 
             int obj_text_x_dynamic = src_image.width - max_text_width - top_right_margin;
-            int obj_text_y = top_right_margin;
+            int current_obj_text_y = top_right_margin; // Use a temporary y for background calculation
+
+            // *** ADDED: Calculate total height of the text block for background ***
+            int total_text_block_height = 0;
+            for (const auto& line : object_event_lines) {
+                if (line.empty()) {
+                    total_text_block_height += obj_line_height_new / 2; // Spacer
+                } else {
+                    total_text_block_height += obj_line_height_new;
+                }
+            }
+            // Add a little padding to the background height
+            total_text_block_height += 5;
+
+            // *** ADDED: Draw the background rectangle ***
+            // Ensure drawing coordinates are within frame boundaries
+            int bg_rect_x = std::max(0, obj_text_x_dynamic - 5); // Small padding
+            int bg_rect_y = std::max(0, current_obj_text_y - 5);
+            int bg_rect_w = std::min(max_text_width + 10, src_image.width - bg_rect_x);
+            int bg_rect_h = std::min(total_text_block_height, src_image.height - bg_rect_y);
+
+            if (bg_rect_w > 0 && bg_rect_h > 0) { // Only draw if valid
+                draw_rectangle(&src_image, bg_rect_x, bg_rect_y, bg_rect_w, bg_rect_h,
+                               text_bg_color, -1); // -1 for filled rectangle
+            }
+            // *******************************************
 
             // Now draw the lines using the dynamically calculated starting X
             bool is_title = true;
             for (const auto& line : object_event_lines) {
-                if (line.empty()) { // Handle spacer lines
-                    obj_text_y += obj_line_height_new / 2; // Smaller gap for spacers
+                if (line.empty()) {
+                    current_obj_text_y += obj_line_height_new / 2;
                     continue;
                 }
                 if (is_title) {
-                    draw_text(&src_image, line.c_str(), obj_text_x_dynamic, obj_text_y, COLOR_ORANGE, obj_text_size_new + 2);
+                    draw_text(&src_image, line.c_str(), obj_text_x_dynamic, current_obj_text_y, COLOR_ORANGE, obj_text_size_new + 2);
                     is_title = false;
                 } else {
-                    draw_text(&src_image, line.c_str(), obj_text_x_dynamic, obj_text_y, COLOR_WHITE, obj_text_size_new);
+                    draw_text(&src_image, line.c_str(), obj_text_x_dynamic, current_obj_text_y, COLOR_WHITE, obj_text_size_new);
                 }
-                obj_text_y += obj_line_height_new;
+                current_obj_text_y += obj_line_height_new;
             }
             // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

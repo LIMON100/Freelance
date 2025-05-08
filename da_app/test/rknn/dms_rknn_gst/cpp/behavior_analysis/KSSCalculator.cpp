@@ -186,20 +186,6 @@ int KSSCalculator::calculateBlinkCountKSS() {
 }
 
 
-// int KSSCalculator::calculateYawnKSS() {
-//     if (yawnFrequency < 1.0) {
-//         return 0;
-//     } else if (yawnFrequency > 1.0 && yawnFrequency < 3.0) {
-//         return 1;
-//     }else if (yawnFrequency > 3.0 && yawnFrequency < 5.0) {
-//         return 4;
-//     } else if (yawnFrequency > 5.0 && yawnFrequency < 7.0) {
-//         return 7;
-//     } else if(yawnFrequency >= 7.0) { 
-//         return 9;
-//     }
-// }
-
 int KSSCalculator::calculateYawnKSS() {
     if (yawnFrequency > 7.0) {
         return 9;
