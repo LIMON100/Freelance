@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
     const char *iris_model_path = "../../model/faceI.rknn";
     const char *yolo_model_path = "../../model/od.rknn";
 
-    const char *video_source = "filesrc location=../../model/wingbody3.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+    const char *video_source = "filesrc location=../../model/t2.mkv ! decodebin ! queue ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink sync=false";
     
     // const char *video_source = "v4l2src device=/dev/video0 ! queue ! videoconvert ! video/x-raw,format=BGR,width=1920,height=1080,framerate=30/1 ! appsink name=sink sync=false";
 
