@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorSurface"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/layout_toolbar"/>
+
+        <LinearLayout
+            android:id="@+id/llMapDbUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/update_row_bg"
+            android:orientation="horizontal"
+            android:layout_marginTop="@dimen/padding_10dp"
+            android:layout_marginHorizontal="@dimen/generic_large_padding"
+            android:padding="@dimen/generic_padding">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_map_db_update" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/generic_padding"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:text="@string/map_db_update"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_arrow_forward" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/llMasterUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_10dp"
+            android:layout_marginHorizontal="@dimen/generic_large_padding"
+            android:background="@drawable/update_row_bg"
+            android:orientation="horizontal"
+            android:padding="@dimen/generic_padding">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_map_db_update" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/generic_padding"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:text="@string/master_firmware_update"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_arrow_forward" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llCameraUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_10dp"
+            android:layout_marginHorizontal="@dimen/generic_large_padding"
+            android:background="@drawable/update_row_bg"
+            android:orientation="horizontal"
+            android:padding="@dimen/generic_padding">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_map_db_update" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/generic_padding"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:text="@string/camera_firmware_update"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_arrow_forward" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>

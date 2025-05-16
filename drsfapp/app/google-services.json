@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "173243809391",
+    "project_id": "axon-main",
+    "storage_bucket": "axon-main.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:173243809391:android:60d0691ea9ae9c546bd79a",
+        "android_client_info": {
+          "package_name": "com.axon.kisa10"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6Ob8hM1SpwAc2eBiuwVsiuNBQq4L61hA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

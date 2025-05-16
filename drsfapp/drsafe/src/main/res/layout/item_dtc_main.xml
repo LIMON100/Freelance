@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/generic_large_padding"
+            android:paddingTop="@dimen/generic_large_padding"
+            android:paddingBottom="@dimen/generic_padding"
+            android:textColor="@color/colorPrimary"
+            tools:text="B0563" />
+
+        <TextView
+            android:id="@+id/tvSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/generic_large_padding"
+            android:paddingVertical="@dimen/generic_padding"
+            android:textAppearance="@style/Theme.DrSafe.caption1"
+            tools:text="Battery Voltage High TSM/TSSM" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="@dimen/generic_small_padding"
+            android:background="@color/colorLine" />
+    </LinearLayout>
+</layout>

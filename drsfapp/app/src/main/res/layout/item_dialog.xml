@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_dialog"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:paddingLeft="@dimen/_20dp"
+    android:id="@+id/tab_item">
+
+
+    <ImageView
+        android:id="@+id/img_check_et"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_gravity="center_vertical"
+        android:background="@drawable/bg_ic_check_state"
+        android:padding="1dp"
+        android:src="@drawable/bg_ic_check" />
+
+
+    <TextView
+        android:id="@+id/tv_content_et"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:text="Hyundai"
+        android:textColor="@color/color_black"
+        android:textSize="@dimen/text_size_12" />
+
+</LinearLayout>

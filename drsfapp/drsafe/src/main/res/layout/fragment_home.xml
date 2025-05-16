@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/splash_bg">
+
+            <include
+                layout="@layout/layout_main_logo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/llTextMessage"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            android:layout_weight="1"
+            android:visibility="visible"
+            android:background="@color/colorLine">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_margin="16dp"
+                android:background="@drawable/home_msg_bg">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:text="@string/home_msg"
+                    android:fontFamily="@font/figtree"
+                    android:textSize="16sp"
+                    android:layout_weight="1"
+                    android:textColor="@color/colorOnSurface"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnOk"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:background="@drawable/generic_btn_bg"
+                    android:fontFamily="@font/figtree"
+                    android:text="@string/ok"
+                    android:textAppearance="@style/Theme.DrSafe.Button"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <include
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="gone"
+            layout="@layout/layout_home_connection_panel" />
+
+    </LinearLayout>
+</layout>

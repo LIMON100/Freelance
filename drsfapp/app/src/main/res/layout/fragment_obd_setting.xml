@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/baudrate" />
+
+            <RadioGroup
+                android:id="@+id/rg_baudrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/rb_125kb"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="125000"
+                    android:text="125KB" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/rb_250kb"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="250000"
+                    android:text="250KB" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/rb_500kb"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:tag="500000"
+                    android:text="500KB" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/rb_1000kb"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="1000000"
+                    android:text="1000KB" />
+            </RadioGroup>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/obd_divider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/can_mode" />
+
+            <RadioGroup
+                android:id="@+id/rg_canmode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/canModeOBD2"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:tag="0"
+                    android:text="OBD2" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/canModeBroadcast"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="1"
+                    android:text="Broadcast" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/canModeUDS"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="2"
+                    android:text="UDS" />
+
+            </RadioGroup>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/obd_divider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/speed" />
+
+            <RadioGroup
+                android:id="@+id/rg_speed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/speed_canType"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:tag="0"
+                    android:text="@string/can_type" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/speed_lineType"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="1"
+                    android:text="Pulse" />
+            </RadioGroup>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/obd_divider" />
+
+        <LinearLayout
+            android:id="@+id/ll_speedFactor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="15dp"
+                android:layout_weight="1"
+                android:text="@string/speed_factor" />
+
+            <EditText
+                android:id="@+id/et_spped"
+                android:layout_width="130dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end"
+                android:background="@drawable/back_obd_setting_input"
+                android:fontFamily="@font/notosans_medium"
+                android:gravity="end"
+                android:inputType="numberDecimal"
+                android:maxLength="6"
+                android:text="0"
+                android:paddingLeft="15dp"
+                android:paddingTop="8dp"
+                android:paddingRight="15dp"
+                android:paddingBottom="8dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/obd_divider" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rpm" />
+
+            <RadioGroup
+                android:id="@+id/rg_rpm"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/rpm_canType"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:tag="0"
+                    android:text="@string/can_type" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/rpm_lineType"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="1"
+                    android:text="Pulse" />
+            </RadioGroup>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/obd_divider" />
+
+        <LinearLayout
+            android:id="@+id/ll_rpmFactor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/rpm_factor" />
+
+            <EditText
+                android:id="@+id/et_rpm"
+                android:layout_width="130dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end"
+                android:background="@drawable/back_obd_setting_input"
+                android:fontFamily="@font/notosans_medium"
+                android:gravity="end"
+                android:inputType="numberDecimal"
+                android:maxLength="6"
+                android:text="0"
+                android:paddingLeft="15dp"
+                android:paddingTop="8dp"
+                android:paddingRight="15dp"
+                android:paddingBottom="8dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/obd_divider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/brake" />
+
+            <RadioGroup
+                android:id="@+id/rg_brake"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/brake_canType"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:tag="0"
+                    android:text="@string/can_type" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/brake_lineType"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="1"
+                    android:text="Pulse" />
+            </RadioGroup>
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCDFFF" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_brakeSignal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
+
+            <TextView
+                style="@style/obd_setting_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Brake Active Lvl" />
+
+            <RadioGroup
+                android:id="@+id/rg_signal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/signal_low"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:tag="0"
+                    android:text="High" />
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+
+                    android:id="@+id/signal_high"
+                    style="@style/obd_setting_radio_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:tag="1"
+                    android:text="Low" />
+            </RadioGroup>
+
+        </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnSaveChange"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/btn_height"
+            android:layout_gravity="center"
+            android:background="@drawable/back_btn"
+            android:textColor="@color/white"
+            android:paddingLeft="30dp"
+            android:textSize="18sp"
+            android:paddingRight="30dp"
+            android:fontFamily="@font/notosans_regular"
+            android:text="@string/save_changes"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+</layout>

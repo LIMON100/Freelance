@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:fontFamily="@font/figtree"
+        android:text="@string/connection_details"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="1dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView2">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:divider="@drawable/divider_connection_list"
+            app:showDividers="middle">
+
+            <include
+                android:id="@+id/panelDate"
+                layout="@layout/fragment_home_connection_list_date"
+                android:layout_width="match_parent"
+                android:layout_height="60dp" />
+
+
+            <include
+                android:id="@+id/panelUsername"
+                layout="@layout/fragment_home_connection_list_username"
+                android:layout_width="match_parent"
+                android:layout_height="60dp" />
+
+
+            <include
+                android:id="@+id/panelRegistrationNumber"
+                layout="@layout/fragment_home_connection_list_product"
+                android:layout_width="match_parent"
+                android:layout_height="60dp" />
+
+            <include
+                android:id="@+id/panelNetworkState"
+                layout="@layout/fragment_home_connection_list_network"
+                android:layout_width="match_parent"
+                android:layout_height="60dp" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

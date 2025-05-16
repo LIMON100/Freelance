@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorSurface">
+
+
+            <TextView
+                android:id="@+id/tvRecentTrips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/generic_large_padding"
+                android:text="@string/recent_trips"
+                android:textAppearance="@style/Theme.DrSafe.headline6"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTrips"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/generic_padding"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintEnd_toEndOf="@id/tvRecentTrips"
+                app:layout_constraintStart_toStartOf="@id/tvRecentTrips"
+                app:layout_constraintTop_toBottomOf="@id/tvRecentTrips"
+                tools:itemCount="2"
+                tools:listitem="@layout/item_trip_details" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/generic_padding"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/rvTrips">
+
+
+                <LinearLayout
+                    android:id="@+id/llPie"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/current_score_bg">
+
+
+                        <com.github.mikephil.charting.charts.PieChart
+                            android:id="@+id/otPieChart"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginStart="@dimen/generic_large_padding"
+                            android:layout_marginTop="@dimen/generic_large_padding"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/tvPie"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="56"
+                            android:textAppearance="@style/Theme.DrSafe.caption2"
+                            android:textStyle="bold"
+                            app:layout_constraintBottom_toBottomOf="@id/otPieChart"
+                            app:layout_constraintEnd_toEndOf="@id/otPieChart"
+                            app:layout_constraintStart_toStartOf="@id/otPieChart"
+                            app:layout_constraintTop_toTopOf="@id/otPieChart" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Km/hr"
+                            android:textAppearance="@style/Theme.DrSafe.caption2"
+                            android:textSize="9sp"
+                            app:layout_constraintEnd_toEndOf="@id/tvPie"
+                            app:layout_constraintStart_toStartOf="@id/tvPie"
+                            app:layout_constraintTop_toBottomOf="@id/tvPie" />
+
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/generic_padding"
+                            android:layout_marginTop="@dimen/generic_large_padding"
+                            android:layout_marginBottom="@dimen/generic_large_padding"
+                            android:text="@string/overtaking_speed"
+                            android:textAppearance="@style/Theme.DrSafe.caption2"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/otPieChart" />
+
+
+                        <LinearLayout
+                            android:id="@+id/llAvg"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/generic_padding"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/otPieChart"
+                            app:layout_constraintTop_toTopOf="@id/otPieChart">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/image_28dp"
+                                android:src="@drawable/indicator_green" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/generic_small_padding"
+                                android:text="Average - 20"
+                                android:textAppearance="@style/Theme.DrSafe.caption2" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/llVariations"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/generic_padding"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/otPieChart"
+                            app:layout_constraintTop_toBottomOf="@id/llAvg">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/image_28dp"
+                                android:src="@drawable/indicator_red" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/generic_small_padding"
+                                android:text="Variations - 34"
+                                android:textAppearance="@style/Theme.DrSafe.caption2" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/llMaximum"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/generic_padding"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/otPieChart"
+                            app:layout_constraintTop_toBottomOf="@id/llVariations">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/image_28dp"
+                                android:src="@drawable/indicator_yellow" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/generic_small_padding"
+                                android:text="Maximum - 48"
+                                android:textAppearance="@style/Theme.DrSafe.caption2" />
+
+                        </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:padding="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvSuddenDip"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="55"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:text="@string/sudden_departure"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_marginTop="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:padding="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvRapidAcc"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_gravity="center"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="60"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:text="@string/rapid_acceleration"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/llParams"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/generic_large_padding"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="@id/llPie"
+                    app:layout_constraintStart_toStartOf="@id/llPie"
+                    app:layout_constraintTop_toBottomOf="@id/llPie">
+
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:paddingVertical="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvRapidDec"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="50"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:text="@string/rapid_deceleration"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:paddingVertical="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvSuddenStop"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="47"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:text="Sudden Stop"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:paddingVertical="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvCourseChange"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="87"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:singleLine="true"
+                                android:text="@string/radical_course_change"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/generic_large_padding"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:paddingVertical="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvSharpTurns"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="64"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:text="@string/sharp_turns"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:paddingVertical="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvSuddenTurns"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="24"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:text="@string/sharp_u_turn"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="@dimen/generic_small_padding"
+                            android:layout_weight="1"
+                            android:background="@drawable/current_score_bg"
+                            android:orientation="vertical"
+                            android:paddingVertical="@dimen/generic_small_padding">
+
+                            <TextView
+                                android:id="@+id/tvLongDrive"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="76"
+                                android:textAppearance="@style/Theme.DrSafe.Headline5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:padding="@dimen/generic_small_padding"
+                                android:singleLine="true"
+                                android:text="@string/long_driving"
+                                android:textAppearance="@style/Theme.DrSafe.caption2"
+                                android:textSize="@dimen/dimen_10sp" />
+                        </LinearLayout>
+
+
+                    </LinearLayout>
+
+
+                </LinearLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cdSpeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/generic_large_padding"
+                    android:background="@drawable/current_score_bg"
+                    app:layout_constraintEnd_toEndOf="@id/llParams"
+                    app:layout_constraintStart_toStartOf="@id/llParams"
+                    app:layout_constraintTop_toBottomOf="@id/llParams">
+
+                    <TextView
+                        android:id="@+id/textView4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="@dimen/generic_large_padding"
+                        android:text="@string/graphical_summary_speed"
+                        android:textAppearance="@style/Theme.DrSafe.headline6"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:id="@+id/llSpeedLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/generic_padding"
+                        app:layout_constraintTop_toBottomOf="@id/textView4"
+                        app:layout_constraintStart_toStartOf="@id/textView4">
+
+                        <ImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/image_28dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/indicator_red" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/generic_small_padding"
+                            android:text="Speed"
+                            android:layout_gravity="center"
+                            android:textAppearance="@style/Theme.DrSafe.caption2" />
+                    </LinearLayout>
+
+
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/lineChartSpeed"
+                        android:layout_width="0dp"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="@dimen/generic_padding"
+                        app:layout_constraintBottom_toTopOf="@id/tvXLabel"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/tvYLabel"
+                        app:layout_constraintTop_toBottomOf="@+id/llSpeedLabel" />
+
+                    <TextView
+                        android:id="@+id/tvYLabel"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:rotation="-90"
+                        android:text="Speed"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+
+                    <TextView
+                        android:id="@+id/tvXLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Time (Min)"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cdRPM"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/generic_large_padding"
+                    android:layout_marginBottom="@dimen/generic_large_padding"
+                    android:background="@drawable/current_score_bg"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="@id/cdSpeed"
+                    app:layout_constraintStart_toStartOf="@id/cdSpeed"
+                    app:layout_constraintTop_toBottomOf="@id/cdSpeed">
+
+                    <TextView
+                        android:id="@+id/textView5"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="@dimen/generic_large_padding"
+                        android:text="@string/graphical_summary_rpm"
+                        android:textAppearance="@style/Theme.DrSafe.headline6"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:id="@+id/llRPMLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/generic_padding"
+                        app:layout_constraintTop_toBottomOf="@id/textView5"
+                        app:layout_constraintStart_toStartOf="@id/textView5">
+
+                        <ImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/image_28dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/indicator_green"
+                            app:tint="@color/colorPrimary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginStart="@dimen/generic_small_padding"
+                            android:text="RPM"
+                            android:textAppearance="@style/Theme.DrSafe.caption2" />
+                    </LinearLayout>
+
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/lineChartRPM"
+                        android:layout_width="0dp"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="@dimen/generic_padding"
+                        app:layout_constraintBottom_toTopOf="@+id/tvXLabelRPM"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/tvYLabelRPM"
+                        app:layout_constraintTop_toBottomOf="@+id/llRPMLabel" />
+
+                    <TextView
+                        android:id="@+id/tvYLabelRPM"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:rotation="-90"
+                        android:text="RPM"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+
+                    <TextView
+                        android:id="@+id/tvXLabelRPM"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Time (Min)"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</layout>

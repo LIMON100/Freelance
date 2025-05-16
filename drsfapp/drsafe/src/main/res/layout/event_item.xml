@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="20dp"
+    android:layout_marginTop="@dimen/generic_large_padding"
+    android:layout_marginBottom="@dimen/generic_large_padding"
+    android:background="@drawable/current_score_bg"
+    android:elevation="4dp"
+    android:padding="@dimen/padding_10dp">
+
+    <!-- Event Title -->
+    <TextView
+        android:id="@+id/tvEventTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Event Title"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="@color/colorOnSurface"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Event Time (add this TextView) -->
+    <TextView
+        android:id="@+id/tvEventTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Event Time"
+        android:textSize="14sp"
+        android:textColor="#888888"
+        app:layout_constraintTop_toBottomOf="@id/tvEventTitle"
+    app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Event Description -->
+    <TextView
+        android:id="@+id/tvEventDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Event Description"
+        android:textSize="14sp"
+        android:textColor="@color/colorOnSurface"
+        app:layout_constraintTop_toBottomOf="@id/tvEventTime"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Down Arrow Icon -->
+    <ImageView
+        android:id="@+id/imgDownArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:src="@drawable/ic_card_down"
+        app:layout_constraintTop_toBottomOf="@id/tvEventDescription"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+    app:layout_constraintTop_toBottomOf="@id/imgDownArrow"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

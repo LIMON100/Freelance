@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:showIn="@layout/fragment_master_device">
+
+        <TextView
+            android:id="@+id/tvWifiSetting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/generic_large_padding"
+            android:gravity="center"
+            android:text="@string/wi_fi_setting"
+            android:textAppearance="@style/Theme.DrSafe.Button"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/llWifiSettings"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/generic_padding"
+            android:layout_marginEnd="@dimen/generic_large_padding"
+            android:background="@drawable/update_row_bg"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvWifiSetting"
+            app:layout_constraintTop_toBottomOf="@id/tvWifiSetting">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/generic_large_padding">
+
+                <ImageView
+                    android:layout_width="@dimen/image_28dp"
+                    android:layout_height="@dimen/image_28dp"
+                    android:src="@drawable/ic_user_name" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="1"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="@string/wifi_type"
+                    android:textAppearance="@style/Theme.DrSafe.caption1"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvWifiType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="@string/wifi_type"
+                    android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorLine" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/generic_large_padding">
+
+                <ImageView
+                    android:layout_width="@dimen/image_28dp"
+                    android:layout_height="@dimen/image_28dp"
+                    android:src="@drawable/ic_wifi" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="1"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="@string/wifi_id"
+                    android:textAppearance="@style/Theme.DrSafe.caption1"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvWifiId"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="@string/wifi_name"
+                    android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorLine" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/generic_large_padding">
+
+                <ImageView
+                    android:layout_width="@dimen/image_28dp"
+                    android:layout_height="@dimen/image_28dp"
+                    android:src="@drawable/ic_wifi_password" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="1"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="@string/wifi_password"
+                    android:textAppearance="@style/Theme.DrSafe.caption1"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvWifiPass"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="12345678"
+                    android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorLine" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/generic_large_padding">
+
+                <ImageView
+                    android:layout_width="@dimen/image_28dp"
+                    android:layout_height="@dimen/image_28dp"
+                    android:src="@drawable/ic_calendar2" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="1"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="@string/wifi_setting_date"
+                    android:textAppearance="@style/Theme.DrSafe.caption1"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvWifiDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/generic_small_padding"
+                    android:text="2024-12-03"
+                    android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/generic_large_padding"
+            android:gravity="center"
+            android:text="@string/status"
+            android:textAppearance="@style/Theme.DrSafe.Button"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/llWifiSettings" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/generic_padding"
+            android:layout_marginEnd="@dimen/generic_large_padding"
+            android:background="@drawable/update_row_bg"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvStatus"
+            app:layout_constraintTop_toBottomOf="@id/tvStatus">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="@dimen/generic_large_padding">
+
+                <TextView
+                    android:id="@+id/tvStatusLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="1"
+                    android:text="@string/master_device"
+                    android:textAppearance="@style/Theme.DrSafe.caption1"
+                    android:textColor="@color/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/CameraStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="@string/disconnected"
+                    android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                    android:textColor="@color/colorCritical"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+<!--        <androidx.appcompat.widget.AppCompatButton-->
+<!--            android:id="@+id/btnWifiReset"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_margin="@dimen/generic_padding"-->
+<!--            android:background="@drawable/generic_btn_bg"-->
+<!--            android:minHeight="48dp"-->
+<!--            android:text="@string/wi_fi_reset"-->
+<!--            android:textAppearance="@style/Theme.DrSafe.Button"-->
+<!--            android:textColor="@color/white"-->
+<!--            android:textStyle="bold"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            app:layout_constraintStart_toStartOf="parent" />-->
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

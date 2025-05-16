@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/color_white"
+    android:orientation="vertical">
+    <LinearLayout
+        android:id="@+id/frg_device"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/color_white">
+
+        <RelativeLayout
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/volume" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/iv_volume_decrese"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp"
+                    android:src="@drawable/previous" />
+
+                <TextView
+                    android:id="@+id/tv_volume"
+                    style="@style/firmware_update_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="28.5dp"
+                    android:layout_marginRight="28.5dp"
+                    android:gravity="center"
+                    android:text="1" />
+
+                <ImageView
+                    android:id="@+id/iv_volume_increse"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp"
+                    android:src="@drawable/next" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <View
+            style="@style/device_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <RelativeLayout
+            android:visibility="gone"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/auto_speed_control" />
+
+            <ToggleButton
+                android:id="@+id/toggle_auto_speed_control"
+                style="@style/firmware_update_text"
+                android:layout_width="60dp"
+                android:layout_height="35dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/toogle_selector"
+                android:checked="false"
+                android:textOff=""
+                android:textOn="" />
+
+        </RelativeLayout>
+        <View
+            android:layout_width="match_parent"
+            style="@style/device_divider"
+            android:layout_height="1dp"
+            android:background="#CCDFFF" />
+        <RelativeLayout
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/speed_control_sensitivity" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:gravity="center">
+
+
+                <ImageView
+                    android:id="@+id/iv_speed_control_decrese"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp"
+                    android:src="@drawable/previous" />
+
+                <TextView
+                    android:id="@+id/tv_speed_control"
+                    style="@style/firmware_update_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginRight="15dp"
+                    android:gravity="center"
+                    android:text="       " />
+
+                <ImageView
+                    android:id="@+id/iv_speed_control_increse"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp"
+                    android:src="@drawable/next" />
+
+            </LinearLayout>
+        </RelativeLayout>
+
+        <RelativeLayout
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/camera_range_control" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:gravity="center">
+
+
+                <ImageView
+                    android:id="@+id/iv_camera_range_control_decrese"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp"
+                    android:src="@drawable/previous" />
+
+                <TextView
+                    android:id="@+id/tv_camera_range_autocontrol"
+                    style="@style/firmware_update_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginRight="15dp"
+                    android:gravity="center"
+                    android:text="       " />
+
+                <ImageView
+                    android:id="@+id/iv_camera_range_control_increse"
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="20dp"
+                    android:src="@drawable/next" />
+
+            </LinearLayout>
+        </RelativeLayout>
+        <View
+            style="@style/device_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+        <RelativeLayout
+            android:id="@+id/rv_schoolzone_ctrl"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/schoolzonespeedcontrol_onoff" />
+
+            <ToggleButton
+                android:id="@+id/toggle_schoolzone_control"
+                style="@style/firmware_update_text"
+                android:layout_width="60dp"
+                android:layout_height="35dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/toogle_selector"
+                android:checked="false"
+                android:textOff=""
+                android:textOn="" />
+
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            style="@style/device_divider"
+            android:layout_height="1dp"
+            android:background="#CCDFFF" />
+
+        <RelativeLayout
+            android:id="@+id/rv_speedlimit_camera_ctrl"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/speedlimitenforcement_camera_onoff" />
+
+            <ToggleButton
+                android:id="@+id/toggle_speedlimit_control"
+                style="@style/firmware_update_text"
+                android:layout_width="60dp"
+                android:layout_height="35dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/toogle_selector"
+                android:checked="false"
+                android:textOff=""
+                android:textOn="" />
+
+        </RelativeLayout>
+
+        <LinearLayout
+            style="@style/menu_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:layout_alignParentRight="true"
+            android:orientation="horizontal"
+            android:layout_gravity="right"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/iv_speed_decrease"
+                android:layout_width="20dp"
+                android:layout_height="match_parent"
+                android:paddingTop="22dp"
+                android:paddingBottom="22dp"
+                android:src="@drawable/previous"/>
+
+            <TextView
+                android:id="@+id/tv_speedcontrol"
+                style="@style/firmware_update_text"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="20 Km/h" />
+
+            <ImageView
+                android:id="@+id/iv_speed_increase"
+                android:layout_width="20dp"
+                android:layout_height="match_parent"
+                android:paddingTop="22dp"
+                android:paddingBottom="22dp"
+                android:src="@drawable/next"/>
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/rv_pua_ctrl"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/sudden_acceleration" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:gravity="center">
+
+                <ToggleButton
+                    android:id="@+id/toggle_pua_control"
+                    style="@style/firmware_update_text"
+                    android:layout_width="60dp"
+                    android:layout_height="35dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/toogle_selector"
+                    android:checked="false"
+                    android:textOff=""
+                    android:textOn="" />
+
+            </LinearLayout>
+        </RelativeLayout>
+
+        <View
+            style="@style/device_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+
+        <RelativeLayout
+                android:id="@+id/rv_rpm"
+                style="@style/menu_layout"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/drawer_menu_item_height"
+                android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_gravity="center"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/rpm_control"
+                android:textColor="@color/color_black"
+                android:textSize="@dimen/text_size_18" />
+
+            <TextView
+                android:id="@+id/tv_rpm_apply"
+                android:layout_width="90dp"
+                android:layout_height="40dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_gravity="center"
+                android:alpha="0.5"
+                android:background="@color/circle_color"
+                android:enabled="false"
+                android:fontFamily="@font/notosans_regular"
+                android:gravity="center"
+                android:text="@string/apply"
+                android:textColor="@color/color_black"
+                android:textSize="@dimen/text_size_14" />
+
+            <EditText
+                android:id="@+id/et_rpm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="150dp"
+                android:layout_marginRight="5dp"
+                android:layout_toLeftOf="@+id/tv_rpm_apply"
+                android:backgroundTint="@color/circle_color"
+                android:inputType="numberDecimal"
+                android:textColor="@color/color_black" />
+
+            </RelativeLayout>
+        <View
+            android:layout_width="match_parent"
+            style="@style/device_divider"
+            android:layout_height="1dp"
+            android:background="#CCDFFF" />
+
+        <RelativeLayout
+            android:id="@+id/rv_speed"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_gravity="center"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/speed_control"
+                android:textColor="@color/color_black"
+                android:textSize="@dimen/text_size_18" />
+
+            <TextView
+                android:id="@+id/tv_speed_apply"
+                android:layout_width="90dp"
+                android:layout_height="40dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_gravity="center"
+                android:alpha="0.5"
+                android:background="@color/circle_color"
+                android:enabled="false"
+                android:fontFamily="@font/notosans_regular"
+                android:gravity="center"
+                android:text="@string/apply"
+                android:textColor="@color/color_black"
+                android:textSize="@dimen/text_size_14" />
+
+
+            <EditText
+                android:id="@+id/et_speed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="150dp"
+                android:layout_marginRight="5dp"
+                android:layout_toLeftOf="@+id/tv_speed_apply"
+                android:backgroundTint="@color/circle_color"
+                android:inputType="numberDecimal"
+                android:textColor="@color/color_black" />
+        </RelativeLayout>
+        <View
+            android:layout_width="match_parent"
+            style="@style/device_divider"
+            android:layout_height="1dp"
+            android:background="#CCDFFF" />
+
+        <RelativeLayout
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/drawer_menu_item_height"
+            android:visibility="gone"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/notosans_regular"
+                android:text="@string/select_mode" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:gravity="center">
+
+                <ToggleButton
+                    android:id="@+id/mode_onoff"
+                    android:layout_width="60dp"
+                    android:layout_height="35dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/toogle_selector"
+                    android:checked="false"
+                    android:textOff=""
+                    android:textOn="" />
+
+            </LinearLayout>
+        </RelativeLayout>
+        <View
+            style="@style/device_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <RelativeLayout
+        style="@style/menu_layout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/drawer_menu_item_height"
+        android:visibility="gone"
+        android:orientation="horizontal">
+
+            <TextView
+                style="@style/firmware_update_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/initialization"
+                android:fontFamily="@font/notoaans_bold"/>
+
+            <ToggleButton
+                android:id="@+id/toggle_initialization"
+                android:layout_width="60dp"
+                android:layout_height="35dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/toogle_selector"
+                android:checked="false"
+                android:textOff=""
+                android:textOn="" />
+        </RelativeLayout>
+
+    </LinearLayout>
+</ScrollView>

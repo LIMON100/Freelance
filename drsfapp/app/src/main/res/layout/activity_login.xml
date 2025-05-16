@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/toolbar_bg"
+        tools:context="com.axon.kisa10.activity.LoginActivity">
+
+
+        <TextView
+            android:id="@+id/textView7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:fontFamily="@font/notoaans_bold"
+            android:text="@string/kisa_3_0"
+            android:textColor="@color/color_black"
+            android:textSize="34sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.15" />
+
+        <TextView
+            android:id="@+id/textView8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="50dp"
+            android:fontFamily="@font/notosans_regular"
+            android:text="@string/login_to_sky_kisa3_0"
+            android:textColor="@color/black"
+            android:textSize="24sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView7" />
+
+        <Button
+            android:id="@+id/btnKakaoLogin"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/login_btn_bg"
+            android:drawableStart="@drawable/ic_kakao_logo"
+            android:fontFamily="@font/notosans_medium"
+            android:gravity="center"
+            android:text="@string/kakao_login"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView8"
+            app:layout_constraintVertical_bias="0.25" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnGoogleLogin"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/login_btn_bg"
+            android:drawableStart="@drawable/googleg_standard_color_18"
+            android:drawablePadding="@dimen/_16dp"
+            android:fontFamily="@font/notosans_medium"
+            android:text="@string/google_login"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="@+id/btnKakaoLogin"
+            app:layout_constraintStart_toStartOf="@+id/btnKakaoLogin"
+            app:layout_constraintTop_toBottomOf="@+id/btnKakaoLogin" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

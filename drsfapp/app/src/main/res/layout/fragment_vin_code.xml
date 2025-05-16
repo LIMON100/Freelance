@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/color_white"
+    android:clickable="true">
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/color_white"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="150dp"
+        android:layout_above="@id/tv_vincode_save">
+        <EditText
+            android:id="@+id/et_vincode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="25dp"
+            android:padding="15dp"
+            android:textColor="@color/black"
+            android:textSize="20sp"
+            android:gravity="center"
+            android:hint="@string/vin_code_c"
+            android:textColorHint="@color/black"
+            android:fontFamily="@font/notoaans_bold"
+            android:layout_gravity="center"
+            android:singleLine="true"
+            android:maxLength="17"
+            android:background="@drawable/back_vincode_input"/>
+    </LinearLayout>
+
+<TextView
+    android:id="@+id/tv_vincode_save"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="@string/save"
+    android:textColor="@color/color_white"
+    android:textSize="18sp"
+    android:fontFamily="@font/notoaans_bold"
+    android:padding="15dp"
+    android:gravity="center"
+    android:layout_alignParentBottom="true"
+    android:background="@color/red"/>
+</RelativeLayout>
+</FrameLayout>

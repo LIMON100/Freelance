@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/layout_toolbar" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorSurface"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/llRecordTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/generic_padding"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:background="@drawable/update_row_bg"
+                android:padding="@dimen/padding_10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_weight="1"
+                    android:text="@string/sound_level"
+                    android:textAppearance="@style/Theme.DrSafe.Button"
+                    android:textStyle="bold" />
+
+                <RadioGroup
+                    android:id="@+id/rgSoundLevel"
+                    style="@style/Theme.DrSafe.RadioGroup.Dvr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="0.3"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/generic_small_padding">
+
+                    <RadioButton
+                        android:id="@+id/rdLow"
+                        style="@style/Theme.DrSafe.RadioButton.Dvr"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/low" />
+
+
+                    <RadioButton
+                        android:id="@+id/rdNormal"
+                        style="@style/Theme.DrSafe.RadioButton.Dvr"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="@string/normal" />
+
+                    <RadioButton
+                        android:id="@+id/rdHigh"
+                        style="@style/Theme.DrSafe.RadioButton.Dvr"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/high" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llNormalFreq"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/generic_padding"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:background="@drawable/update_row_bg"
+                android:padding="@dimen/padding_10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_weight="1"
+                    android:singleLine="true"
+                    android:text="@string/normal_frequent"
+                    android:textAppearance="@style/Theme.DrSafe.Button"
+                    android:textStyle="bold" />
+
+                <RadioGroup
+                    android:id="@+id/rgNormalFreq"
+                    style="@style/Theme.DrSafe.RadioGroup.Dvr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/generic_small_padding"
+                    android:layout_weight="0.3"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/generic_small_padding">
+
+                    <RadioButton
+                        android:id="@+id/rdSound"
+                        style="@style/Theme.DrSafe.RadioButton.Dvr"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/sound" />
+
+
+                    <RadioButton
+                        android:id="@+id/rdInterval"
+                        style="@style/Theme.DrSafe.RadioButton.Dvr"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="@string/interval" />
+
+                </RadioGroup>
+            </LinearLayout>
+
+
+            <View
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/generic_padding"
+                android:background="@drawable/generic_btn_bg"
+                android:text="@string/save"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textColor="@color/white"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnCancel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/generic_padding"
+                android:layout_marginBottom="@dimen/generic_padding"
+                android:background="@drawable/outline_btn_bg"
+                android:text="@string/cancel"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>

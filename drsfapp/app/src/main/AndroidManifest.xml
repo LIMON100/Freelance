@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.kisa10">
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--         Ble permissions -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
+
+    <application
+        android:name="com.axon.kisa10.AxonApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_drsafe_logo"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:requestLegacyExternalStorage="true"
+        android:roundIcon="@mipmap/ic_drsafe_logo_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name="com.axon.kisa10.distributor.MainDistributorActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="oauth"
+                    android:scheme="kakao5bdfd212ac417e0b79f8a9bc67f5796d" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.axon.kisa10.activity.LoginActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.axon.kisa10.activity.BluetoothPairingActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.axon.kisa10.activity.TermsAndConditionActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.axon.kisa10.activity.SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.axon.kisa10.activity.SearchDeviceActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="com.axon.kisa10.activity.MainActivity"
+            android:exported="true"
+            android:launchMode="singleInstance"
+            android:configChanges="orientation|keyboardHidden|screenSize"/>
+        <activity
+            android:name="com.axon.kisa10.activity.RegisterUserActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.axon.kisa10.activity.ChangeLanguageActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.axon.kisa10.distributor.LoginDistributorActivity"
+            android:exported="false" />
+
+        <service
+            android:name="com.axon.kisa10.ble.AxonBLEService"
+            android:exported="false"
+            android:foregroundServiceType="location|connectedDevice" />
+        <service
+            android:name="com.axon.kisa10.pushnotification.AxonFCMService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.axon.kisa10.ble.LogDownloadService"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.axon.kisa10.ble.OnNotificationDismissReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

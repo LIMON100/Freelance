@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/color_white"
+    tools:context="com.axon.kisa10.activity.SearchDeviceActivity">
+   <RelativeLayout
+       android:layout_width="match_parent"
+       android:layout_height="@dimen/_80dp"
+       android:background="@drawable/bg_top_nav">
+
+       <ImageView
+           android:id="@+id/iv_back"
+           android:layout_width="28dp"
+           android:layout_height="28dp"
+           android:layout_alignParentStart="true"
+           android:layout_alignParentTop="true"
+           android:layout_alignParentBottom="true"
+           android:layout_marginStart="16dp"
+           android:scaleType="fitCenter"
+           android:src="@drawable/back" />
+
+       <TextView
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_centerInParent="true"
+           android:drawableStart="@drawable/ic_main_title"
+           android:drawablePadding ="@dimen/_8dp"
+           android:text="@string/devices"
+           android:textColor="@color/color_white"
+           android:fontFamily="@font/notosans_semibold"
+           android:textSize="@dimen/_24dp"/>
+
+       <ImageView
+           android:id="@+id/iv_refresh"
+           android:layout_width="28dp"
+           android:layout_height="28dp"
+           android:layout_marginEnd="16dp"
+           android:layout_alignParentTop="true"
+           android:layout_alignParentBottom="true"
+           android:layout_alignParentRight="true"
+           android:src="@drawable/ic_bt_refresh"/>
+   </RelativeLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_deviceList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:listitem="@layout/adapter_search_device"/>
+</LinearLayout>

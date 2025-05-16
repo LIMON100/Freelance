@@ -1,0 +1,689 @@
+<resources>
+    <string name="permission_required_to_access_videos">Permission is required to access videos.</string>
+    <string name="app_name">Dr Safe</string>
+    <string name="wifi_name">ESP32</string>
+    <string name="setting">Setting</string>
+    <string name="update">Update</string>
+    <string name="video_list">Videos</string>
+    <string name="dvr_file">DVR File</string>
+    <string name="home">Home</string>
+    <string name="home_msg">If you want to link the Dr. S@fe product and the app to use the video downloader, you must start the vehicle and connect to Dr. S@fe via WiFi.</string>
+    <string name="ok">ok</string>
+    <string name="connection_date">Connection Date</string>
+    <string name="connection_details">Connection Details</string>
+    <string name="username">Username</string>
+    <string name="product_registration_number">Product Reg. Number</string>
+    <string name="connect_now">Connect Now</string>
+    <string name="no_connection">No Connection</string>
+    <string name="dvr_file_title">DVR File</string>
+    <string name="normal">Normal</string>
+    <string name="event">Event</string>
+    <string name="search">Search</string>
+    <string name="size">Size</string>
+    <string name="downloaded_nvideo_list">Downloaded\nVideo List</string>
+    <string name="download">Download</string>
+    <string name="driving">Driving</string>
+    <string name="downloading_data">Downloading Data</string>
+    <string name="confirmation">Confirmation</string>
+    <string name="do_you_want_to_download_the_video">Do you want to download the video?</string>
+    <string name="send_sms">Send SMS</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="play">Play</string>
+    <string name="delete_msg">Do you want to delete the video?</string>
+    <string name="map_db_update">Map DB update</string>
+    <string name="master_firmware_update">Master Firmware update</string>
+    <string name="camera_firmware_update">Camera Firmware Update</string>
+    <string name="db_update">DB Update</string>
+    <string name="version">Version</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="firmware_update">Firmware Update</string>
+    <string name="update_notification">Update Notification</string>
+    <string name="auto_update">Auto Update</string>
+    <string name="confirm">Confirm</string>
+    <string name="successfully_updated">Successfully Updated</string>
+    <string name="this_is_the_latest_version">This is the latest version.</string>
+    <string name="user_profile">User Profile</string>
+    <string name="nick_name">Nick Name</string>
+    <string name="phone_number">Phone No:</string>
+    <string name="dvr_options">DVR Options</string>
+    <string name="wi_fi_connection">Wi-Fi Connection</string>
+    <string name="ble_connection">BLE Connection</string>
+    <string name="master_device">Master Device</string>
+    <string name="connection">Connection</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="camera_device">Camera Device</string>
+    <string name="vehicle">Vehicle</string>
+    <string name="audio_settings">Audio Settings</string>
+    <string name="register_vehicle">Register Vehicle</string>
+    <string name="brand">Brand</string>
+    <string name="model">Model</string>
+<!--    <string name="fuel_type">Fuel Type</string>-->
+    <string name="year_of_manufacture">Year Of Manufacture</string>
+    <string name="please_select_a_model">Please select a model</string>
+    <string name="please_select_a_brand">Please select a brand</string>
+    <string name="please_select_a_fuel_type">Please select a fuel type</string>
+    <string name="please_select_a_year">Please select a year</string>
+    <string name="vehicle_saved">Vehicle Saved</string>
+    <string name="record_time">Record Time</string>
+    <string name="_10_sec">10 Sec</string>
+    <string name="_20_sec">20 Sec</string>
+    <string name="resolution">Resolution</string>
+    <string name="_320x240">320x240</string>
+    <string name="_640x480">640x480</string>
+    <string name="_5_fps">5 fps</string>
+    <string name="_10_fps">10 fps</string>
+    <string name="_30_fps">30 fps</string>
+    <string name="format_storage">Format Storage</string>
+    <string name="format">Format</string>
+    <string name="do_you_want_to_do_format">Do you want to do format?</string>
+    <string name="okay">Okay</string>
+    <string name="save">Save</string>
+    <string name="format_in_progress">Format In Progress</string>
+    <string name="format_complete_subtitle">Please Insert SD Card.</string>
+    <string name="format_complete_title">NO SD CARD</string>
+    <string name="settings_saved">Settings Saved</string>
+    <string name="wi_fi_setting">Wi-Fi Setting</string>
+    <string name="ble_setting">BLE Setting</string>
+    <string name="wifi_type">WPA-2</string>
+    <string name="wifi_id">WiFi ID</string>
+    <string name="wifi_password">WiFi Password</string>
+    <string name="wifi_setting_date">WiFi Setting Date</string>
+    <string name="status">Status</string>
+    <string name="wi_fi_reset">Wi-Fi Reset</string>
+    <string name="BLE_reset">BLE Reset</string>
+    <string name="reset_wi_fi">Reset Wi-Fi</string>
+    <string name="do_you_want_to_reset_your_wifi">Do you want to reset your wifi?</string>
+    <string name="wifi">Wifi</string>
+    <string name="connecting_your_device_to_wi_fi">Connecting your device to Wi-Fi</string>
+    <string name="audio_setting">Audio Setting</string>
+    <string name="sound_level">Sound Level</string>
+    <string name="sound">Sound</string>
+    <string name="interval">Interval</string>
+    <string name="normal_frequent">Normal Frequent</string>
+    <string name="low">Low</string>
+    <string name="high">High</string>
+    <string name="audio_settings_saved">Audio Settings Saved.</string>
+    <string name="dr_safe">Dr.S@fe</string>
+    <string name="login">Login</string>
+    <string name="login_with_google">Login with Google</string>
+    <string name="login_with_kakao">Login with Kakao</string>
+    <string name="email_or_phone">Email or Phone</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="remember_me">Remember me</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="not_registered_yet">Not Registered yet?</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="or">Or</string>
+    <string name="terms_condition"><![CDATA[Terms & Condition]]></string>
+    <string name="terms_of_register">Terms of register</string>
+    <string name="i_agree_with_the_terms_of_register">I agree with the terms of register</string>
+    <string name="terms_of_collecting_to_private_info">Terms of collecting to private info</string>
+    <string name="i_agree_with_the_collecting_about_private_info">I agree with the collecting about private info.</string>
+    <string name="information_about_the_privacy_commission">Information about the privacy commission</string>
+    <string name="i_agree_with_the_information_about_the_privacy_commission">I agree with the information about the privacy commission.</string>
+    <string name="i_agree_with_all_of_the_terms">I agree with all of the terms</string>
+    <string name="eula_location_contents_script" translatable="false">Hanyang Informations &amp; Communications Co., Ltd. (hereafter “HYIC” or “we”) provides its websites accessible at www.adasone.com,and any other website for which HYIC owns the domain registration (the “Site”), its proprietary video viewing platform and ADAS ONE (hereafter “the Device”) made available by HYIC therein, including the “HYIC Network” (any and all of the forgoing the “Device”). Please read carefully the following terms and conditions (“Terms of Use”), Copyright Policy, Trademark Policy, and our Privacy Policy. These Terms of Use govern your access to and use of the Device and all Collective Content (defined below), and constitute a binding legal agreement between you and HYIC.Key…</string>
+    <string name="eula_privacy_contents_script" translatable="false">ADAS ONE collects information about you when you use our mobile applications, websites, and other online products and services (collectively, the “Services”) and through other interactions and communications you have with us.  Scope and Application  This Privacy Statement (\\“Statement\") applies to persons anywhere in the world who use our apps or Services to request transportation, delivery, or other on-demand services (“Users”). This Statement does not apply to information we collect from or about drivers, couriers, partner transportation companies, or any other persons who use the ADAS ONE platform under license (collectively “Drivers”). If you interact with the Services as both a User and a Driver, the respective privacy statements apply to your different interactions.  Collection of Information  Information You Provide to Us  We collect information you provide directly to us, such as when you create or modify your account, request on-demand services, contact customer support, or otherwise communicate with us. This information may include: name, email, phone number, postal address, profile picture, payment method, items requested (for delivery services), delivery notes, and other information you choose to provide.  Information We Collect Through Your Use of Our Services  When you use our Services, we collect information about you in the following general categories:  •\tLocation Information: When you use the Services for transportation or delivery, we collect precise location data about the trip from the ADAS ONE app used by the Driver. If you permit the ADAS ONE app to access location services through the permission system used by your mobile operating system (“platform”), we may also collect the precise location of your device when the app is running in the foreground or background. We may also derive your approximate location from your IP address.  •\tContacts Information: If you permit the ADAS ONE app to access the address book on your device through the permission system used by your mobile platform, we may access and store names and contact information from your address book to facilitate social interactions through our Services and for other purposes described in this Statement or at the time of consent or collection.  •\tTransaction Information: We collect transaction details related to your use of our Services, including the type of service requested, date and time the service was provided, amount charged, distance traveled, and other related transaction details. Additionally, if someone uses your promo code, we may associate your name with that person.  •\tUsage and Preference Information: We collect information about how you and site visitors interact with our Services, preferences expressed, and settings chosen. In some cases we do this through the use of cookies, pixel tags, and similar technologies that create and maintain unique identifiers.  •\tDevice Information: We may collect information about your mobile device, including, for example, the hardware model, operating system and version, software and file names and verions, preferred language, unique device identifier, advertising identifiers, serial number, device motion information, and mobile network information.  •\tCall and SMS Data : Our Services facilitate communications between Users and Drivers. In connection with facilitating this service, we receive call data, including the date and time of the call or SMS message, the parties’ phone numbers, and the content of the SMS message.  •\tLog Information: When you interact with the Services, we collect server logs, which may include information like device IP address, access dates and times, app features or pages viewed, app crashes and other system activity, type of browser, and the third-party site or service you were using before interacting with our Services.  Important Information About Platform Permissions  Most mobile platforms (iOS, Android, etc.) have defined certain types of device data that apps cannot access without your consent. And these platforms have different permission systems for obtaining your consent. The iOS platform will alert you the first time the ADAS ONE app wants permission to access certain types of data and will let you consent (or not consent) to that request. Android devices will notify you of the permissions that the ADAS ONE app seeks before you first use the app, and your use of the app constitutes your consent. To learn about the platform-level permissions that the app seeks, please visit our new Android Permissions page. Sometimes these permissions require more explanation than the platforms themselves provide, and the permissions we request will change over time, so we’ve created these pages to serve as authoritative and up-to-date resources for our users.  Information We Collect From Other Sources  We may also receive information from other sources and combine that with information we collect through our Services. For example:  •\tIf you choose to link, create, or log in to your ADAS ONE account with a payment provider (e.g., Google Wallet) or social media service (e.g., Facebook), or if you engage with a separate app or website that uses our API (or whose API we use), we may receive information about you or your connections from that site or app.  •\tIf your employer uses one of our enterprise solutions, such as ADAS ONE for Business, we may receive information about you from your employer.  •\tWhen you request on demand services, our Drivers may provide us with a User rating after providing services to you.  •\tIf you also interact with our Services in another capacity, for instance as a Driver or user of other apps we provide, we may combine or associate that information with information we have collected from you in your capacity as a User or rider.  Use of Information  We may use the information we collect about you to:  •\tProvide, maintain, and improve our Services, including, for example, to facilitate payments, send receipts, provide products and services you request (and send related information), develop new features, provide customer support to Users and Drivers, develop safety features, authenticate users, and send product updates and administrative messages;  •\tPerform internal operations, including, for example, to prevent fraud and abuse of our Services; to troubleshoot software bugs and operational problems; to conduct data analysis, testing, and research; and to monitor and analyze usage and activity trends;  •\tSend or facilitate communications (i) between you and a Driver, such as estimated times of arrival (ETAs), or (ii) between you and a contact of yours at your direction in connection with your use of certain features, such as referrals, invites, split fare requests, or ETA sharing;  •\tSend you communications we think will be of interest to you, including information about products, services, promotions, news, and events of ADAS ONE and other companies, where permissible and according to local applicable laws; and to process contest, sweepstake, or other promotion entries and fulfill any related awards;  •\tPersonalize and improve the Services, including to provide or recommend features, content, social connections, referrals, and advertisements.  We may transfer the information described in this Statement to, and process and store it in, the United States and other countries, some of which may have less protective data protection laws than the region in which you reside. Where this is the case, we will take appropriate measures to protect your personal information in accordance with this Statement.  Sharing of Information  We may share the information we collect about you as described in this Statement or as described at the time of collection or sharing, including as follows:  Through Our Services  We may share your information:  •\tWith Drivers to enable them to provide the Services you request. For example, we share your name, photo (if you provide one), average User rating given by Drivers, and pickup and/or drop-off locations with Drivers;  •\tWith third parties to provide you a service you requested through a partnership or promotional offering made by a third party or us;  •\tWith the general public if you submit content in a public forum, such as blog comments, social media posts, or other features of our Services that are viewable by the general public;  •\tWith third parties with whom you choose to let us share information, for example other apps or websites that integrate with our API or Services, or those with an API or Service with which we integrate; and  •\tWith your employer (or similar entity) and any necessary third parties engaged by us or your employer (e.g., an expense management service provider), if you participate in any of our enterprise solutions such as ADAS ONE for Business.  Other Important Sharing  We may share your information:  •\tWith ADAS ONE subsidiaries and affiliated entities that provide services or conduct data processing on our behalf, or for data centralization and / or logistics purposes;  •\tWith vendors, consultants, marketing partners, and other service providers who need access to such information to carry out work on our behalf;  •\tIn response to a request for information by a competent authority if we believe disclosure is in accordance with, or is otherwise required by, any applicable law, regulation, or legal process;  •\tWith law enforcement officials, government authorities, or other third parties if we believe your actions are inconsistent with our User agreements, Terms of Service, or policies, or to protect the rights, property, or safety of ADAS ONE or others;  •\tIn connection with, or during negotiations of, any merger, sale of company assets, consolidation or restructuring, financing, or acquisition of all or a portion of our business by or into another company;  •\tIf we otherwise notify you and you consent to the sharing; and  •\tIn an aggregated and/or anonymized form which cannot reasonably be used to identify you.  Social Sharing Features  The Services may integrate with social sharing features and other related tools which let you share actions you take on our Services with other apps, sites, or media, and vice versa. Your use of such features enables the sharing of information with your friends or the public, depending on the settings you establish with the social sharing service. Please refer to the privacy policies of those social sharing services for more information about how they handle the data you provide to or share through them.  Analytics and Advertising Services Provided by Others  We may allow others to provide audience measurement and analytics services for us, to serve advertisements on our behalf across the Internet, and to track and report on the performance of those advertisements. These entities may use cookies, web beacons, SDKs, and other technologies to identify your device when you visit our site and use our Services, as well as when you visit other online sites and services. For more information about these technologies and service providers, please refer to our Cookie Statement.  Your Choices  Account Information  You may correct your account information at any time by logging into your online or in-app account. If you wish to cancel your account, please email us at marketing@adasone.com. Please note that in some cases we may retain certain information about you as required by law, or for legitimate business purposes to the extent permitted by law. For instance, if you have a standing credit or debt on your account, or if we believe you have committed fraud or violated our Terms, we may seek to resolve the issue before deleting your information.  Access Rights  ADAS ONE will comply with individual’s requests regarding access, correction, and/or deletion of the personal data it stores in accordance with applicable law.  Location Information  We request permission for our app’s collection of precise location from your device per the permission system used by your mobile operating system. If you initially permit the collection of this information, you can later disable it by changing the location settings on your mobile device. However, this will limit your ability to use certain features of our Services. Additionally, disabling our app’s collection of precise location from your device will not limit our ability to collect your trip location information from a Driver\'s device nor our ability to derive approximate location from your IP address.  Contact Information  We may also seek permission for our app’s collection and syncing of contact information from your device per the permission system used by your mobile operating system. If you initially permit the collection of this information, iOS users can later disable it by changing the contacts settings on your mobile device. The Android platform does not provide such a setting.  Promotional Communications  You may opt out of receiving promotional messages from us by following the instructions in those messages. If you opt out, we may still send you non-promotional communications, such as those  about your account, about Services you have requested, or our ongoing business relations.  Cookies and Advertising  Please refer to our Cookie Statement for more information about your choices around cookies and related technologies.  Changes to the Statement  We may change this Statement from time to time. If we make significant changes in the way we treat your personal information, or to the Statement, we will provide you notice through the Services or by some other means, such as email. Your continued use of the Services after such notice constitutes your consent to the changes. We encourage you to periodically review the Statement for the latest information on our privacy practices.  Contact Us  If you have any questions about this Privacy Statement, please contact us at marketing@adasone.com or write us at 3F Bangbae-ro 114 Seocho-gu, Seoul, Korea..</string>
+    <string name="eula_service_contents_script" translatable="false">"1. Contractual Relationship  These Terms of Use (\"Terms\") govern your access or use, from within the United States and its territories and possessions, of the applications, websites, content, products, and services (the \"Services,\" as more fully defined below in Section 2) made available in the United States and its territories and possessions by ADAS ONE USA, LLC and its parents, subsidiaries, representatives, affiliates, officers and directors (collectively, \"ADAS ONE\"). PLEASE READ THESE TERMS CAREFULLY, AS THEY CONSTITUTE A LEGAL AGREEMENT BETWEEN YOU AND ADAS ONE. In these Terms, the words \"including\" and \"include\" mean \"including, but not limited to.\"  By accessing or using the Services, you confirm your agreement to be bound by these Terms. If you do not agree to these Terms, you may not access or use the Services. These Terms expressly supersede prior agreements or arrangements with you. ADAS ONE may immediately terminate these Terms or any Services with respect to you, or generally cease offering or deny access to the Services or any portion thereof, at any time for any reason.  IMPORTANT: PLEASE REVIEW THE ARBITRATION AGREEMENT SET FORTH BELOW CAREFULLY, AS IT WILL REQUIRE YOU TO RESOLVE DISPUTES WITH ADAS ONE ON AN INDIVIDUAL BASIS THROUGH FINAL AND BINDING ARBITRATION. BY ENTERING THIS AGREEMENT, YOU EXPRESSLY ACKNOWLEDGE THAT YOU HAVE READ AND UNDERSTAND ALL OF THE TERMS OF THIS AGREEMENT AND HAVE TAKEN TIME TO CONSIDER THE CONSEQUENCES OF THIS IMPORTANT DECISION.  Supplemental terms may apply to certain Services, such as policies for a particular event, program, activity or promotion, and such supplemental terms will be disclosed to you in separate region-specific disclosures (e.g., a particular city webpage on www.adasone.com) or in connection with the applicable Service(s). Supplemental terms are in addition to, and shall be deemed a part of, the Terms for the purposes of the applicable Service(s). Supplemental terms shall prevail over these Terms in the event of a conflict with respect to the applicable Services.  ADAS ONE may amend the Terms from time to time. Amendments will be effective upon ADAS ONE's posting of such updated Terms at this location or in the amended policies or supplemental terms on the applicable Service(s). Your continued access or use of the Services after such posting confirms your consent to be bound by the Terms, as amended. If ADAS ONE changes these Terms after the date you first agreed to the Terms (or to any subsequent changes to these Terms), you may reject any such change by providing ADAS ONE written notice of such rejection within 30 days of the date such change became effective, as indicated in the \"Effective\" date above. This written notice must be provided either (a) by mail or hand delivery to our registered agent for service of process, c/o ADAS ONE INC., or (b) by email from the email address associated with your Account to: marketing@adasone.com. In order to be effective, the notice must include your full name and clearly indicate your intent to reject changes to these Terms. By rejecting changes, you are agreeing that you will continue to be bound by the provisions of these Terms as of the date you first agreed to the Terms (or to any subsequent changes to these Terms).  2. The Services  The Services comprise mobile applications and related services (each, an \"Application\"), which enable users to arrange and schedule transportation, logistics and/or delivery services and/or to purchase certain goods, including with third party providers of such services and goods under agreement with ADAS ONE or certain of ADAS ONE's affiliates (\"Third Party Providers\"). In certain instances the Services may also include an option to receive transportation, logistics and/or delivery services for an upfront price, subject to acceptance by the respective Third Party Providers. Unless otherwise agreed by ADAS ONE in a separate written agreement with you, the Services are made available solely for your personal, noncommercial use. YOU ACKNOWLEDGE THAT YOUR ABILITY TO OBTAIN TRANSPORTATION, LOGISTICS AND/OR DELIVERY SERVICES THROUGH THE USE OF THE SERVICES DOES NOT ESTABLISH ADAS ONE AS A PROVIDER OF TRANSPORTATION, LOGISTICS OR DELIVERY SERVICES OR AS A TRANSPORTATION CARRIER.  License.  Subject to your compliance with these Terms, ADAS ONE grants you a limited, non-exclusive, non-sublicensable, revocable, non-transferable license to: (i) access and use the Applications on your personal device solely in connection with your use of the Services; and (ii) access and use any content, information and related materials that may be made available through the Services, in each case solely for your personal, noncommercial use. Any rights not expressly granted herein are reserved by ADAS ONE and ADAS ONE's licensors.  Restrictions.  You may not: (i) remove any copyright, trademark or other proprietary notices from any portion of the Services; (ii) reproduce, modify, prepare derivative works based upon, distribute, license, lease, sell, resell, transfer, publicly display, publicly perform, transmit, stream, broadcast or otherwise exploit the Services except as expressly permitted by ADAS ONE; (iii) decompile, reverse engineer or disassemble the Services except as may be permitted by applicable law; (iv) link to, mirror or frame any portion of the Services; (v) cause or launch any programs or scripts for the purpose of scraping, indexing, surveying, or otherwise data mining any portion of the Services or unduly burdening or hindering the operation and/or functionality of any aspect of the Services; or (vi) attempt to gain unauthorized access to or impair any aspect of the Services or its related systems or networks.  Third Party Services and Content.  The Services may be made available or accessed in connection with third party services and content (including advertising) that ADAS ONE does not control. You acknowledge that different terms of use and privacy policies may apply to your use of such third party services and content. ADAS ONE does not endorse such third party services and content and in no event shall ADAS ONE be responsible or liable for any products or services of such third party providers. Additionally, Apple Inc., Google, Inc., Microsoft Corporation or BlackBerry Limited will be a third-party beneficiary to this contract if you access the Services using Applications developed for Apple iOS, Android, Microsoft Windows, or Blackberry-powered mobile devices, respectively. These third party beneficiaries are not parties to this contract and are not responsible for the provision or support of the Services in any manner. Your access to the Services using these devices is subject to terms set forth in the applicable third party beneficiary's terms of service.  Ownership.  The Services and all rights therein are and shall remain ADAS ONE's property or the property of ADAS ONE's licensors. Neither these Terms nor your use of the Services convey or grant to you any rights: (i) in or related to the Services except for the limited license granted above; or (ii) to use or reference in any manner ADAS ONE's company names, logos, product and service names, trademarks or services marks or those of ADAS ONE's licensors.  3. Access and Use of the Services  User Accounts.  In order to use most aspects of the Services, you must register for and maintain an active personal user Services account (\"Account\"). You must be at least 18 years of age, or the age of legal majority in your jurisdiction (if different than 18), to obtain an Account. Account registration requires you to submit to ADAS ONE certain personal information, such as your name, address, mobile phone number and age, as well as at least one valid payment method supported by ADAS ONE. You agree to maintain accurate, complete, and up-to-date information in your Account. Your failure to maintain accurate, complete, and up-to-date Account information, including having an invalid or expired payment method on file, may result in your inability to access or use the Services. You are responsible for all activity that occurs under your Account, and you agree to maintain the security and secrecy of your Account username and password at all times. Unless otherwise permitted by ADAS ONE in writing, you may only possess one Account.  User Requirements and Conduct.  The Service is not available for use by persons under the age of 18. You may not authorize third parties to use your Account, and you may not allow persons under the age of 18 to receive transportation or logistics services from Third Party Providers unless they are accompanied by you. You may not assign or otherwise transfer your Account to any other person or entity. You agree to comply with all applicable laws when accessing or using the Services, and you may only access or use the Services for lawful purposes (e.g., no transport of unlawful or hazardous materials). You may not in your access or use of the Services cause nuisance, annoyance, inconvenience, or property damage, whether to the Third Party Provider or any other party. In certain instances you may be asked to provide proof of identity to access or use the Services, and you agree that you may be denied access to or use of the Services if you refuse to provide proof of identity.  Text Messaging and Telephone Calls.  You agree that ADAS ONE may contact you by telephone or text messages (including by an automatic telephone dialing system) at any of the phone numbers provided by you or on your behalf in connection with an ADAS ONE account, including for marketing purposes. You understand that you are not required to provide this consent as a condition of purchasing any property, goods or services. You also understand that you may opt out of receiving text messages from ADAS ONE at any time, either by texting the word “STOP” to 89203 using the mobile device that is receiving the messages, or by contacting marketing@adasone.com.  Referrals and Promotional Codes.  ADAS ONE may, in its sole discretion, create referral and/or promotional codes (\"Promo Codes\") that may be redeemed for discounts on future Services and/or a Third Party Provider's services, or other features or benefits related to the Services and/or a Third Party Provider's services, subject to any additional terms that ADAS ONE establishes. You agree that Promo Codes: (i) must be used for the intended audience and purpose, and in a lawful manner; (ii) may not be duplicated, sold or transferred in any manner, or made available to the general public (whether posted to a public form or otherwise), unless expressly permitted by ADAS ONE; (iii) may be disabled by ADAS ONE at any time for any reason without liability to ADAS ONE; (iv) may only be used pursuant to the specific terms that ADAS ONE establishes for such Promo Code; (v) are not valid for cash; and (vi) may expire prior to your use. ADAS ONE reserves the right to withhold or deduct credits or other features or benefits obtained through the use of the referral system or Promo Codes by you or any other user in the event that ADAS ONE determines or believes that the use of the referral system or use or redemption of the Promo Code was in error, fraudulent, illegal, or otherwise in violation of ADAS ONE’s Terms.  User Provided Content.  ADAS ONE may, in ADAS ONE's sole discretion, permit you from time to time to submit, upload, publish or otherwise make available to ADAS ONE through the Services textual, audio, and/or visual content and information, including commentary and feedback related to the Services, initiation of support requests, and submission of entries for competitions and promotions (\"User Content\"). Any User Content provided by you remains your property. However, by providing User Content to ADAS ONE, you grant ADAS ONE a worldwide, perpetual, irrevocable, transferable, royalty-free license, with the right to sublicense, to use, copy, modify, create derivative works of, distribute, publicly display, publicly perform, and otherwise exploit in any manner such User Content in all formats and distribution channels now known or hereafter devised (including in connection with the Services and ADAS ONE's business and on third-party sites and services), without further notice to or consent from you, and without the requirement of payment to you or any other person or entity.  You represent and warrant that: (i) you either are the sole and exclusive owner of all User Content or you have all rights, licenses, consents and releases necessary to grant ADAS ONE the license to the User Content as set forth above; and (ii) neither the User Content, nor your submission, uploading, publishing or otherwise making available of such User Content, nor ADAS ONE's use of the User Content as permitted herein will infringe, misappropriate or violate a third party's intellectual property or proprietary rights, or rights of publicity or privacy, or result in the violation of any applicable law or regulation.  You agree to not provide User Content that is defamatory, libelous, hateful, violent, obscene, pornographic, unlawful, or otherwise offensive, as determined by ADAS ONE in its sole discretion, whether or not such material may be protected by law. ADAS ONE may, but shall not be obligated to, review, monitor, or remove User Content, at ADAS ONE's sole discretion and at any time and for any reason, without notice to you.  Network Access and Devices.  You are responsible for obtaining the data network access necessary to use the Services. Your mobile network's data and messaging rates and fees may apply if you access or use the Services from your device. You are responsible for acquiring and updating compatible hardware or devices necessary to access and use the Services and Applications and any updates thereto. ADAS ONE does not guarantee that the Services, or any portion thereof, will function on any particular hardware or devices. In addition, the Services may be subject to malfunctions and delays inherent in the use of the Internet and electronic communications.  4. Payment  You understand that use of the Services may result in charges to you for the services or goods you receive (\"Charges\"). ADAS ONE will receive and/or enable your payment of the applicable Charges for services or goods obtained through your use of the Services. Charges will be inclusive of applicable taxes where required by law. Charges may include other applicable fees, tolls, and/or surcharges including a booking fee, municipal tolls, airport surcharges or processing fees for split payments.  All Charges and payments will be enabled by ADAS ONE using the preferred payment method designated in your Account, after which you will receive a receipt by email. If your primary Account payment method is determined to be expired, invalid or otherwise not able to be charged, you agree that ADAS ONE may use a secondary payment method in your Account, if available. Charges paid by you are final and non-refundable, unless otherwise determined by ADAS ONE.  As between you and ADAS ONE, ADAS ONE reserves the right to establish, remove and/or revise Charges for any or all services or goods obtained through the use of the Services at any time in ADAS ONE's sole discretion. Further, you acknowledge and agree that Charges applicable in certain geographical areas may increase substantially during times of high demand. ADAS ONE will use reasonable efforts to inform you of Charges that may apply, provided that you will be responsible for Charges incurred under your Account regardless of your awareness of such Charges or the amounts thereof. ADAS ONE may from time to time provide certain users with promotional offers and discounts that may result in different amounts charged for the same or similar services or goods obtained through the use of the Services, and you agree that such promotional offers and discounts, unless also made available to you, shall have no bearing on your use of the Services or the Charges applied to you. You may elect to cancel your request for Services at any time prior to the commencement of such Services, in which case you may be charged a cancellation fee on a Third Party Provider’s behalf. After you have received services or goods obtained through the Service, you will have the opportunity to rate your experience and leave additional feedback. ADAS ONE may use the proceeds of any Charges for any purpose, subject to any payment obligations it has agreed to with any Third Party Providers or other third parties.  In certain cases, with respect to Third Party Providers, Charges you incur will be owed directly to Third Party Providers, and ADAS ONE will collect payment of those charges from you, on the Third Party Provider’s behalf as their limited payment collection agent, and payment of the Charges shall be considered the same as payment made directly by you to the Third Party Provider. In such cases, you retain the right to request lower Charges from a Third Party Provider for services or goods received by you from such Third Party Provider at the time you receive such services or goods, and Charges you incur will be owed to the Third Party Provider. ADAS ONE will respond accordingly to any request from a Third Party Provider to modify the Charges for a particular service or good. This payment structure is intended to fully compensate a Third Party Provider, if applicable, for the services or goods obtained in connection with your use of the Services. In all other cases, Charges you incur will be owed and paid directly to ADAS ONE or its affiliates, where ADAS ONE is solely liable for any obligations to Third Party Providers. In such cases, you retain the right to request lower Charges from ADAS ONE for services or goods received by you from a Third Party Provider at the time you receive such services or goods, and ADAS ONE will respond accordingly to any request from you to modify the Charges for a particular service or good. Except with respect to taxicab transportation services requested through the Application, ADAS ONE does not designate any portion of your payment as a tip or gratuity to a Third Party Provider. Any representation by ADAS ONE (on ADAS ONE's website, in the Application, or in ADAS ONE's marketing materials) to the effect that tipping is \"voluntary,\" \"not required,\" and/or \"included\" in the payments you make for services or goods provided is not intended to suggest that ADAS ONE provides any additional amounts, beyond those described above, to a Third Party Provider you may use. You understand and agree that, while you are free to provide additional payment as a gratuity to any Third Party Provider who provides you with services or goods obtained through the Service, you are under no obligation to do so. Gratuities are voluntary.  Repair or Cleaning Fees.  You shall be responsible for the cost of repair for damage to, or necessary cleaning of, vehicles and property resulting from use of the Services under your Account in excess of normal \"wear and tear\" damages and necessary cleaning (\"Repair or Cleaning\"). In the event that a Repair or Cleaning request is verified by ADAS ONE in ADAS ONE's reasonable discretion, ADAS ONE reserves the right to facilitate payment for the reasonable cost of such Repair or Cleaning using your payment method designated in your Account. Such amounts will be transferred by ADAS ONE to a Third Party Provider, if applicable, and are non-refundable.  5. Disclaimers; Limitation of Liability; Indemnity.  DISCLAIMER.  THE SERVICES ARE PROVIDED \"AS IS\" AND \"AS AVAILABLE.\" ADAS ONE DISCLAIMS ALL REPRESENTATIONS AND WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, NOT EXPRESSLY SET OUT IN THESE TERMS, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN ADDITION, ADAS ONE MAKES NO REPRESENTATION, WARRANTY, OR GUARANTEE REGARDING THE RELIABILITY, TIMELINESS, QUALITY, SUITABILITY, OR AVAILABILITY OF THE SERVICES OR ANY SERVICES OR GOODS REQUESTED THROUGH THE USE OF THE SERVICES, OR THAT THE SERVICES WILL BE UNINTERRUPTED OR ERROR-FREE. ADAS ONE DOES NOT GUARANTEE THE QUALITY, SUITABILITY, SAFETY OR ABILITY OF THIRD PARTY PROVIDERS. YOU AGREE THAT THE ENTIRE RISK ARISING OUT OF YOUR USE OF THE SERVICES, AND ANY SERVICE OR GOOD REQUESTED IN CONNECTION THEREWITH, REMAINS SOLELY WITH YOU, TO THE MAXIMUM EXTENT PERMITTED UNDER APPLICABLE LAW.  LIMITATION OF LIABILITY.  ADAS ONE SHALL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, LOST DATA, PERSONAL INJURY, OR PROPERTY DAMAGE RELATED TO, IN CONNECTION WITH, OR OTHERWISE RESULTING FROM ANY USE OF THE SERVICES, REGARDLESS OF THE NEGLIGENCE (EITHER ACTIVE, AFFIRMATIVE, SOLE, OR CONCURRENT) OF ADAS ONE, EVEN IF ADAS ONE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.  ADAS ONE SHALL NOT BE LIABLE FOR ANY DAMAGES, LIABILITY OR LOSSES ARISING OUT OF: (i) YOUR USE OF OR RELIANCE ON THE SERVICES OR YOUR INABILITY TO ACCESS OR USE THE SERVICES; OR (ii) ANY TRANSACTION OR RELATIONSHIP BETWEEN YOU AND ANY THIRD PARTY PROVIDER, EVEN IF ADAS ONE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. ADAS ONE SHALL NOT BE LIABLE FOR DELAY OR FAILURE IN PERFORMANCE RESULTING FROM CAUSES BEYOND ADAS ONE'S REASONABLE CONTROL. YOU ACKNOWLEDGE THAT THIRD PARTY PROVIDERS PROVIDING TRANSPORTATION SERVICES REQUESTED THROUGH SOME REQUEST PRODUCTS MAY OFFER RIDESHARING OR PEER-TO-PEER TRANSPORTATION SERVICES AND MAY NOT BE PROFESSIONALLY LICENSED OR PERMITTED.  THE SERVICES MAY BE USED BY YOU TO REQUEST AND SCHEDULE TRANSPORTATION, GOODS, OR LOGISTICS SERVICES WITH THIRD PARTY PROVIDERS, BUT YOU AGREE THAT ADAS ONE HAS NO RESPONSIBILITY OR LIABILITY TO YOU RELATED TO ANY TRANSPORTATION, GOODS OR LOGISTICS SERVICES PROVIDED TO YOU BY THIRD PARTY PROVIDERS OTHER THAN AS EXPRESSLY SET FORTH IN THESE TERMS.  THE LIMITATIONS AND DISCLAIMER IN THIS SECTION DO NOT PURPORT TO LIMIT LIABILITY OR ALTER YOUR RIGHTS AS A CONSUMER THAT CANNOT BE EXCLUDED UNDER APPLICABLE LAW. BECAUSE SOME STATES OR JURISDICTIONS DO NOT ALLOW THE EXCLUSION OF OR THE LIMITATION OF LIABILITY FOR CONSEQUENTIAL OR INCIDENTAL DAMAGES, IN SUCH STATES OR JURISDICTIONS, ADAS ONE’S LIABILITY SHALL BE LIMITED TO THE EXTENT PERMITTED BY LAW. THIS PROVISION SHALL HAVE NO EFFECT ON ADAS ONE’S CHOICE OF LAW PROVISION SET FORTH BELOW.  Indemnity.  You agree to indemnify and hold ADAS ONE and its affiliates and their officers, directors, employees, and agents harmless from any and all claims, demands, losses, liabilities, and expenses (including attorneys' fees), arising out of or in connection with: (i) your use of the Services or services or goods obtained through your use of the Services; (ii) your breach or violation of any of these Terms; (iii) ADAS ONE's use of your User Content; or (iv) your violation of the rights of any third party, including Third Party Providers.  6. Other Provisions  Notice.  ADAS ONE may give notice by means of a general notice on the Services, electronic mail to your email address in your Account, telephone or text message to any phone number provided in connection with your account, or by written communication sent by first class mail or pre-paid post to any address connected with your Account. Such notice shall be deemed to have been given upon the expiration of 48 hours after mailing or posting (if sent by first class mail or pre-paid post) or 12 hours after sending (if sent by email or telephone). You may give notice to ADAS ONE, with such notice deemed given when received by ADAS ONE, at any time by first class mail or pre-paid post to our registered agent for service of process, c/o ADAS ONE INC..  General. You may not assign these Terms without ADAS ONE's prior written approval. ADAS ONE may assign these Terms without your consent to: (i) a subsidiary or affiliate; (ii) an acquirer of ADAS ONE's equity, business or assets; or (iii) a successor by merger. Any purported assignment in violation of this section shall be void. No joint venture, partnership, employment, or agency relationship exists between you, ADAS ONE or any Third Party Provider as a result of this Agreement or use of the Services. If any provision of these Terms is held to be invalid or unenforceable, such provision shall be struck and the remaining provisions shall be enforced to the fullest extent under law. ADAS ONE's failure to enforce any right or provision in these Terms shall not constitute a waiver of such right or provision unless acknowledged and agreed to by ADAS ONE in writing. This provision shall not affect the Severability and Survivability section of the Arbitration Agreement of these Terms. "</string>
+    <string name="my_driving">My Driving</string>
+    <string name="my_car">My Car</string>
+    <string name="dvr">DVR</string>
+    <string name="current_score">Current Score</string>
+
+
+    <string-array name="score_options">
+        <item>Weekly</item>
+        <item>Monthly</item>
+    </string-array>
+    <string-array name="weekly_monthly">
+        <item>Weekly</item>
+        <item>Monthly</item>
+    </string-array>
+
+
+    <string-array name="brands">
+        <item>Hyundai</item>
+        <item>Kia</item>
+        <item>Volkswagen</item>
+        <item>Audi</item>
+        <item>Nissan</item>
+        <item>Ssangyong</item>
+        <item>Rolls Royce</item>
+        <item>Benz</item>
+        <item>Saab</item>
+        <item>Volvo</item>
+    </string-array>
+
+    <string-array name="weekly">
+        <item>@string/weekly</item>
+    </string-array>
+
+    <string name="weekly">Weekly</string>
+    <string name="key_metrices">key Metrices</string>
+    <string name="average_speed">Average speed</string>
+    <string name="breaks_km">Breaks/Km</string>
+    <string name="events_km">events/km</string>
+    <string name="unit_hrs">Hrs</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="trips">Trips</string>
+    <string name="driving_score">Events</string>
+    <string name="e_call">E-call</string>
+    <string name="total_driving_time">Total driving time</string>
+    <string name="hard_acceleration_events">Hard Acceleration events</string>
+    <string name="hard_breaking_events">Hard breaking events</string>
+    <string name="unit_km_hr">Km/hr</string>
+    <string name="graphical_summary">Graphical summary</string>
+    <string name="recent_trips">Recent Trips</string>
+    <string name="overtaking_speed">Overtaking Speed</string>
+    <string name="rapid_acceleration">Rapid Acceleration</string>
+    <string name="sudden_departure">Sudden Departure</string>
+    <string name="rapid_deceleration">Rapid Deceleration</string>
+    <string name="radical_course_change">Radical Course Change</string>
+    <string name="sharp_turns">Sharp Turns</string>
+    <string name="long_driving">Long Driving</string>
+    <string name="sharp_u_turn">Sharp U-turn</string>
+    <string name="graphical_summary_rpm">Graphical summary (RPM)</string>
+    <string name="graphical_summary_speed">Graphical Summary (Speed)</string>
+    <string name="out_0f_100">Out 0f 100</string>
+    <string name="rapid_acc_description">Take control of your trading pace with our Acceleration Control feature. Whether you\'re a cautious investor or a high-speed trader.</string>
+    <string name="sudden_stop">Sudden Stop</string>
+    <string name="breaking_behaviour">Breaking Behaviour</string>
+    <string name="breaking_behvaiour_desc">Set specific conditions, such as market drops or volatility spikes, that will trigger the braking mechanism.</string>
+    <string name="comparative_analysis">Comparative Analysis :</string>
+    <string name="speed">Speed</string>
+    <string name="your_score">Your Score</string>
+    <string name="co_driver">Co-Driver</string>
+    <string name="speed_mgmt">Speed Management</string>
+    <string name="acc_control">Acceleration Control</string>
+    <string name="emergency_contact_sms">Emergency Contact SMS</string>
+    <string name="apply">Apply</string>
+    <string name="emergency_sms">Emergency Sms</string>
+    <string name="emergency_confirm_msg">Send an emergency message to the listed contacts automatically when your vehicle gets an abnormal impact</string>
+    <string name="emergency_sms_formate">emergency Sms Formate</string>
+    <string name="edit">Edit</string>
+    <string name="Initialize">Initialize</string>
+    <string name="overview">Overview</string>
+    <string name="DTC">DTC</string>
+    <string name="car_details">Car Details</string>
+    <string name="hyundai_sonata">Hyundai Sonata</string>
+    <string name="car_usage_graph">Car Usage Graph</string>
+    <string name="radio_instruments_and_bcm">Radio, Instruments and BCM</string>
+    <string name="fps">FPS</string>
+    <string name="register_user">Register User</string>
+
+    <string name="splash_text1">쉽고 편리한\n운행기록자료 제출</string>
+    <string name="splash_text2">DTG</string>
+    <string name="splash_text3">보급형1호 운행기록계</string>
+
+    <string name="connect_product">제품과 연결하기</string>
+    <string name="msg_info_need_connect">블루투스를 활성화하여 제품과 연결해 주세요</string>
+    <string name="find_product">제품찾기</string>
+    <string name="msg_info_device_connected">제품과 앱이\n연결되었습니다</string>
+    <string name="title_btn_car_registration">차량정보 등록</string>
+
+
+
+
+
+
+    <string name="title_device_state">단말 이상</string>
+
+
+
+
+
+
+
+
+
+
+
+
+    <string name="alert_register_vehicle">차량 정보를 등록하시겠습니까?</string>
+    <string name="alert_cartype_save">차종을 설정하시겠습니까?</string>
+    <string name="hello">안녕하세요</string>
+    <string name="ts_etas">한국교통안전공단\n보급형 운행기록계 입니다.</string>
+    <string name="id">아이디</string>
+    <string name="id_hint">아이디를 입력해 주세요</string>
+<!--    <string name="password">패스워드</string>-->
+    <string name="password_hint">패스워드를 입력해 주세요</string>
+    <string name="save_id">아이디 저장</string>
+    <string name="auto_login">자동 로그인</string>
+<!--    <string name="login">로그인</string>-->
+    <string name="pls_check_pw">패스워드를 다시 확인해 주세요</string>
+
+    <string name="bring_phone">(차량 운행시, 스마트폰을 꼭 휴대하세요)</string>
+<!--    <string name="confirm">확인</string>-->
+    <string name="environment_setting">환경설정</string>
+    <string name="searching">검색</string>
+    <string name="trip_file_content">· 내  용</string>
+
+    <string name="submission_history_title">제출이력보기</string>
+    <string name="upload_time">· 전송시각</string>
+    <string name="trans_file_name">· 파일명</string>
+    <string name="rb_protocol_line">LINE</string>
+    <string name="rb_protocol_can_2.0a">CAN 2.0A</string>
+    <string name="rb_protocol_can_2.0b">CAN 2.0B</string>
+    <string name="rb_protocol_can_fd">CAN FD</string>
+    <string name="rb_silent">Silent</string>
+    <string name="rb_normal">Normal</string>
+    <string name="rb_normal_uds">Normal UDS</string>
+    <string name="colon">:</string>
+    <string name="version_management">버전 관리</string>
+    <string name="app_version">앱 버전</string>
+    <string name="Device_firmware_version">단말기 펌웨어 버전</string>
+    <string name="newtag">NEW</string>
+    <string name="driving_data_managmnt">운행 데이터 관리</string>
+    <string name="eTas_interval">eTAS 자동 전송 시간 간격</string>
+    <string name="driving_maintenance_period">운행기록계 제출이력 유지기간</string>
+    <string name="total_driving_distance">총 주행거리 설정</string>
+    <string name="connecation_status">연결상태</string>
+    <string name="user_management">사용자 관리</string>
+    <string name="Auto_login">자동 로그인</string>
+<!--    <string name="firmware_update">단말기 펌웨어 업데이트</string>-->
+    <string name="firmware_updating">펌웨어 업데이트중</string>
+    <string name="firmware_validating">펌웨어 파일 확인중</string>
+    <string name="firmware_update_complete">펌웨어 업데이트가 <br />완료되었습니다</string>
+    <string name="firmware_update_fail">펌웨어 업데이트 실패</string>
+    <string name="OK">확인</string>
+    <string name="oneHour">1 시간</string>
+    <string name="oneDay">1 일</string>
+    <string name="twelveHour">12 시간</string>
+    <string name="sixHour">6 시간</string>
+    <string name="threeHour">3 시간</string>
+    <string name="twoHour">2 시간</string>
+    <string name="notext">없음</string>
+    <string name="timeIntervalDialogTitle">eTAS 자동 전송 시간 간격</string>
+    <string name="days10">10 일</string>
+    <string name="days20">20 일</string>
+    <string name="days30">30 일</string>
+    <string name="days60">60 일</string>
+    <string name="days90">90 일</string>
+    <string name="days120">120 일</string>
+    <string name="days180">180 일</string>
+    <string name="days">일</string>
+    <string name="drivingFileMaintenanceDialogTitle">운행 파일 유지 기간</string>
+<!--    <string name="normal">정상</string>-->
+    <string name="not_display">-</string>
+    <string name="error">오류</string>
+    <string name="undefined">미정의</string>
+    <!--    <string name="bad">불량</string>-->
+
+    <string name="title_btn_reconnect">다시 연결하기</string>
+    <string name="msg_device_not_found">다시 제품을 찾지 못했습니다.\n다시 시도해 주세요</string>
+
+    <string name="btn_scanning">찾는중</string>
+    <string name="title_btn_connect">연결하기</string>
+    <string name="btn_connecting">연결중</string>
+    <string name="btn_configuring">설정중</string>
+    <string name="btn_disconnect">연결해제</string>
+    <string name="btn_scan">제품찾기</string>
+
+
+
+
+    <string name="no">아니오</string>
+    <string name="yes">예</string>
+    <string name="dtg_lite">보급형 운행기록 장치</string>
+    <string name="estimated_time">예상시간 약 1분 3초</string>
+    <string name="success">성공</string>
+    <string name="all">전체</string>
+    <string name="all_newest">전체 최신순</string>
+    <string name="all_past">전체 과거순</string>
+    <string name="success_newest">성공 최신순</string>
+    <string name="past_success">성공 과거순</string>
+    <string name="failur_newest">실패 최신순</string>
+    <string name="failur_past">실패 과거순</string>
+
+
+<!--    <string name="ok">확인</string>-->
+    <string name="connection_status">연결 상태</string>
+    <!--    <string name="good">양호</string>-->
+    <string name="alert_edit_driver_info">수정된 콘텐츠를 등록하시겠습니까?</string>
+
+    <string name="please_select_vehicle_type">차종을 선택하세요</string>
+    <string name="please_enter_vehicle_number">유효한 차량 번호를 입력하십시오.</string>
+    <string name="please_enter_vehicle_id_number">유효한 차대 번호를 입력하십시오.(17자리)</string>
+    <string name="please_enter_registration_number">유효한 운송사업자 등록 번호를 입력하세요.</string>
+
+    <string name="scan_fail">스캔 실패</string>
+
+    <string name="data_is_null">데이터가 null입니다</string>
+    <string name="please_enter_user_id">사용자 ID를 입력하십시오</string>
+    <string name="please_enter_user_pwd">비밀번호를 입력 해주세요</string>
+
+    <string name="vehicle_info_setting_error">차량 정보 설정 오류</string>
+    <string name="please_wait">기다려주세요…</string>
+    <string name="chek_internet_connection">인터넷 연결을 확인해주세요</string>
+
+
+    <string name="state_ready">연결됨</string>
+    <string name="state_connected">설정중</string>
+    <string name="state_connecting">연결중</string>
+    <string name="state_disconnected">연결끊김</string>
+
+    <string name="msg_connecting">연결 중 입니다.\n잠시 기다려주세요.</string>
+    <string name="msg_communication">통신 중 입니다.\n잠시 기다려주세요.</string>
+
+    <string name="firmware_update_info">펌웨어 업데이트 정보</string>
+    <string name="current_version">현재 버전:</string>
+    <string name="latest_version">최신 버전:</string>
+    <string name="firmare_version_text">차량이 정지된 상태에서 업데이트를 진행해주세요.</string>
+    <string name="firmware_update_alert">차량이 정지된 상태에서 업데이트해야 합니다.</string>
+
+
+    <string name="firmware_update_error">펌웨어 업데이트 오류</string>
+    <string name="tv_term_condition">이용 약관</string>
+    <string name="tv_text_term_condition">이용 약관에 관한 내용</string>
+    <string name="tv_agree_term">모든 약관에 동의합니다.</string>
+    <string name="tv_term_of_register">등록 조건</string>
+    <string name="tv_privacylocation_agree">개인위치정보 사용 동의 확인</string>
+    <string name="tv_agree_register">등록 조건에 동의합니다.</string>
+    <string name="tv_agree_privacylocation">개인위치정보 사용에 동의합니다.</string>
+    <string name="tv_term_of_collect">개인 정보 수집 조건</string>
+    <string name="tv_agree_collect">개인 정보 수집에 동의합니다.</string>
+    <string name="tv_information">개인 정보 보호 서비스에 대한 정보</string>
+    <string name="tv_agree_information">개인 정보 보호에 대해 동의합니다.</string>
+    <string name="tv_detail">자세히</string>
+    <string name="eula_location_contents"> @string/eula_location_contents_script </string>
+    <string name="eula_privacy_contents"> @string/eula_privacy_contents_script </string>
+    <string name="eula_service_contents"> @string/eula_service_contents_script </string>
+    <string name="oddometer_test">운행기록계 테스트</string>
+    <string name="etas_test_file_transfer">eTAS 테스트 파일 전송</string>
+    <string name="etas_test_file_transfer_note">eTAS 테스트 파일 전송을 누르시면 바로 전송됩니다</string>
+    <string name="etas_test_file_transfer_fail">한국교통안전공단 운행기록분석시스템 eTAS로 운행기록자료 테스트 파일 전송 실패. 구입처에 문의 바랍니다.</string>
+    <string name="etas_test_file_transfer_success">한국교통안전공단 운행기록분석시스템 eTAS로 운행기록자료 테스트 파일 전송 성공.</string>
+
+    <string name="tv_autofile_transmission">파일 자동전송 동의</string>
+    <string name="tv_agree_autofile_transmission">운행기록자료를 자동으로 한국교통안전공단에 전송되는 서비스 이용 동의 약관입니다.</string>
+    <string name="data_transmission_status">업로드 상태</string>
+    <string name="data_transmission_status_transmittiing">전송중</string>
+    <string name="data_transmission_status_cutoff">끊김</string>
+    <string name="dtg_submission_history">운행기록계 제출이력</string>
+    <string name="dtg_history_fail_list">실패 내역 보기</string>
+    <string name="history_fail_name">전송 실패 내역</string>
+    <string name="history_back">이전으로 가기</string>
+    <string name="user_environment_setting">단말기 환경설정</string>
+    <string name="current_terminal_is_latest_version">현재단말기는 최신 버전입니다</string>
+
+
+
+
+
+
+    <string name="vehicle_type_1">시내버스</string>
+    <string name="vehicle_type_2">서울본부</string>
+    <string name="manufacture_type">Acura</string>
+    <string name="lat_1">서울</string>
+    <string name="lat_2">부산</string>
+    <string name="lat_3">대구</string>
+    <string name="lat_4">인천</string>
+    <string name="lat_5">광주</string>
+    <string name="lat_6">대전</string>
+    <string name="lat_7">울산</string>
+    <string name="lat_8">경기</string>
+    <string name="lat_9">강원</string>
+    <string name="lat_10">충북</string>
+    <string name="lat_11">충남</string>
+    <string name="lat_12">전북</string>
+    <string name="lat_13">전남</string>
+    <string name="lat_14">경북</string>
+    <string name="lat_15">경남</string>
+    <string name="lat_16">제주</string>
+    <string name="lat_17">세종</string>
+    <string name="please_select_location">위치를 선택하세요.</string>
+    <string name="please_select_branchcode">공단 지사 코드를 선택하세요.</string>
+    <string name="driver_preferences">운전 정보 확인</string>
+    <string name="no_list_data">서버에 데이터가 없습니다.</string>
+    <string name="no_company_code">회사코드가 공백입니다.</string>
+    <string name="first_select_left_location">먼저 시도를 선택 해주세요</string>
+    <string name="no_value_manufacture">제조사를 먼저 선택 해주세요.</string>
+    <string name="no_value_manu_model">제조사, 차량모델을 먼저 선택 해주세요.</string>
+    <string name="no_value_manu_year">제조사, 차량모델, 연식을 먼저 선택 해주세요.</string>
+    <string name="failure">실패</string>
+    <string name="resident_register_number_validation">유효한 자격번호 또는 주민록번호 뒷자리를 입력하세요.</string>
+    <string name="register_manufacture_validation">제조사를 선택해주세요.</string>
+    <string name="register_manufacture_model_validation">차량 모델을 선택해주세요</string>
+    <string name="register_manufacture_year_validation">연식을 선택해주세요.</string>
+    <string name="register_manufacture_fueltype_validation">연료타입을 선택해주세요.</string>
+    <string name="register_obd_cable_type_validation">OBD 케이블 타입을 선택해주세요.</string>
+
+    <string name="all_agreements">전체 약관에 동의</string>
+
+    <string name="etas_server_trasmission">eTAS 서버 파일 전송 테스트 시험 부탁드립니다</string>
+    <string name="drive_time">운행 시간 : </string>
+    <string name="operating_distance">운행 거리 : </string>
+    <string name="txt_Km">Km</string>
+
+
+    <string name="comprehensive_table">종합진단표</string>
+
+
+    <string name="cetification_number">자격번호</string>
+    <string name="overall_diagnostic_table_title">종합진단표</string>
+    <string name="new_device_connection">새 단말기 연결</string>
+    <string name="firmware_update_retry_message">단말기 펌웨어 업데이트를 다시 진행하시려면 "확인"을 누르십시요 </string>
+    <string name="up_ok">확인</string>
+    <string name="up_cancel">취소</string>
+    <string name="desc_rssi">connection state</string>
+    <string name="desc_scan">보급형DTG검색</string>
+    <string name="simulator">시뮬레이터</string>
+
+
+    <string name="device_error_not_supported">지원하지 않는 명령입니다.(%s)</string>
+    <string name="device_error_invalid_parameter">유효하지 않은 파라미터입니다.(%s)</string>
+    <string name="device_error_file_operation_fail">파일 관련 동작이 실패했습니다.(%s)</string>
+    <string name="device_error_invalid_file_size">파일크기가 유효하지 않습니다.(%s)</string>
+    <string name="device_error_crc_mismatch">CRC가 일치하지 않습니다.(%s)</string>
+    <string name="device_error">장치 오류가 발생했습니다.(%s)</string>
+    <string name="device_error_speed_not_zero">속도가 0이 아닙니다.(%s)</string>
+    <string name="device_error_invalid_state">유효하지 않은 상태입니다.(%s)</string>
+
+
+    <string name="warning_etas_1">한국교통안전공단에서 서비스하는 기능이며 eTAS 운행기록분석시스템 (https://etas.kotsa.or.kr) 에서 회원가입/로그인을 하시면 운행기록자료를 다운로드 받으실 수 있습니다. </string>
+    <string name="warning_etas_2">회원가입/로그인을 하지 않더라도 차량 운행시 운행기록자료는 자동으로 전송됩니다.</string>
+
+
+    <string name="msg_request_system_alert_permission">자동 실행을 위해 권한이 필요합니다.</string>
+    <string name="msg_request_notification_permission">알림 표시를 위해 권한이 필요합니다.</string>
+
+
+
+
+
+    <string name="title_vehicle_registration">Register Vehicle Information</string>
+    <string name="vehicle_number">Vehicle Number</string>
+    <string name="hint_vehicle_number">License Plate Number</string>
+    <string name="input_warn">If not entered accurately, driving records may not be reported properly.</string>
+    <string name="vehicle_identification_number">Vehicle Identification Number</string>
+    <string name="validation_vehicle_identification_number">Vehicle registration document, 17 characters (letters/numbers)</string>
+    <string name="transport_business_registration_number">Transport Business Registration Number</string>
+    <string name="validation_vehicle_registration_number">Business registration certificate, 10 characters</string>
+    <string name="company_name">Company/Corporation Name</string>
+    <string name="company_name_hint">Name of general taxpayer or corporate business</string>
+    <string name="vehicletype">Vehicle Type</string>
+    <string name="hint_vehicle_type">Please select the vehicle type</string>
+    <string name="location">Location (e.g., Seoul, Guro)</string>
+    <string name="loaction_hint">Please enter the detailed address</string>
+    <string name="branch_code">Branch Office Code</string>
+    <string name="hint_branch_code">Please select the branch office.</string>
+    <string name="name">Name (Actual Vehicle Driver)</string>
+    <string name="pls_enter_name">Please enter a name of at least 2 Korean characters.</string>
+    <string name="resident_register_number">Qualification Number (Freight Vehicle) or Last 7 Digits of Resident Registration Number</string>
+    <string name="resident_register_number_hint">Please enter at least 7 digits.</string>
+    <string name="manufacturer">Manufacturer</string>
+    <string name="hint_manufacturer_type">Automobile Manufacturer</string>
+    <string name="car_model">Car Model</string>
+    <string name="hint_carmodel_type">Model Name</string>
+    <string name="title_year">Year</string>
+    <string name="hint_year_type">Vehicle registration document, vehicle registration year</string>
+    <string name="fuel_type">Fuel Type</string>
+    <string name="hint_fuel_type">Fuel Type</string>
+    <string name="obd_connector_type">OBD Cable Type</string>
+    <string name="to_edit">Edit</string>
+    <string name="type_a">TypeA</string>
+    <string name="type_b">TypeB</string>
+    <string name="type_c">TypeC</string>
+<!--    <string name="btn_registration">Register</string>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!--    <string name="bad">불량</string>-->
+
+
+
+    <string name="btn_registration">등록하기</string>
+
+
+
+
+
+    <string name="check_internet_connection">인터넷 연결을 확인해주세요</string>
+
+    <string name="error_already_connected">이미 장치(%s)와 연결되어 있습니다.</string>
+    <string name="error_already_connecting">이미 장치(%s)와 연결 중입니다.</string>
+    <string name="error_ble_133">장치(%s)가 연결할 수 있는 상태인지 확인하세요</string>
+    <string name="error_ble_22">안드로이드가 연결을 끊었습니다.</string>
+    <string name="error_ble_8">권한이 없거나 연결 시간을 초과하였습니다.</string>
+    <string name="error_ble_not_supported">BLE(Bluetooth Low Energy)를 지원하지 않는 장치입니다.</string>
+    <string name="error_ble_with_timeout">BLE 연결이 시간이 초과하였습니다. 장치(%s)가 연결할 수 있는 상태인지 확인하세요</string>
+    <string name="error_bt_not_enable">블루투스를 켜야합니다.</string>
+    <string name="error_communication">통신오류.</string>
+    <string name="error_connect_timeout">장치 연결이 시간이 초과하였습니다.</string>
+    <string name="error_fail_to_connect">연결이 실패하였습니다.</string>
+    <string name="error_forbidden">사용할 수 없는 기능입니다.</string>
+    <string name="error_invalid_address">맥어드레스는 AA:BB:CC:DD:EE:FF 와 같은 형식이어야 합니다.</string>
+    <string name="error_no_connection">연결이 수립되지 않았습니다.</string>
+    <string name="error_not_connected">장치와 연결되지 않았습니다. (%s)</string>
+    <string name="error_not_ready">장치와 연결이 완료되지 않았습니다. (%s)</string>
+    <string name="error_response_not_ok">실패 응답을 수신하였습니다.(%s)</string>
+    <string name="error_response_timeout">명령에 대한 장치 응답시간이 초과하였습니다.</string>
+    <string name="error_response_timeout_command">(%s) 명령에 대한 장치 응답시간이 초과하였습니다.</string>
+    <string name="error_send_timeout">(%s) 명령 전송 시간이 초과하였습니다.</string>
+    <string name="msg_request_activity_recognition">보급형 DTG 연결 서비스를 재실행 하기 위해 권한이 필요합니다.</string>
+    <string name="msg_request_bt_connect_permission">보급형 DTG와 연결하기 위해 블루투스 연결 권한이 필요합니다.</string>
+    <string name="msg_request_enable_location">보급형 DTG와 연결하기 위해 위치서비스를 활성화하세요.</string>
+    <string name="msg_request_location_permission">보급형 DTG를 찾기 위해 위치 권한이 필요합니다.</string>
+    <string name="msg_request_phone_number_permission">차량 등록을 위해 전화 권한 허용이 필요합니다.</string>
+    <string name="msg_request_write_permission">DTG 파일을 저장하기 위해 저장 권한이 필요합니다.</string>
+    <string name="update_file_not_found">업데이트 파일을 찾을 수 없습니다</string>
+    <string name="upload_file_location_not_found">업데이트 파일 경로를 찾을 수 없습니다</string>
+
+    <string name="canmode_save">설정</string>
+
+
+    <string name="title_car_analysis_config">차량 분석 정보 설정</string>
+
+
+
+
+
+
+    <string name="eula_privacylocation_agree_script">
+\n한국교통안전공단 및 (주)스카이오토넷은 이용 서비스를 제공함에 있어 개인위치정보 주체에게 다음과 같은 내용을 고지하고 개인위치정보 사용에 대한 사전 동의를 구합니다.
+\n ① 귀하의 위치정보는 "한국교통안전공단 및 (주)스카이오토넷" 에게 제공됩니다. 위치정보는 엄격한 인증 절차를 걸친 최소한의 관리자만이 접근할 수 있도록 관리됩니다.
+\n ② 제공된 위치정보는 다음 각 의호의 목적으로 이용되며, 타 목적으로는 이용 되지 않습니다. 보유기간은 5년입니다.
+\n단, 「위치정보의 보호 및 이용 등에 관한 법률」 제4장에 의해 재난 또는 재해의 위험 등으로부터의 긴급구조를 위한 목적 하에서는 개인위치정보 주체의 동의 없이도 긴급구조기관에 위치정보가 제공될 수 있습니다.
+\n ③ 서비스 제공자1 : 한국교통안전공단
+\n    o - 주소 : 경상북도 김천시 혁신6로 17 (율곡동, 한국교통안전공단)
+\n    o - 전화 : 1577-0990 홈페이지 : etas.kotsa.or.kr
+\n * 관련법령 : 교통안전법 제55조
+\n
+\n ④ 서비스 제공자2 : (주)스카이오토넷
+\n    o - 주소 : 서울시 서초구 논현로 145, 3층 (양재동, 스카이레이크빌딩)
+\n    o - 전화 : 02-570-8900, 홈페이지 : skyautonet.com
+\n * 관련법령 : 교통안전법 제55조
+</string>
+
+
+    <string name="eula_autofile_sending_script">
+\n한국교통안전공단 및 (주)스카이오토넷은 관련 법령에 의해 운행기록자료를 수집, 분석하여 교통안전에 활용하고 있습니다.
+\n보급형DTG는 수집단말장치와 보급형전용앱으로 구성되어 있으며, 보급형DTG를 장착한 사용자의 운행기록자료가 자동으로
+\n공단에 제출되는 기능을 내포하고 있습니다.
+\n수집단말장치와 보급형전용앱이 자동 연결(페어링)되면 수집단말장치에서 미전송된 운행기록자료를 수집하여 공단에 자동으로 제출되며,
+\n운행기록자료 전송시 사용자의 이동무선통신(LTE, 5G 등) 모바일데이터를 사용함에 동의합니다.
+\n(자동 전송을 원치 않는 사용자는 기존 비통신형 운행기록장치를 구매하여 장착해야 함)
+\n
+\n한국교통안전공단으로 자동 전송되는 항목은 교통안전법 시행규칙 별표5 양식과 같습니다.
+\n전송항목
+\n운행기록 장치 모델명
+\n차대번호
+\n자동차유형
+\n자동차 등록번호
+\n운송사업자등록번호
+\n운전자 코드
+\n일일주행거리
+\n누적주행거리
+\n차량속도
+\n차량위치
+\nGPS 방위각
+\n기기 및 통신상태 코드
+\n
+\n(주)스카이오토넷으로 자동 전송되는 항목은 아래와 같습니다.
+\n회사명
+\n소재지
+\n공단 지사 코드
+\n자격번호 또는 주민등록번호
+\n차량 제조사
+\n차량 모델명
+\n차량 연식
+\n연료 타입
+\n전화번호
+\n안드로이드 ID
+\n앱 버전
+\nOS 버전
+\n서비스 활성 여부
+\n마지막 업로드 파일명
+\n마지막 다운로드 파일명
+\n장치 맥 어드레스
+\n마지막 장치 연결 시각
+\n마지막 장치 연결해제 시각
+\n마지막 연결 장치 펌웨어 버전
+\n마지막 연결 장치 저장장치 정상여부
+\n마지막 연결 장치 OBD 정상여부
+\n등록된 장치 목록
+\n파이어베이스 테스트랩에서 실행 중 여부
+\nFCM 토큰
+\nFCM 수신 여부
+\n앱 로그 파일
+\n기기 모델
+\n자동 연결 활성 여부
+\n앱 이름
+    </string>
+
+    <string name="connected">Connected : %1$s</string>
+    <string name="connection_timeout">Connection TimeOut</string>
+    <string name="devices">Devices</string>
+
+    <string name="connecting">Connecting...</string>
+    <string name="enable_location_permission">Please enable location permission for scan neearby devices from App permissions</string>
+    <string name="enable_location_setting">Enable location settings</string>
+    <string name="enable_bluetooth">Please enable bluetooth</string>
+    <string name="please_turn_on_the_location">Please Turn on the location.</string>
+    <string name="please_turn_on_the_bluetooth">Please Turn on the bluetooth.</string>
+    <string name="permission_required">Permission Required</string>
+    <string name="bluetooth_location_permission_required"><![CDATA[Bluetooth & Location Permission Required]]></string>
+    <string name="notification_permission_required">Notification permission required.</string>
+    <string name="license">License Plate Number</string>
+    <string name="background_location_rationale">Background Location required in order to Get Safe Drive data in background</string>
+
+
+</resources>

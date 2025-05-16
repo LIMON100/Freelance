@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+
+    <LinearLayout
+        android:id="@+id/tbCalibration"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="Date" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="Time" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="License No." />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="H_MIN" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="L_MIN" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="H_MAX" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="L_MAX" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="H_BTO" />
+
+            <TextView
+                style="@style/text_style_table_row"
+                android:text="L_BTO" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</layout>

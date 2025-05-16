@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'com.skyautonet.drsafe'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.skyautonet.drsafe"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+    buildFeatures {
+        dataBinding = true
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.11.0-beta02'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.activity:activity:1.9.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.7'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.7'
+
+    // osmAndroid
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation 'androidx.databinding:databinding-runtime:7.4.2'
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01"
+
+    implementation("com.mikhaellopez:circularprogressbar:3.1.0")
+    implementation("com.google.code.gson:gson:2.8.9")
+
+    implementation(platform("com.google.firebase:firebase-bom:32.1.1"))
+
+    implementation(platform("com.google.firebase:firebase-bom:32.1.1"))
+
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+
+    implementation "com.kakao.sdk:v2-user:2.20.1" // Module for the Kakao Login APIs
+
+    def retrofitVersion = "2.0.7"
+    // retrofit
+    implementation("com.github.skydoves:sandwich-retrofit:$retrofitVersion")
+    implementation("com.github.skydoves:sandwich:$retrofitVersion")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.0")
+
+}

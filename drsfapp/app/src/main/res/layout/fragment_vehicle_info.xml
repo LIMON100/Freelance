@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/register_main"
+        android:orientation="vertical">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:orientation="vertical">
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/edLicense"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="24dp"
+                        android:background="@drawable/register_edittext_bg"
+                        android:fontFamily="@font/notosans_regular"
+                        android:hint="@string/license_plate_number"
+                        android:padding="16dp"
+                        android:textColor="@color/gray_100"
+                        android:textColorHint="@android:color/darker_gray" />
+
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/edVincode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="25dp"
+                        android:background="@drawable/register_edittext_bg"
+                        android:fontFamily="@font/notosans_regular"
+                        android:hint="@string/vin_code"
+                        android:inputType="number"
+                        android:padding="16dp"
+                        android:textColor="@color/gray_100"
+                        android:textColorHint="@android:color/darker_gray" />
+
+
+                    <!--                <AutoCompleteTextView-->
+                    <!--                    android:id="@+id/edCarType"-->
+                    <!--                    style="@style/Widget.AppCompat.Spinner.DropDown"-->
+                    <!--                    android:layout_width="match_parent"-->
+                    <!--                    android:layout_height="wrap_content"-->
+                    <!--                    android:layout_marginHorizontal="16dp"-->
+                    <!--                    android:layout_marginTop="20dp"-->
+                    <!--                    android:background="@drawable/register_edittext_bg"-->
+                    <!--                    android:dropDownHeight="match_parent"-->
+                    <!--                    android:fontFamily="@font/notosans_regular"-->
+                    <!--                    android:inputType="none"-->
+                    <!--                    android:dropDownWidth="100dp"-->
+                    <!--                    android:dropDownAnchor=""-->
+                    <!--                    android:drawableEnd="@drawable/baseline_arrow_drop_down_24"-->
+                    <!--                    android:padding="16dp"-->
+                    <!--                    android:textColor="@color/white" />-->
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/edCarType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="25dp"
+                        android:background="@drawable/spinner_bg"
+                        android:entries="@array/car_types"
+                        android:padding="16dp"
+                        android:popupBackground="@drawable/spinner_popup_bg" />
+
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/edDeviceInfoMac"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="25dp"
+                        android:background="@drawable/register_edittext_bg"
+                        android:fontFamily="@font/notosans_regular"
+                        android:hint="@string/device_mac"
+                        android:padding="16dp"
+                        android:textColor="@color/gray_100"
+                        android:textColorHint="@android:color/darker_gray" />
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/edLocationProvince"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="25dp"
+                        android:editable="false"
+                        android:background="@drawable/register_edittext_bg"
+                        android:fontFamily="@font/notosans_regular"
+                        android:hint="@string/location"
+                        android:inputType="none"
+                        android:padding="16dp"
+                        android:textColor="@color/gray_100"
+                        android:textColorHint="@android:color/darker_gray" />
+
+<!--                    <androidx.appcompat.widget.AppCompatSpinner-->
+<!--                        android:id="@+id/edLocationProvince"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginHorizontal="16dp"-->
+<!--                        android:layout_marginTop="25dp"-->
+<!--                        android:background="@drawable/spinner_bg"-->
+<!--                        android:entries="@array/Provinces"-->
+<!--                        android:padding="16dp"-->
+<!--                        android:popupBackground="@drawable/spinner_popup_bg" />-->
+
+<!--                    <androidx.appcompat.widget.AppCompatSpinner-->
+<!--                        android:id="@+id/edLocationCity"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginHorizontal="16dp"-->
+<!--                        android:layout_marginTop="25dp"-->
+<!--                        android:background="@drawable/spinner_bg"-->
+<!--                        android:entries="@array/car_types"-->
+<!--                        android:padding="16dp"-->
+<!--                        android:popupBackground="@drawable/spinner_popup_bg" />-->
+
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/edProject"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="25dp"
+                        android:background="@drawable/spinner_bg"
+                        android:padding="16dp"
+                        android:popupBackground="@drawable/spinner_popup_bg" />
+
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/edDevices"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="25dp"
+                        android:background="@drawable/spinner_bg"
+                        android:padding="16dp"
+                        android:popupBackground="@drawable/spinner_popup_bg" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+        </LinearLayout>
+
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnStartCalibration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:background="@drawable/register_edittext_bg"
+                android:fontFamily="@font/notosans_regular"
+                android:text="Start Calibration"
+                android:textAllCaps="false"
+                android:textColor="@color/gray_100" />
+
+
+    </LinearLayout>
+</layout>

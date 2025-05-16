@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/layout_toolbar" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/progressContainer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:visibility="visible"
+                tools:visibility="visible">
+
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/circularProgressIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center|center_vertical"
+                    android:indeterminate="false"
+                    app:indicatorSize="220dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:trackColor="@color/colorLine"
+                    app:trackCornerRadius="@dimen/generic_small_padding"
+                    app:trackThickness="12dp"
+                    tools:progress="40" />
+
+                <TextView
+                    android:id="@+id/tvProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0%"
+                    android:textAppearance="@style/Theme.DrSafe.Headline1"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="68sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/circularProgressIndicator"
+                    app:layout_constraintEnd_toEndOf="@+id/circularProgressIndicator"
+                    app:layout_constraintStart_toStartOf="@+id/circularProgressIndicator"
+                    app:layout_constraintTop_toTopOf="@+id/circularProgressIndicator" />
+
+                <TextView
+                    android:id="@+id/tvProgressStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_10dp"
+                    android:text="Updating..."
+                    android:textAppearance="@style/Theme.DrSafe.Headline4"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="@id/circularProgressIndicator"
+                    app:layout_constraintStart_toStartOf="@id/circularProgressIndicator"
+                    app:layout_constraintTop_toBottomOf="@id/circularProgressIndicator" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/successContainer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:visibility="gone">
+
+
+                <ImageView
+                    android:id="@+id/imgSuccess"
+                    android:layout_width="220dp"
+                    android:layout_height="220dp"
+                    android:src="@drawable/ic_update_success"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_10dp"
+                    android:text="@string/successfully_updated"
+                    android:textAppearance="@style/Theme.DrSafe.Headline4"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="@id/imgSuccess"
+                    app:layout_constraintStart_toStartOf="@id/imgSuccess"
+                    app:layout_constraintTop_toBottomOf="@id/imgSuccess" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+<!--            <androidx.appcompat.widget.AppCompatButton-->
+<!--                android:id="@+id/btnConfirm"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_margin="16dp"-->
+<!--                android:background="@drawable/generic_btn_bg"-->
+<!--                android:text="@string/confirm"-->
+<!--                android:textAppearance="@style/Theme.DrSafe.Button"-->
+<!--                android:textColor="@color/white" />-->
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>

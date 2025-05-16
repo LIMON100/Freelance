@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_margin="10dp">
+<EditText
+
+    android:id="@+id/tvIpAddress"
+    android:layout_marginTop="@dimen/text_28_sp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="Enter Server Ip Address"
+    android:textAlignment="center"/>
+        <EditText
+            android:id="@+id/tvFileName"
+            android:layout_marginTop="@dimen/text_28_sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter FileName"
+            android:textAlignment="center"/>
+        <Button
+            android:id="@+id/btnGetData"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Get Data"/>
+
+
+
+    </LinearLayout>
+</layout>

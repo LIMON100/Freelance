@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/layout_toolbar" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorSurface">
+
+            <TextView
+                android:id="@+id/tvUserProfile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/generic_large_padding"
+                android:layout_marginTop="@dimen/generic_large_padding"
+                android:text="@string/user_profile"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <LinearLayout
+                android:id="@+id/llUserProfile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:layout_marginEnd="@dimen/generic_large_padding"
+                android:background="@drawable/update_row_bg"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/tvUserProfile"
+                app:layout_constraintTop_toBottomOf="@id/tvUserProfile">
+
+                <LinearLayout
+                    android:id="@+id/llNickName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/padding_10dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_user_name" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:layout_weight="1"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/phone_number"
+
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/tvMobNumber"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:padding="@dimen/generic_small_padding"
+                        android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                        android:text="0000000000" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/colorLine" />
+
+                <LinearLayout
+                    android:id="@+id/llVehicle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/padding_10dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_vehicle" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:layout_weight="1"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/vehicle"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:drawablePadding="@dimen/generic_small_padding"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="Hyundai"
+                        android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                        app:drawableEndCompat="@drawable/ic_arrow_forward" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvDvrOptions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/generic_large_padding"
+                android:layout_marginTop="@dimen/generic_large_padding"
+                android:text="@string/dvr_options"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/llUserProfile" />
+
+
+
+            <LinearLayout
+                android:id="@+id/llDvrOptionsContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:layout_marginEnd="@dimen/generic_large_padding"
+                android:background="@drawable/update_row_bg"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/tvDvrOptions"
+                app:layout_constraintTop_toBottomOf="@id/tvDvrOptions">
+
+
+                <LinearLayout
+                    android:id="@+id/llDvrOptions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/padding_10dp">
+
+
+                    <ImageView
+                        android:layout_width="@dimen/image_28dp"
+                        android:layout_height="@dimen/image_28dp"
+                        android:src="@drawable/ic_dvr_settings" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:drawablePadding="@dimen/generic_small_padding"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/dvr_options"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface"
+                        app:drawableEndCompat="@drawable/ic_arrow_forward" />
+                </LinearLayout>
+
+
+            </LinearLayout>
+
+
+
+
+
+
+            <TextView
+                android:id="@+id/tvWifiConnection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/generic_large_padding"
+                android:layout_marginTop="@dimen/generic_large_padding"
+                android:text="@string/wi_fi_connection"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/llDvrOptionsContainer" />
+
+
+
+
+
+
+            <LinearLayout
+                android:id="@+id/llWifiSettings"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:layout_marginEnd="@dimen/generic_large_padding"
+                android:background="@drawable/update_row_bg"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/tvWifiConnection"
+                app:layout_constraintTop_toBottomOf="@id/tvWifiConnection">
+
+
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/colorLine"/>
+
+                <LinearLayout
+                    android:id="@+id/llCameraDeviceWifi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/padding_10dp">
+
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_vehicle" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:layout_weight="1"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/camera_device"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:drawablePadding="@dimen/generic_small_padding"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/disconnected"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorCritical"
+                        android:textStyle="bold"
+                        app:drawableEndCompat="@drawable/ic_info" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <TextView
+                android:id="@+id/tvBleConnection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/generic_large_padding"
+                android:layout_marginTop="@dimen/generic_large_padding"
+                android:text="@string/ble_connection"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/llWifiSettings" />
+            <LinearLayout
+                android:id="@+id/llBleSettings"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:layout_marginEnd="@dimen/generic_large_padding"
+                android:background="@drawable/update_row_bg"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/tvBleConnection"
+                app:layout_constraintTop_toBottomOf="@id/tvBleConnection">
+
+                <LinearLayout
+                    android:id="@+id/llMasterDeviceBle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/padding_10dp">
+
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_vehicle" />
+
+                    <TextView
+
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:layout_weight="1"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/master_device"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/masterBleStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:drawablePadding="@dimen/generic_small_padding"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/connection"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorPrimary"
+                        android:textStyle="bold"
+                        app:drawableEndCompat="@drawable/ic_info" />
+
+                </LinearLayout>
+
+
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvAudio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/generic_large_padding"
+                android:layout_marginTop="@dimen/generic_large_padding"
+                android:text="Audio"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/llBleSettings" />
+
+            <LinearLayout
+                android:id="@+id/llAudioSettingsContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/generic_padding"
+                android:layout_marginEnd="@dimen/generic_large_padding"
+                android:background="@drawable/update_row_bg"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/tvAudio"
+                app:layout_constraintTop_toBottomOf="@id/tvAudio">
+
+                <LinearLayout
+                    android:id="@+id/llAudioSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_10dp"
+                    android:orientation="horizontal">
+
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_vehicle" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/generic_padding"
+                        android:layout_weight="1"
+                        android:drawablePadding="@dimen/generic_small_padding"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="@string/audio_settings"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface"
+                        app:drawableEndCompat="@drawable/ic_arrow_forward" />
+
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvVehicleOptions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/generic_large_padding"
+                android:layout_marginTop="@dimen/generic_large_padding"
+                android:text="Firmware Update"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/llAudioSettingsContainer" />
+
+            <LinearLayout
+                android:id="@+id/llUpdateOptionContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="@dimen/generic_large_padding"
+                android:background="@drawable/update_row_bg"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/tvVehicleOptions"
+                app:layout_constraintTop_toBottomOf="@id/tvVehicleOptions">
+                <LinearLayout
+                    android:id="@+id/llUpdateOptions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="@dimen/generic_padding"
+                    android:padding="@dimen/padding_10dp">
+
+
+                    <ImageView
+                        android:layout_width="@dimen/image_28dp"
+                        android:layout_height="@dimen/image_28dp"
+                        android:src="@drawable/ic_dvr_settings" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:drawablePadding="@dimen/generic_small_padding"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/generic_small_padding"
+                        android:text="Firmware Options"
+                        android:textAppearance="@style/Theme.DrSafe.caption1"
+                        android:textColor="@color/colorOnSurface"
+                        app:drawableEndCompat="@drawable/ic_arrow_forward" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </LinearLayout>
+</layout>

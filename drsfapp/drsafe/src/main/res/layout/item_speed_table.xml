@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/speedtable_bg"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/generic_small_padding">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="@string/speed"
+                android:textAppearance="@style/Theme.DrSafe.caption1"
+                android:textColor="@color/black"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="@string/your_score"
+                android:textAppearance="@style/Theme.DrSafe.caption1"
+                android:textColor="@color/black"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="@string/co_driver"
+                android:textAppearance="@style/Theme.DrSafe.caption1"
+                android:textColor="@color/black"
+                android:textStyle="bold" />
+
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorLine" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="@string/speed_mgmt"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+
+            <TextView
+                android:id="@+id/r1c1"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="92"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+
+            <TextView
+                android:id="@+id/r1c2"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="94"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorLine" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="@string/breaking_behaviour"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+
+            <TextView
+                android:id="@+id/r2c1"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="92"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+            <TextView
+                android:id="@+id/r2c2"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="94"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorLine" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="@string/acc_control"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+
+            <TextView
+                android:id="@+id/r3c1"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="92"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorLine" />
+
+
+            <TextView
+                android:id="@+id/r3c2"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/generic_small_padding"
+                android:text="94"
+                android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="@dimen/generic_small_padding"
+            android:background="@color/colorLine" />
+
+    </LinearLayout>
+</layout>

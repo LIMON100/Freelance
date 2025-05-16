@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true" android:state_checked="true" android:drawable="@drawable/icon_select" />
+
+    <item android:state_checked="true" android:drawable="@drawable/icon_select" android:state_focused="false" />
+
+    <item android:state_pressed="true" android:state_checked="false" android:drawable="@drawable/disable_selection" />
+
+    <item android:state_checked="false" android:drawable="@drawable/disable_selection" android:state_focused="false" />
+</selector>
