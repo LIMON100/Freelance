@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/tbMyDrivingRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:background="@color/colorPrimary">
+
+        <RadioGroup
+            android:id="@+id/rgMyDrivingTab"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/radio_grp_bg"
+            android:gravity="center"
+            android:minHeight="48dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            tools:showIn="@layout/fragment_my_driving">
+
+            <RadioButton
+                android:id="@+id/rdDashboard"
+                style="@style/Theme.DrSafe.RadioButton.MyDriving"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:gravity="center"
+                android:text="@string/dashboard" />
+
+            <RadioButton
+                android:id="@+id/rdTrips"
+                style="@style/Theme.DrSafe.RadioButton.MyDriving"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/trips" />
+
+            <RadioButton
+                android:id="@+id/rdDrivingScore"
+                style="@style/Theme.DrSafe.RadioButton.MyDriving"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/driving_score" />
+
+            <RadioButton
+                android:id="@+id/rdECall"
+                style="@style/Theme.DrSafe.RadioButton.MyDriving"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/e_call" />
+        </RadioGroup>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>
+

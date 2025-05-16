@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/layout_toolbar" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorSurface">
+
+
+            <include
+                android:id="@+id/rgSelection"
+                layout="@layout/layout_radio_selection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/bg_search"
+                android:drawableEnd="@drawable/ic_search"
+                android:ems="10"
+                android:fontFamily="@font/figtree"
+                android:hint="@string/search"
+                android:inputType="text"
+                android:padding="12dp"
+                android:textColor="@color/black"
+                android:textColorHint="#B4BECA"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rgSelection" />
+
+
+            <TextView
+                android:id="@+id/tvResult"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="0 results"
+                android:textAppearance="@style/Theme.DrSafe.body"
+                app:layout_constraintStart_toStartOf="@id/etSearch"
+                app:layout_constraintTop_toBottomOf="@id/etSearch"
+                tools:text="200 Results" />
+
+            <TextView
+                android:id="@+id/tvErrorMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@android:color/holo_red_dark"
+                android:text="@string/permission_required_to_access_videos"
+                android:visibility="gone"
+                android:textSize="16sp"
+                app:layout_constraintStart_toStartOf="@id/etSearch"
+                app:layout_constraintTop_toBottomOf="@id/tvResult" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:animateLayoutChanges="true"
+                app:layout_constraintEnd_toEndOf="@id/etSearch"
+                app:layout_constraintStart_toStartOf="@id/etSearch"
+                app:layout_constraintTop_toBottomOf="@id/tvResult"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <include
+                    android:id="@+id/dvr_panel"
+                    layout="@layout/layout_video_panel"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginTop="8dp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnDelete"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/generic_padding"
+                    android:layout_marginTop="@dimen/generic_padding"
+                    android:background="@drawable/generic_btn_bg"
+                    android:backgroundTint="@color/colorCritical"
+                    android:text="@string/delete"
+                    android:textAllCaps="false"
+                    android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                    android:textColor="@color/white"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="@id/etSearch"
+                    app:layout_constraintStart_toStartOf="@id/etSearch"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+</layout>

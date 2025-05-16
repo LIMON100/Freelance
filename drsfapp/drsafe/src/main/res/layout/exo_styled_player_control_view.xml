@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/padding_10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@color/black_transparent">
+
+        <ImageView
+            android:id="@+id/imgStop"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/image_28dp"
+            android:layout_weight="1"
+
+            android:src="@drawable/ic_exo_stop"/>
+
+
+        <ImageView
+            android:id="@+id/imgPlay"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/image_28dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_exo_play"/>
+
+<!--        <ImageView-->
+<!--            android:id="@+id/imgPause"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="@dimen/image_28dp"-->
+<!--            android:layout_weight="1"-->
+<!--            android:src="@drawable/ic_exo_pause"/>-->
+
+        <ImageView
+            android:id="@+id/imgRepeat"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="@dimen/image_28dp"
+            android:src="@drawable/ic_exo_repeat"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

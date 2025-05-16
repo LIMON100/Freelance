@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/loginWithKakao"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/generic_large_padding"
+        android:layout_marginTop="@dimen/generic_large_padding"
+        android:background="@drawable/login_btn_bg"
+        android:orientation="horizontal"
+        android:padding="@dimen/generic_padding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/loginWithGoogle"
+        tools:showIn="@layout/fragment_login_main">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:layout_width="@dimen/image_28dp"
+            android:layout_height="@dimen/image_28dp"
+            android:layout_gravity="center"
+            android:layout_marginEnd="@dimen/generic_small_padding"
+            android:src="@drawable/ic_kakao" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="@dimen/generic_small_padding"
+            android:text="@string/login_with_kakao"
+            android:textAppearance="@style/Theme.DrSafe.Button"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+</layout>

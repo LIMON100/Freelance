@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/color_white"
+    android:clickable="true">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/color_white"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_centerInParent="true"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:id="@+id/rl_accelerator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:layout_width="180dp"
+                    android:layout_height="180dp"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/progress_back" />
+
+                <ImageView
+                    android:layout_width="149dp"
+                    android:layout_height="160dp"
+                    android:layout_centerInParent="true"
+                    android:gravity="center"
+                    android:src="@drawable/accelerator" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/rl_progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="visible">
+
+                <ImageView
+                    android:layout_width="180dp"
+                    android:layout_height="180dp"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/progress_back" />
+
+                <com.axon.kisa10.util.CircularSeekBar
+                    android:id="@+id/seek_bar_progress"
+                    android:layout_width="180dp"
+                    android:layout_height="180dp"
+                    android:layout_centerInParent="true"
+                    android:clickable="false"
+                    android:focusable="false"
+                    app:cs_circle_color="@color/circle_color"
+                    app:cs_circle_progress_color="@color/progress_color"
+                    app:cs_circle_stroke_width="6dp"
+                    app:cs_circle_style="round"
+                    app:cs_negative_enabled="true"
+                    app:cs_pointer_color="@color/progress_color"
+                    app:cs_pointer_stroke_width="20dp"
+                    app:cs_progress="0" />
+
+                <TextView
+                    android:id="@+id/tv_progress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:fontFamily="@font/notosans_medium"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="#0c54c2"
+                    android:textSize="40sp" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="125dp"
+                    android:src="@drawable/ic_percent"
+                    android:visibility="visible" />
+
+            </RelativeLayout>
+
+	        <ImageView
+	            android:id="@+id/iv_success"
+	            android:layout_width="180dp"
+	            android:layout_height="180dp"
+	            android:src="@drawable/success"
+	            android:visibility="gone"
+	            android:layout_centerInParent="true"/>
+
+            <ImageView
+                android:id="@+id/iv_not_success"
+                android:layout_width="180dp"
+                android:layout_height="180dp"
+                android:src="@drawable/not_success"
+                android:visibility="gone"
+                android:layout_centerInParent="true"/>
+
+            <TextView
+                android:id="@+id/tv_update_status"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:fontFamily="@font/notosans_medium"
+                android:gravity="left"
+                android:text="@string/in_calibration"
+                android:textColor="@color/color_black"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tv_accelerator_status"
+                android:visibility="visible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:fontFamily="@font/notosans_medium"
+                android:gravity="left"
+                android:text="@string/calibration_accel"
+                android:textColor="@color/color_black"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_ok"
+            style="@style/bottom_btn"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/btn_height"
+            android:layout_alignParentBottom="true"
+            android:text="@string/ok_c"
+            android:visibility="invisible" />
+    </RelativeLayout>
+</FrameLayout>

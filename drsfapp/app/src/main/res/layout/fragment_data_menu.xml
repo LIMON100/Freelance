@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg_main"
+        android:orientation="vertical">
+
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_data_update"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/firmware" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/data_update" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_event_update"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/firmware" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/event_update" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_log_view"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/firmware" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/log_view" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_event_view"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/firmware" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/event_view" />
+        </LinearLayout>
+
+
+    </LinearLayout>
+</layout>

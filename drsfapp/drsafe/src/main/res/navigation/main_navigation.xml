@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_navigation"
+    app:startDestination="@id/dashboardFragment">
+
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.skyautonet.drsafe.ui.mydriving.dashboard.DashboardFragment"
+        android:label="Home"
+        tools:targetApi="o" />
+    <fragment
+        android:id="@+id/ecallFragment"
+        android:name="com.skyautonet.drsafe.ui.mydriving.ecall.EcallFragment"
+        android:label="ECALL" />
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.skyautonet.drsafe.ui.setting.SettingsFragment"
+        android:label="Setting" />
+    <fragment
+        android:id="@+id/eventListFragment"
+        android:name="com.skyautonet.drsafe.ui.event.EventListFragment"
+        android:label="EVENT" />
+    <fragment
+        android:id="@+id/tripListFragment"
+        android:name="com.skyautonet.drsafe.ui.trips.TripListFragment"
+        android:label="TRIPS" /><action android:id="@+id/action_global_settingsFragment" app:destination="@id/settingsFragment"/><action android:id="@+id/action_global_dashboardFragment" app:destination="@id/dashboardFragment"/><action android:id="@+id/action_global_eventListFragment" app:destination="@id/eventListFragment"/><action android:id="@+id/action_global_ecallFragment" app:destination="@id/ecallFragment"/><action android:id="@+id/action_global_tripListFragment" app:destination="@id/tripListFragment"/>
+
+
+</navigation>

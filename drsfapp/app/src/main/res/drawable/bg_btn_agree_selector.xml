@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 버튼을 눌렀을 때 (pressed 상태) -->
+    <item android:drawable="@drawable/bg_btn_agree_disabled" android:state_pressed="true"/>
+    <!-- 기본 상태 -->
+    <item android:drawable="@drawable/bg_btn_agree_enabled"/>
+</selector>

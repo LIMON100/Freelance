@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="colorWhitle">#FFFFFF</color>
+    <color name="colorBlue">#2064C9</color>
+    <color name="colorBackground">#0E1D6D</color>
+    <color name="colorBgRegister">#1E2C75</color>
+
+    <color name="colorPrimary">#2064C9</color>
+    <color name="colorPrimaryDark">#0A327A</color>
+    <color name="colorAccent">#2064C9</color>
+    <color name="color_white">#FFFFFF</color>
+    <color name="color_black">#000000</color>
+    <color name="color_black_opacity30">#4D000000</color>
+    <color name="color_transparent">#00000000</color>
+    <color name="transparent_forgot_password">#1AFBFBFB</color>
+    <color name="color_background_forgot_password">#0E1D6D</color>
+    <color name="color_background_nav_setting">#3d4989</color>
+    <color name="colorFab_add">#FF9800</color>
+    <color name="colorGray">#5E5E5E</color>
+    <color name="colorBgDialog">#E9E9E9</color>
+    <color name="colorLineMap">#F11976</color>
+
+    <color name="color1">#87FFE3</color>
+    <color name="color2">#88FF00</color>
+    <color name="color3">#FFD500</color>
+    <color name="color4">#FF9800</color>
+
+    <color name="startLineColorChart">#87FFE5</color>
+    <color name="centerLineColorChart">#4FB3FF</color>
+    <color name="endLineColorChart">#59FFC2</color>
+    <color name="startShadowColorChart">#59FCC5</color>
+    <color name="endShadowColorChart">#0084FBE7</color>
+
+    <color name="startLineColorChartSpeed">#00FF6E</color>
+    <color name="centerLineColorChartSpeed">#00FF6E</color>
+    <color name="endLineColorChartSpeed">#F9FF59</color>
+    <color name="startShadowColorSpeed">#88FF00</color>
+    <color name="endShadowColorSpeed">#0087FF00</color>
+
+    <color name="endShadowColorRPM">#00FFEE00</color>
+    <color name="startShadowColorRPM">#FFF700</color>
+    <color name="endLineColorChartRPM">#B6FF5E</color>
+    <color name="centerLineColorChartRPM">#FFD163</color>
+    <color name="startLineColorChartRPM">#FFD163</color>
+
+    <color name="calendar_header_title">#FFF</color>
+    <color name="selected_date_circle_color_app">#0B54C2</color>
+    <color name="range_bg_color_app">#FFCDD2</color>
+
+    <color name="bg_menu_shadow">#8C1d3d86</color>
+    <color name="drawer_divider">#007BAA</color>
+    <color name="bg_main">#003FAB</color>
+    <color name="trans_white">#33FFFFFF</color>
+    <color name="color_pink">#FC005E</color>
+    <color name="color_light_blue">#005EFF</color>
+   
+    <color name="white">#ffffff</color>
+    <color name="sky_blue">#abccff</color>
+    <color name="progress_color">#3E8BFF</color>
+    <color name="dialog_color">#e9e9e9</color>
+    <color name="dialog_text">#262626</color>
+    <color name="black">#000000</color>
+    <color name="radio_btn">#30b6e3</color>
+    <color name="radio_text">#575559</color>
+    <color name="obd_divider">#CCDFFF</color>
+    <color name="circle_color">#C9C9C9</color>
+    <color name="red">#ce000c</color>
+    <color name="toolbar_bg">#D2D2D2</color>
+    <color name="surface_bg">#CEC9C9</color>
+    <color name="toolbar_bg_light">#DCDCDC</color>
+    <color name="register_toolbar_color">#3A466D</color>
+    <color name="register_main">#071841</color>
+    <color name="grey_title">#F3F3F3</color>
+    <color name="splash_text_color2">#65D5FF</color>
+    <color name="hint_color">#C7C7C7</color>
+    <color name="disable_btn_color">#B4B4B4</color>
+    <color name="btn_color">#003FAB</color>
+    <color name="dialog_text_title_color">#0B54C2</color>
+
+
+</resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/color_white">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/color_black"
+        android:text="@string/user_reset_first_inf"
+        android:textSize="25sp"
+        android:fontFamily="@font/notosans_medium"/>
+
+    <TextView
+        android:id="@+id/tv_deviceName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/notosans_medium"
+        android:textColor="@color/color_black"
+        android:visibility="gone"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/tv_deviceAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textColor="@color/color_black"
+        android:fontFamily="@font/notoaans_bold"/>
+
+    <Button
+        android:id="@+id/btn_ok"
+        android:layout_width="200dp"
+        android:layout_height="@dimen/height_button_normal"
+        android:background="@drawable/bg_btn_register"
+        android:fontFamily="@font/notosans_medium"
+        android:text="@string/ok"
+        android:textAllCaps="false"
+        android:layout_marginTop="50dp"
+        android:textColor="@color/colorWhitle"
+        android:textSize="@dimen/text_size_19"/>
+</LinearLayout>

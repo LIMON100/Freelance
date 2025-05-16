@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:showIn="@layout/fragment_db_update">
+
+        <LinearLayout
+            android:id="@+id/llVersion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/generic_large_padding"
+            android:layout_marginTop="@dimen/generic_padding"
+            android:background="@drawable/update_row_bg"
+            android:orientation="horizontal"
+            android:padding="@dimen/padding_10dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_version" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/generic_padding"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:text="@string/version"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:padding="@dimen/generic_small_padding"
+                android:textAppearance="@style/Theme.DrSafe.Button.Small"
+                android:textColor="@color/colorPrimary"
+                android:textStyle="bold"
+                tools:text="V 1.2" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llUpdateNotification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/generic_large_padding"
+            android:layout_marginTop="@dimen/generic_padding"
+            android:background="@drawable/update_row_bg"
+            android:orientation="horizontal"
+            android:padding="@dimen/padding_10dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_update_notification" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/generic_padding"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:text="@string/update_notification"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+
+            <com.skyautonet.drsafe.util.CheckableImageView
+                android:id="@+id/swUpdateNotification"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:src="@drawable/switch_bg"
+                tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llAutoUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/generic_large_padding"
+            android:layout_marginTop="@dimen/generic_padding"
+            android:background="@drawable/update_row_bg"
+            android:orientation="horizontal"
+            android:padding="@dimen/padding_10dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_version" />
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/generic_padding"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:text="@string/auto_update"
+                android:textAppearance="@style/Theme.DrSafe.Button"
+                android:textStyle="bold" />
+
+            <com.skyautonet.drsafe.util.CheckableImageView
+                android:id="@+id/swAutoUpdate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:src="@drawable/switch_bg"
+                tools:ignore="UseSwitchCompatOrMaterialXml"
+
+                />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_margin="@dimen/generic_large_padding"
+            android:background="@drawable/generic_btn_bg"
+            android:text="@string/update"
+            android:textAppearance="@style/Theme.DrSafe.Button"
+            android:textColor="@color/white"
+            android:visibility="gone"/>
+    </LinearLayout>
+</layout>

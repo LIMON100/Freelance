@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/layout_toolbar" />
+
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:overScrollMode="never">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/parentLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/generic_large_padding"
+                    android:text="@string/register_user"
+                    android:textAppearance="@style/Theme.DrSafe.Headline2"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+
+<!--                <LinearLayout-->
+<!--                    android:id="@+id/llVehicleNumber"-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_margin="@dimen/generic_large_padding"-->
+<!--                    android:orientation="vertical"-->
+<!--                    app:layout_constraintEnd_toEndOf="parent"-->
+<!--                    app:layout_constraintStart_toStartOf="parent"-->
+<!--                    app:layout_constraintTop_toBottomOf="@id/textView">-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="Vincode"-->
+<!--                        android:textAppearance="@style/Theme.DrSafe.caption1" />-->
+
+<!--                    <EditText-->
+<!--                        android:id="@+id/edVincode"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginTop="@dimen/generic_padding"-->
+<!--                        android:background="@drawable/edit_login_selector"-->
+<!--                        android:padding="@dimen/padding_10dp" />-->
+<!--                </LinearLayout>-->
+
+                <LinearLayout
+                    android:id="@+id/llname"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/generic_large_padding"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/textView">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Name"
+                        android:layout_marginBottom="@dimen/generic_padding"
+                        android:textAppearance="@style/Theme.DrSafe.caption1" />
+                        <androidx.appcompat.widget.AppCompatEditText
+                            android:id="@+id/edName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/edit_login_selector"
+
+                            android:padding="@dimen/padding_10dp" />
+
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/llMobileNumber"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/generic_large_padding"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/llname">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mob Number"
+                        android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+                    <EditText
+                        android:id="@+id/edMobNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/generic_padding"
+                        android:background="@drawable/edit_login_selector"
+                        android:padding="@dimen/padding_10dp" />
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:id="@+id/llEmailId"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/generic_large_padding"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/llMobileNumber"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Email Id"
+                        android:textAppearance="@style/Theme.DrSafe.caption1" />
+
+                    <EditText
+                        android:id="@+id/edEmailId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/generic_padding"
+                        android:background="@drawable/edit_login_selector"
+                        android:padding="@dimen/padding_10dp" />
+                </LinearLayout>
+
+
+
+<!--                <LinearLayout-->
+<!--                    android:id="@+id/llLogin"-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="@dimen/generic_large_padding"-->
+<!--                    android:orientation="horizontal"-->
+<!--                    app:layout_constraintEnd_toEndOf="@id/btnLogin"-->
+<!--                    app:layout_constraintStart_toStartOf="@id/llEmailId"-->
+<!--                    app:layout_constraintTop_toBottomOf="@id/llEmailId"-->
+<!--                    tools:ignore="NotSibling">-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_weight="1"-->
+<!--                        android:gravity="end"-->
+<!--                        android:text="Already have an account?"-->
+<!--                        android:textAppearance="@style/Theme.DrSafe.caption1" />-->
+
+<!--                    <TextView-->
+<!--                        android:id="@+id/tvlogin"-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginStart="@dimen/generic_padding"-->
+<!--                        android:layout_weight="1"-->
+<!--                        android:text="Login"-->
+<!--                        android:textColor="@color/colorPrimary"-->
+<!--                        android:textAppearance="@style/Theme.DrSafe.Button.Small"-->
+<!--                        android:textStyle="bold" />-->
+
+<!--                </LinearLayout>-->
+
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnRegister"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/generic_padding"
+                    android:background="@drawable/generic_btn_bg"
+                    android:text="Register"
+                    android:textAppearance="@style/Theme.DrSafe.Button"
+                    android:textColor="@color/white"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+
+
+
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+</layout>

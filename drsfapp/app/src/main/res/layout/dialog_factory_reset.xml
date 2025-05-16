@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp"
+    android:background="@android:color/transparent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="550dp"
+        android:background="@drawable/bg_dialog"
+        android:orientation="vertical"
+        android:paddingBottom="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/img_dialog"
+                android:layout_width="wrap_content"
+                android:layout_height="150dp"
+                android:layout_marginTop="@dimen/_40dp"
+                android:src="@drawable/ic_factoryreset_img" />
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="82dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="82dp"
+                android:fontFamily="@font/notosans_regular"
+                android:gravity="center"
+                android:text="@string/tv_status_delete"
+                android:textColor="#262626"
+                android:textSize="19sp" />
+        </LinearLayout>
+
+
+        <Button
+            android:id="@+id/btn_confirm"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_btn_register"
+            android:fontFamily="@font/notosans_medium"
+            android:text="@string/ok_c"
+            android:textColor="@color/color_white"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="20dp"
+            android:background="@drawable/bg_button_cancel_dialog"
+            android:fontFamily="@font/notosans_medium"
+            android:text="@string/cancel"
+            android:textAllCaps="false"
+            android:textColor="#1F62C6"
+            android:textSize="18sp" />
+    </LinearLayout>
+</LinearLayout>

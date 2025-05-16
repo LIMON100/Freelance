@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg_main"
+        android:orientation="vertical">
+
+
+        <LinearLayout
+            android:id="@+id/ll_data_update_menu"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/firmware" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/data_update" />
+        </LinearLayout>
+
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_firmwareUpadte"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/firmware" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/firmware_update" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+
+
+        <LinearLayout
+            android:id="@+id/ll_db_update"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/db_update" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/db_update" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_device"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/device" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/device" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_obdSetting"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/obd_setting" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/obd_setting" />
+        </LinearLayout>
+
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_calibration"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/calibration" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/calibration" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_facory_reset"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/ic_factory_reset" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/factory_reset" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_ble_connection"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/bluetooth"
+                app:tint="@color/white" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_connection" />
+
+            <ImageView
+                android:id="@+id/iv_connectStatus"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:visibility="visible"
+                android:src="@drawable/ic_ovel_connected"/>
+
+        </LinearLayout>
+
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_log_calibration"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/ic_logs"
+                app:tint="@color/white"/>
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Calibration Logs" />
+        </LinearLayout>
+
+        <View
+            style="@style/menu_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <LinearLayout
+            android:id="@+id/ll_log_out"
+            style="@style/menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_60dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/drawer_menu_item_margin_left"
+                android:src="@drawable/back" />
+
+            <TextView
+                style="@style/menu_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/logout" />
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>
