@@ -3,7 +3,7 @@ package com.axon.kisa10.util
 import android.content.Context
 import android.media.AudioManager
 import android.media.SoundPool
-import com.kisa10.R
+import com.axon.kisa10.R
 
 /**
  * Created by Hussain on 15/07/24.

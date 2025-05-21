@@ -60,8 +60,8 @@ import com.axon.kisa10.viewmodel.CalibrationViewModel
 import com.axon.kisa10.viewmodel.RegisterViewModel
 import com.axon.kisa10.workmanager.FileUploadWorker
 import com.google.gson.Gson
-import com.kisa10.BuildConfig
-import com.kisa10.R
+import com.axon.kisa10.BuildConfig
+import com.axon.kisa10.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

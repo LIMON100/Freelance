@@ -8,7 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.axon.kisa10.util.AppConstants
-import com.kisa10.databinding.EventListItemBinding
+import com.axon.kisa10.databinding.EventListItemBinding
 import me.saket.bytesize.binaryBytes
 import java.io.File
 

@@ -29,7 +29,7 @@ import com.axon.kisa10.util.CheckSelfPermission.checkPermissionForWriteExtertalS
 import com.axon.kisa10.util.CheckSelfPermission.checkStoragePermission
 import com.axon.kisa10.util.Network.Companion.isConnectionFast
 import com.axon.kisa10.viewmodel.FirmwareViewModel
-import com.kisa10.R
+import com.axon.kisa10.R
 import java.io.File
 import java.util.Locale
 

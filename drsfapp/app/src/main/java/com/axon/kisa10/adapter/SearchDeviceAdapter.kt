@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.axon.kisa10.adapter.SearchDeviceAdapter.MyViewHolder
 import com.axon.kisa10.model.ScanModel
-import com.kisa10.R
+import com.axon.kisa10.R
 
 class SearchDeviceAdapter(
     private val context: Context,

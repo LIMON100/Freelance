@@ -22,8 +22,8 @@ import com.axon.kisa10.model.distributor.calibration.DistributorCalibrationUploa
 import com.axon.kisa10.model.distributor.project.Data
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.viewmodel.VehicleInfoViewModel
-import com.kisa10.R
-import com.kisa10.databinding.FragmentVehicleInfoBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentVehicleInfoBinding
 
 class VehicleInfoFragment : Fragment() {
 

@@ -13,7 +13,7 @@ import android.view.WindowManager
 import android.widget.Button
 import com.axon.kisa10.ble.AxonBLEService
 import com.axon.kisa10.util.AppConstants
-import com.kisa10.R
+import com.axon.kisa10.R
 
 class CustomDialogCalibration(private val context: Context, private val mListener: IOnClickConfirmListener,private val bleService: AxonBLEService) : Dialog(context) {
     private lateinit var mBtnConfirm: Button

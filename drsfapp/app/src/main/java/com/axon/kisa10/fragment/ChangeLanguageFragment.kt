@@ -12,8 +12,8 @@ import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.LocaleHelper
 import com.axon.kisa10.util.SharedPrefKeys
 import com.axon.kisa10.util.SharedPrefManager
-import com.kisa10.R
-import com.kisa10.databinding.FragmentChangeLanguageBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentChangeLanguageBinding
 import java.util.Locale
 
 /**

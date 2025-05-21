@@ -5,26 +5,50 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.axon.kisa10.activity.SplashActivity">
-
+    android:background="@drawable/splash_background_gradient_drsafe"
+    tools:context="com.axon.kisa10.activity.SplashActivity"> <!-- Ensure tools:context points to your KISA1.0 SplashActivity -->
 
     <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="250dp"
-        android:layout_height="250dp"
-        android:src="@drawable/dr_safe_logo"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/iv_logo_drsafe"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:src="@drawable/logo"
+        android:contentDescription="@string/app_name"
+        app:layout_constraintBottom_toTopOf="@+id/tv_tagline_drsafe"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.4"
+        app:layout_constraintVertical_chainStyle="packed" />
 
-    <ProgressBar
+    <TextView
+        android:id="@+id/tv_tagline_drsafe"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:indeterminate="true"
-        android:indeterminateTint="@color/white"
-        app:layout_constraintEnd_toEndOf="@+id/imageView"
-        app:layout_constraintStart_toStartOf="@+id/imageView"
-        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+        android:layout_marginTop="16dp"
+        android:text="@string/dr_safe_tagline"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/progress_indicator_splash"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/iv_logo_drsafe" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progress_indicator_splash"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="70dp"
+        android:layout_marginEnd="70dp"
+        android:layout_marginBottom="80dp"
+        android:indeterminate="false"
+        android:progress="0"
+        app:indicatorColor="@color/white"
+        app:trackColor="@color/white"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

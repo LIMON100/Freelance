@@ -18,8 +18,8 @@ import com.axon.kisa10.activity.MainActivity
 import com.axon.kisa10.ble.AxonBLEService
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.IBackPressed
-import com.kisa10.R
-import com.kisa10.databinding.FragmentFirmwareUpdateBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentFirmwareUpdateBinding
 import java.io.File
 import java.util.LinkedList
 

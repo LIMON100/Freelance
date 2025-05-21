@@ -4,6 +4,17 @@
 
     <string name="setting">Setting</string>
 
+    <string name="dr_safe_tagline" translatable="false">나의 안전운전 지킴이</string>
+
+    <string name="terms_title" translatable="false">Terms &amp; Condition</string>
+    <string name="terms_of_register_title" translatable="false">Terms of register</string>
+    <string name="terms_of_register_agree" translatable="false">I agree with the terms of register.</string>
+    <string name="terms_collecting_private_info_title" translatable="false">Terms of collecting to private info</string>
+    <string name="terms_collecting_private_info_agree" translatable="false">I agree with the collecting about private info.</string>
+    <string name="terms_privacy_commission_title" translatable="false">Information about the privacy commission</string>
+    <string name="terms_privacy_commission_agree" translatable="false">I agree with the information about the privacy commission.</string>
+    <string name="terms_agree_all" translatable="false">I agree with all of the terms</string>
+
     <string name="firmware_update">Firmware Update</string>
     <string name="db_update">DB Update</string>
     <string name="device">Device Settings</string>

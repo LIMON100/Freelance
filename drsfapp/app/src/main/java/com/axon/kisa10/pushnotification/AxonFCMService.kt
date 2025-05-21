@@ -28,8 +28,8 @@ import com.axon.kisa10.workmanager.LogUploadWorker
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
-import com.kisa10.BuildConfig
-import com.kisa10.R
+import com.axon.kisa10.BuildConfig
+import com.axon.kisa10.R
 import com.skydoves.sandwich.isSuccess
 import com.skydoves.sandwich.suspendOnSuccess
 import kotlinx.coroutines.runBlocking

@@ -21,7 +21,7 @@ import com.axon.kisa10.util.AlarmSoundHandler
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.AppMethods
 import com.axon.kisa10.util.getSdiNameFromType
-import com.kisa10.databinding.FragmentMapProdBinding
+import com.axon.kisa10.databinding.FragmentMapProdBinding
 import com.tmapmobility.tmap.tmapsdk.ui.util.TmapUISDK
 
 /**

@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.axon.kisa10.activity.MainActivity
-import com.kisa10.databinding.FragmentDataMenuBinding
+import com.axon.kisa10.databinding.FragmentDataMenuBinding
 
 /**
  * Created by Hussain on 10/09/24.

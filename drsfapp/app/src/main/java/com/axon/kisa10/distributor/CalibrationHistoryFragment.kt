@@ -12,8 +12,8 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.axon.kisa10.data.CalibrationHistoryDb
 import com.axon.kisa10.model.distributor.calibration.CalibrationHistory
-import com.kisa10.R
-import com.kisa10.databinding.FragmentCalibHistoryBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentCalibHistoryBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch

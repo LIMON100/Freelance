@@ -14,8 +14,8 @@ import com.axon.kisa10.ble.ServiceConnector
 import com.axon.kisa10.util.SharedPrefKeys
 import com.axon.kisa10.util.SharedPrefManager
 import com.google.gson.Gson
-import com.kisa10.R
-import com.kisa10.databinding.ActivityLoginDistributorBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.ActivityLoginDistributorBinding
 
 class LoginDistributorActivity : BaseActivity() {
 

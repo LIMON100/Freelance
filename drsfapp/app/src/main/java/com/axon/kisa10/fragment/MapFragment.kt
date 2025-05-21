@@ -30,8 +30,8 @@ import com.axon.kisa10.util.AlarmSoundHandler
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.AppMethods
 import com.axon.kisa10.util.getSdiNameFromType
-import com.kisa10.R
-import com.kisa10.databinding.FragmentMapBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentMapBinding
 import com.skt.tmap.engine.navigation.SDKManager
 import com.skt.tmap.engine.navigation.data.SDIInfo
 import com.skt.tmap.engine.navigation.network.ndds.NddsDataType.DestSearchFlag

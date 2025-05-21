@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.kisa10.R
-import com.kisa10.databinding.ItemLocationBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.ItemLocationBinding
 
 class LocationAdapter(val onClickLocation : (String) -> Unit) : RecyclerView.Adapter<LocationAdapter.LocationViewHolder>() {
 

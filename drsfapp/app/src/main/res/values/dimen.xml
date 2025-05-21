@@ -43,6 +43,7 @@
     <dimen name="_250dp">250dp</dimen>
     <dimen name="_300dp">300dp</dimen>
 
+    <dimen name="text_24_sp">24sp</dimen>
     <!-- convert 105px -->
     <dimen name="height_button_small">40dp</dimen>
     <!-- convert 120px -->

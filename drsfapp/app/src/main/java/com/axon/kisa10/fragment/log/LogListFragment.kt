@@ -23,8 +23,8 @@ import com.axon.kisa10.util.LogUtil
 import com.axon.kisa10.util.forEachVisibleHolder
 import com.axon.kisa10.util.getDeviceDirectory
 import com.axon.kisa10.util.getLogDownloadDirectory
-import com.kisa10.R
-import com.kisa10.databinding.FragmentLogListBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentLogListBinding
 import java.io.File
 import java.io.FileOutputStream
 import java.util.LinkedList

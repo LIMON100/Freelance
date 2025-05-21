@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.kisa10.databinding.FragmentLocationProvinceBinding
+import com.axon.kisa10.databinding.FragmentLocationProvinceBinding
 
 class LocationFragment(private val locationList : List<String>, val type : LOCATION_TYPE) : Fragment() {
 

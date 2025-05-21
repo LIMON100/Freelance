@@ -12,8 +12,8 @@ import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.axon.kisa10.activity.MainActivity
 import com.axon.kisa10.util.AppConstants
-import com.kisa10.R
-import com.kisa10.databinding.FragmentDrawerBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentDrawerBinding
 
 class DrawerFragment : Fragment() {
     private lateinit var binding: FragmentDrawerBinding

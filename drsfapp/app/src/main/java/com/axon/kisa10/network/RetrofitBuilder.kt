@@ -1,7 +1,7 @@
 package com.axon.kisa10.network
 
 import com.axon.kisa10.util.SharedPrefManager
-import com.kisa10.BuildConfig
+import com.axon.kisa10.BuildConfig
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

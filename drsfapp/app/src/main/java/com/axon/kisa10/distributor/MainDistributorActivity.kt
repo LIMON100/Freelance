@@ -17,8 +17,8 @@ import com.axon.kisa10.ble.ServiceConnector
 import com.axon.kisa10.fragment.CalibrationFragment
 import com.axon.kisa10.model.distributor.calibration.DistributorCalibrationUploadRequest
 import com.axon.kisa10.util.AppConstants
-import com.kisa10.R
-import com.kisa10.databinding.ActivityMainDistributorBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.ActivityMainDistributorBinding
 
 class MainDistributorActivity : AppCompatActivity() {
 

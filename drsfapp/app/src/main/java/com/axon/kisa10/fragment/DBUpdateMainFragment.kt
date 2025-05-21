@@ -18,8 +18,8 @@ import com.axon.kisa10.activity.MainActivity
 import com.axon.kisa10.ble.AxonBLEService
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.viewmodel.DbUpdateViewModel
-import com.kisa10.R
-import com.kisa10.databinding.FragmentFirmwareUpdateMainBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentFirmwareUpdateMainBinding
 import java.io.File
 import java.util.Calendar
 

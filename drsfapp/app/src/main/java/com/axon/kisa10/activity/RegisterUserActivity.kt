@@ -22,8 +22,8 @@ import com.axon.kisa10.util.hideKeyboard
 import com.axon.kisa10.viewmodel.RegisterViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
-import com.kisa10.R
-import com.kisa10.databinding.ActivityRegisterUserBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.ActivityRegisterUserBinding
 
 @Suppress("DEPRECATION")
 class RegisterUserActivity : BaseActivity() {

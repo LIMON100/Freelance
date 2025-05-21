@@ -29,15 +29,25 @@ import com.axon.kisa10.util.SharedPrefKeys
 import com.axon.kisa10.util.SharedPrefManager
 import com.axon.kisa10.workmanager.UpdateCheckWorker
 import com.google.firebase.auth.FirebaseAuth
-import com.kisa10.BuildConfig
-import com.kisa10.R
+import com.axon.kisa10.BuildConfig
+import com.axon.kisa10.R
 import java.util.concurrent.TimeUnit
+
+import com.axon.kisa10.databinding.ActivitySplashBinding
+import android.os.Handler // <-- Import Handler
+import android.os.Looper // <-- Import Looper
+import android.view.animation.LinearInterpolator
+import android.animation.ObjectAnimator
 
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : BaseActivity() {
     private lateinit var sharedPrefManager: SharedPrefManager
     private var isFirstPermission = true
     private var bleService : AxonBLEService? = null
+
+    private lateinit var binding : ActivitySplashBinding // Make sure this matches your layout file name
+    private val handler by lazy { Handler(Looper.getMainLooper()) } // Correct way to initialize Handler
+
     private val serviceConnector = ServiceConnector(
         { s ->
             this.bleService = s
@@ -72,12 +82,86 @@ class SplashActivity : BaseActivity() {
         }
     }
 
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_splash)
+//        startService(Intent(this,AxonBLEService::class.java))
+//        sharedPrefManager = SharedPrefManager.getInstance(this)
+//    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_splash)
-        startService(Intent(this,AxonBLEService::class.java))
-        sharedPrefManager = SharedPrefManager.getInstance(this)
+        binding = ActivitySplashBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Initialize sharedPrefManager HERE:
+        sharedPrefManager = SharedPrefManager.getInstance(this) // <--- FIX
+
+        // Example: Animate progress from 0 to 100 over 2 seconds
+        val progressBar = binding.progressIndicatorSplash
+        val animator = ObjectAnimator.ofInt(progressBar, "progress", 0, 100)
+        animator.duration = 2000
+        animator.interpolator = LinearInterpolator()
+        animator.start()
+
+        handler.postDelayed({
+            // Now sharedPrefManager is initialized and can be used safely
+            val termsAgreed = sharedPrefManager.getBool(SharedPrefKeys.TERMS_CONDITION_AGREE_KEY)
+            if (!termsAgreed) {
+                val intent1 = Intent(this, TermsAndConditionActivity::class.java)
+                startActivity(intent1)
+                finish()
+            } else {
+                // Check for Kakao token or Firebase Auth user for social login status
+                val isSociallyLoggedIn = !sharedPrefManager.getString(SharedPrefKeys.KAKAO_TOKEN_KEY).isNullOrBlank() ||
+                        FirebaseAuth.getInstance().currentUser != null
+
+                // Check for your backend's registration token
+                val isRegisteredWithBackend = !sharedPrefManager.getString(SharedPrefKeys.TOKEN).isNullOrBlank()
+
+                if (BuildConfig.IS_DISTRIBUTOR) { // Check if it's the distributor build
+                    val isDistributorLoggedIn = !sharedPrefManager.getString(SharedPrefKeys.DISTRIBUTOR_TOKEN).isNullOrBlank()
+                    if (!isDistributorLoggedIn) {
+                        val intent = Intent(this, LoginDistributorActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        val isBleConnected = bleService?.isConnected() ?: false
+                        val intent = if (isBleConnected) {
+                            Intent(this, MainActivity::class.java)
+                        } else {
+                            Intent(this, SearchDeviceActivity::class.java)
+                        }
+                        startActivity(intent)
+                        finish()
+                    }
+                } else { // Regular End-User flow
+                    if (!isSociallyLoggedIn) {
+                        val intent = Intent(this, LoginActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        if (!isRegisteredWithBackend) {
+                            val intent = Intent(this, SearchDeviceActivity::class.java)
+                            startActivity(intent)
+                            finish()
+                        } else {
+                            val isBleConnected = bleService?.isConnected() ?: false
+                            val intent = if (isBleConnected) {
+                                Intent(this, MainActivity::class.java)
+                            } else {
+                                Intent(this, SearchDeviceActivity::class.java)
+                            }
+                            startActivity(intent)
+                            finish()
+                        }
+                    }
+                }
+            }
+        }, 2000)
     }
+
 
     override fun onResume() {
         super.onResume()
