@@ -13,7 +13,7 @@ import androidx.work.WorkerParameters
 import com.axon.kisa10.util.AppConstants
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.UpdateAvailability
-import com.kisa10.R
+import com.axon.kisa10.R
 
 
 /**

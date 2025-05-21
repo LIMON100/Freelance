@@ -8,7 +8,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.recyclerview.widget.RecyclerView
 import com.axon.kisa10.ble.AxonBLEService
-import com.kisa10.R
+import com.axon.kisa10.R
 
 /**
  * Created by Hussain on 01/07/24.

@@ -11,7 +11,7 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
-import com.kisa10.R
+import com.axon.kisa10.R
 import java.io.File
 import java.io.UnsupportedEncodingException
 

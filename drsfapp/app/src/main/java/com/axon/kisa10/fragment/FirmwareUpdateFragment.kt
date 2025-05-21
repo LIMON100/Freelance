@@ -22,7 +22,7 @@ import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.AppConstants.makeIntentFilter
 import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
-import com.kisa10.R
+import com.axon.kisa10.R
 import io.feeeei.circleseekbar.CircleSeekBar
 import java.io.File
 import java.io.FileInputStream

@@ -16,8 +16,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.gson.Gson
 import com.kakao.sdk.user.UserApiClient
-import com.kisa10.R
-import com.kisa10.databinding.ActivityLoginBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.ActivityLoginBinding
 
 class LoginActivity : BaseActivity() {
     private val TAG = "LoginActivity"

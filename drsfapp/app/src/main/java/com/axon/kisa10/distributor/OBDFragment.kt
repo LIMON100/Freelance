@@ -22,8 +22,8 @@ import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.AppConstants.makeIntentFilter
 import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
-import com.kisa10.R
-import com.kisa10.databinding.FragmentObdSettingBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentObdSettingBinding
 
 class OBDFragment(private val bleService: AxonBLEService) : Fragment(), OnCheckedChangeListener {
 

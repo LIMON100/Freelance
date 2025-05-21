@@ -16,8 +16,8 @@ import com.axon.kisa10.ble.AxonBLEService
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
-import com.kisa10.R
-import com.kisa10.databinding.FragmentDeviceSettingBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentDeviceSettingBinding
 
 class DeviceSettingFragment(private val bleService: AxonBLEService?) : Fragment() {
 

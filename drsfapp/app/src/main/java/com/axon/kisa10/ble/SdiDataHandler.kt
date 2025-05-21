@@ -23,7 +23,7 @@ import com.axon.kisa10.model.neartoroad.NearToRoadResponse
 import com.axon.kisa10.util.AlarmSoundHandler
 import com.axon.kisa10.util.AppConstants
 import com.google.gson.Gson
-import com.kisa10.R
+import com.axon.kisa10.R
 import com.skt.tmap.engine.navigation.NavigationManager
 import com.skt.tmap.engine.navigation.data.DriveMode
 import com.skt.tmap.engine.navigation.data.SDIInfo

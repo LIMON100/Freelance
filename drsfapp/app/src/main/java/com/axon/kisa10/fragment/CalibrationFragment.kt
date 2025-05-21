@@ -29,8 +29,8 @@ import com.axon.kisa10.util.AppConstants.makeIntentFilter
 import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
 import com.axon.kisa10.viewmodel.CalibrationViewModel
-import com.kisa10.R
-import com.kisa10.databinding.FragmentCalibrationProgressBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentCalibrationProgressBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

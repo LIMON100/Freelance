@@ -12,9 +12,9 @@ import com.axon.kisa10.distributor.MainDistributorActivity
 import com.axon.kisa10.util.SharedPrefKeys
 import com.axon.kisa10.util.SharedPrefManager
 import com.google.firebase.auth.FirebaseAuth
-import com.kisa10.BuildConfig
-import com.kisa10.R
-import com.kisa10.databinding.ActivityTermsAndConditionBinding
+import com.axon.kisa10.BuildConfig
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.ActivityTermsAndConditionBinding
 
 class TermsAndConditionActivity : BaseActivity(), View.OnClickListener {
     private lateinit var binding: ActivityTermsAndConditionBinding

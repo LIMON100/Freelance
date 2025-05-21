@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.axon.kisa10.adapter.ListItemDialogAdapter.ListItemDialogViewHolder
 import com.axon.kisa10.model.ListItemDialog
-import com.kisa10.R
+import com.axon.kisa10.R
 
 class ListItemDialogAdapter(
     private val listItemDialogs: ArrayList<ListItemDialog>,

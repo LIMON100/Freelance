@@ -32,8 +32,8 @@ import com.axon.kisa10.util.CheckSelfPermission
 import com.axon.kisa10.util.SharedPref
 import com.axon.kisa10.util.SharedPrefKeys
 import com.axon.kisa10.util.SharedPrefManager
-import com.kisa10.BuildConfig
-import com.kisa10.R
+import com.axon.kisa10.BuildConfig
+import com.axon.kisa10.R
 import java.util.Timer
 import java.util.TimerTask
 

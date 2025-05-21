@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.axon.kisa10.ble.AxonBLEService
-import com.kisa10.databinding.FragmentCalibrationStartBinding
+import com.axon.kisa10.databinding.FragmentCalibrationStartBinding
 
 class CalibrationStartFragment(private val bleService: AxonBLEService) : Fragment() {
 

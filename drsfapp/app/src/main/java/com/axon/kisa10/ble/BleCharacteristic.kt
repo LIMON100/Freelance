@@ -12,7 +12,7 @@ import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
 import com.axon.kisa10.util.AppMethods.showProgressDialog
 import com.axon.kisa10.util.CheckSelfPermission.isBluetoothOn
-import com.kisa10.R
+import com.axon.kisa10.R
 import java.util.UUID
 
 @SuppressLint("MissingPermission")

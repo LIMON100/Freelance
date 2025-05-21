@@ -2,7 +2,7 @@ package com.axon.kisa10.network
 
 import com.axon.kisa10.util.SharedPrefKeys
 import com.axon.kisa10.util.SharedPrefManager
-import com.kisa10.BuildConfig
+import com.axon.kisa10.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response

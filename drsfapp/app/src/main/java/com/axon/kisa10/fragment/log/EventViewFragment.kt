@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.axon.kisa10.util.AppConstants
-import com.kisa10.databinding.FragmentEventViewBinding
+import com.axon.kisa10.databinding.FragmentEventViewBinding
 import java.io.File
 
 /**

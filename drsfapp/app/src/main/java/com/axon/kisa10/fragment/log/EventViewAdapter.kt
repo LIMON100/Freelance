@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.axon.kisa10.util.AppConstants
-import com.kisa10.databinding.ItemLogViewBinding
+import com.axon.kisa10.databinding.ItemLogViewBinding
 import me.saket.bytesize.binaryBytes
 import java.io.File
 

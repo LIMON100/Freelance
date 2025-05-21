@@ -32,7 +32,7 @@ import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
 import com.axon.kisa10.util.AppMethods.showProgressDialog
 import com.axon.kisa10.util.CheckAutoUpdate.isNewUpdate
-import com.kisa10.R
+import com.axon.kisa10.R
 
 class DeviceFragment(private val bleService: AxonBLEService) : Fragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener {
     private val TAG = "DeviceFragment"

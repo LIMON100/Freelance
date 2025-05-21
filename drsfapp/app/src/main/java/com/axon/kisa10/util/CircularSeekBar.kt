@@ -16,7 +16,7 @@ import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import com.kisa10.R
+import com.axon.kisa10.R
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -306,87 +306,87 @@ class CircularSeekBar : View {
      * @param attrArray TypedArray containing the attributes.
      */
     private fun initAttributes(attrArray: TypedArray) {
-        mCircleXRadius = attrArray.getDimension(R.styleable.cs_CircularSeekBar_cs_circle_x_radius, DEFAULT_CIRCLE_X_RADIUS)
-        mCircleYRadius = attrArray.getDimension(R.styleable.cs_CircularSeekBar_cs_circle_y_radius, DEFAULT_CIRCLE_Y_RADIUS)
-        mPointerStrokeWidth = attrArray.getDimension(R.styleable.cs_CircularSeekBar_cs_pointer_stroke_width, DEFAULT_POINTER_STROKE_WIDTH)
-        mPointerHaloWidth = attrArray.getDimension(R.styleable.cs_CircularSeekBar_cs_pointer_halo_width, DEFAULT_POINTER_HALO_WIDTH)
-        mPointerHaloBorderWidth = attrArray.getDimension(R.styleable.cs_CircularSeekBar_cs_pointer_halo_border_width, DEFAULT_POINTER_HALO_BORDER_WIDTH)
-        mCircleStrokeWidth = attrArray.getDimension(R.styleable.cs_CircularSeekBar_cs_circle_stroke_width, DEFAULT_CIRCLE_STROKE_WIDTH)
+        mCircleXRadius = attrArray.getDimension(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_x_radius, DEFAULT_CIRCLE_X_RADIUS)
+        mCircleYRadius = attrArray.getDimension(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_y_radius, DEFAULT_CIRCLE_Y_RADIUS)
+        mPointerStrokeWidth = attrArray.getDimension(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_stroke_width, DEFAULT_POINTER_STROKE_WIDTH)
+        mPointerHaloWidth = attrArray.getDimension(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_halo_width, DEFAULT_POINTER_HALO_WIDTH)
+        mPointerHaloBorderWidth = attrArray.getDimension(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_halo_border_width, DEFAULT_POINTER_HALO_BORDER_WIDTH)
+        mCircleStrokeWidth = attrArray.getDimension(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_stroke_width, DEFAULT_CIRCLE_STROKE_WIDTH)
 
-        val circleStyle = attrArray.getInt(R.styleable.cs_CircularSeekBar_cs_circle_style, DEFAULT_CIRCLE_STYLE)
+        val circleStyle = attrArray.getInt(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_style, DEFAULT_CIRCLE_STYLE)
         mCircleStyle = Cap.values()[circleStyle]
 
-        mPointerColor = attrArray.getColor(R.styleable.cs_CircularSeekBar_cs_pointer_color, DEFAULT_POINTER_COLOR)
-        mPointerHaloColor = attrArray.getColor(R.styleable.cs_CircularSeekBar_cs_pointer_halo_color, DEFAULT_POINTER_HALO_COLOR)
+        mPointerColor = attrArray.getColor(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_color, DEFAULT_POINTER_COLOR)
+        mPointerHaloColor = attrArray.getColor(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_halo_color, DEFAULT_POINTER_HALO_COLOR)
         mPointerHaloColorOnTouch = attrArray.getColor(
-            R.styleable.cs_CircularSeekBar_cs_pointer_halo_color_ontouch,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_halo_color_ontouch,
             DEFAULT_POINTER_HALO_COLOR_ONTOUCH
         )
         mCircleColor =
-            attrArray.getColor(R.styleable.cs_CircularSeekBar_cs_circle_color, DEFAULT_CIRCLE_COLOR)
+            attrArray.getColor(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_color, DEFAULT_CIRCLE_COLOR)
         mCircleProgressColor = attrArray.getColor(
-            R.styleable.cs_CircularSeekBar_cs_circle_progress_color,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_progress_color,
             DEFAULT_CIRCLE_PROGRESS_COLOR
         )
         mCircleFillColor = attrArray.getColor(
-            R.styleable.cs_CircularSeekBar_cs_circle_fill,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_circle_fill,
             DEFAULT_CIRCLE_FILL_COLOR
         )
 
         mPointerAlpha = Color.alpha(mPointerHaloColor)
 
         mPointerAlphaOnTouch = attrArray.getInt(
-            R.styleable.cs_CircularSeekBar_cs_pointer_alpha_ontouch,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_alpha_ontouch,
             DEFAULT_POINTER_ALPHA_ONTOUCH
         )
         if (mPointerAlphaOnTouch > 255 || mPointerAlphaOnTouch < 0) {
             mPointerAlphaOnTouch = DEFAULT_POINTER_ALPHA_ONTOUCH
         }
 
-        mMax = attrArray.getInt(R.styleable.cs_CircularSeekBar_cs_max, DEFAULT_MAX).toFloat()
+        mMax = attrArray.getInt(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_max, DEFAULT_MAX).toFloat()
         mProgress =
-            attrArray.getInt(R.styleable.cs_CircularSeekBar_cs_progress, DEFAULT_PROGRESS).toFloat()
+            attrArray.getInt(me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_progress, DEFAULT_PROGRESS).toFloat()
         mCustomRadii = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_use_custom_radii,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_use_custom_radii,
             DEFAULT_USE_CUSTOM_RADII
         )
         mMaintainEqualCircle = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_maintain_equal_circle,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_maintain_equal_circle,
             DEFAULT_MAINTAIN_EQUAL_CIRCLE
         )
         mMoveOutsideCircle = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_move_outside_circle,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_move_outside_circle,
             DEFAULT_MOVE_OUTSIDE_CIRCLE
         )
         isLockEnabled = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_lock_enabled,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_lock_enabled,
             DEFAULT_LOCK_ENABLED
         )
         mDisablePointer = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_disable_pointer,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_disable_pointer,
             DEFAULT_DISABLE_POINTER
         )
         isNegativeEnabled = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_negative_enabled,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_negative_enabled,
             DEFAULT_NEGATIVE_ENABLED
         )
         mIsInNegativeHalf = false
         mDisableProgressGlow = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_disable_progress_glow,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_disable_progress_glow,
             DEFAULT_DISABLE_PROGRESS_GLOW
         )
         mHideProgressWhenEmpty = attrArray.getBoolean(
-            R.styleable.cs_CircularSeekBar_cs_hide_progress_when_empty,
+            me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_hide_progress_when_empty,
             DEFAULT_CS_HIDE_PROGRESS_WHEN_EMPTY
         )
 
         // Modulo 360 right now to avoid constant conversion
         mStartAngle = ((360f + (attrArray.getFloat(
-            (R.styleable.cs_CircularSeekBar_cs_start_angle),
+            (me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_start_angle),
             DEFAULT_START_ANGLE
         ) % 360f)) % 360f)
         mEndAngle = ((360f + (attrArray.getFloat(
-            (R.styleable.cs_CircularSeekBar_cs_end_angle),
+            (me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_end_angle),
             DEFAULT_END_ANGLE
         ) % 360f)) % 360f)
 
@@ -402,7 +402,7 @@ class CircularSeekBar : View {
 
         // Modulo 360 right now to avoid constant conversion
         mPointerAngle = ((360f + (attrArray.getFloat(
-            (R.styleable.cs_CircularSeekBar_cs_pointer_angle),
+            (me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar_cs_pointer_angle),
             DEFAULT_POINTER_ANGLE
         ) % 360f)) % 360f)
         if (mPointerAngle == 0f) {
@@ -947,7 +947,7 @@ class CircularSeekBar : View {
 
     private fun init(attrs: AttributeSet?, defStyle: Int) {
         val attrArray =
-            context.obtainStyledAttributes(attrs, R.styleable.cs_CircularSeekBar, defStyle, 0)
+            context.obtainStyledAttributes(attrs, me.tankery.lib.circularseekbar.R.styleable.cs_CircularSeekBar, defStyle, 0)
 
         initAttributes(attrArray)
 

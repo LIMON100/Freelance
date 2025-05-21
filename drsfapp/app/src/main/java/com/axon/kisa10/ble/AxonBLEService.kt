@@ -47,8 +47,8 @@ import com.axon.kisa10.util.LogUtil
 import com.axon.kisa10.util.SharedPrefManager
 import com.axon.kisa10.util.isNotifiable
 import com.axon.kisa10.workmanager.LogDownloadWorker
-import com.kisa10.BuildConfig
-import com.kisa10.R
+import com.axon.kisa10.BuildConfig
+import com.axon.kisa10.R
 import com.skt.tmap.engine.navigation.data.SDIInfo
 import java.lang.ref.WeakReference
 import java.util.Locale

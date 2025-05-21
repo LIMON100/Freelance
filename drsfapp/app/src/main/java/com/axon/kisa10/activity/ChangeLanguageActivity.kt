@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.widget.FrameLayout
 import android.widget.Toast
 import com.axon.kisa10.fragment.ChangeLanguageFragment
-import com.kisa10.R
+import com.axon.kisa10.R
 
 /**
  * Created by Hussain on 28/06/24.

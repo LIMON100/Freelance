@@ -37,8 +37,8 @@ import com.axon.kisa10.util.AppConstants.makeIntentFilter
 import com.axon.kisa10.util.AppMethods.hideProgressDialog
 import com.axon.kisa10.util.AppMethods.setAlertDialog
 import com.axon.kisa10.util.AppMethods.showProgressDialog
-import com.kisa10.R
-import com.kisa10.databinding.FragmentObdSettingBinding
+import com.axon.kisa10.R
+import com.axon.kisa10.databinding.FragmentObdSettingBinding
 import java.util.Timer
 import java.util.TimerTask
 

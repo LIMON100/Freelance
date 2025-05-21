@@ -15,7 +15,7 @@ import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.kisa10.R
+import com.axon.kisa10.R
 
 object CheckSelfPermission {
 

@@ -16,7 +16,7 @@ import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.LogParser
 import com.axon.kisa10.util.getDeviceDirectory
 import com.axon.kisa10.util.getLogDownloadDirectory
-import com.kisa10.databinding.FragmentLogviewBinding
+import com.axon.kisa10.databinding.FragmentLogviewBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

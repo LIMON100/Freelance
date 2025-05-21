@@ -14,7 +14,7 @@ import com.axon.kisa10.ble.BleCharacteristic.enableNotifychar
 import com.axon.kisa10.util.AppConstants
 import com.axon.kisa10.util.AppMethods.convertByteToString
 import com.axon.kisa10.util.AppMethods.setAlertDialog
-import com.kisa10.R
+import com.axon.kisa10.R
 import java.util.Locale
 
 @SuppressLint("MissingPermission")
