@@ -54,13 +54,11 @@
     <color name="trans_white">#33FFFFFF</color>
     <color name="color_pink">#FC005E</color>
     <color name="color_light_blue">#005EFF</color>
-   
-    <color name="white">#ffffff</color>
+
     <color name="sky_blue">#abccff</color>
-    <color name="progress_color">#3E8BFF</color>
+
     <color name="dialog_color">#e9e9e9</color>
     <color name="dialog_text">#262626</color>
-    <color name="black">#000000</color>
     <color name="radio_btn">#30b6e3</color>
     <color name="radio_text">#575559</color>
     <color name="obd_divider">#CCDFFF</color>
@@ -69,14 +67,53 @@
     <color name="toolbar_bg">#D2D2D2</color>
     <color name="surface_bg">#CEC9C9</color>
     <color name="toolbar_bg_light">#DCDCDC</color>
+
+
+    <color name="black">#FF000000</color>
+    <color name="black_transparent">#80000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="colorSecondary">#64666C</color>
+    <color name="colorPlaceholder">#B1B1B1</color>
+    <color name="colorLine">#E5E5E5</color>
+    <color name="colorSurface">#F5F5F5</color>
+    <color name="colorCritical">#E74141</color>
+    <color name="colorSuccess">#37B853</color>
+    <color name="colorWarning">#FFB321</color>
+    <color name="colorNavigationText">#64666C</color>
+    <color name="dark_yellow">#F0AF36</color>
+    <color name="progress_track_color">#DCDCDC</color>
+    <color name="my_driving_tab_background">#4076FF</color>
+    <color name="score_text_color">#37B853</color>
     <color name="register_toolbar_color">#3A466D</color>
     <color name="register_main">#071841</color>
-    <color name="grey_title">#F3F3F3</color>
+
+    <color name="splash_background_color">#003FAB</color>
+    <color name="splash_text_color1">#A4D7FF</color>
     <color name="splash_text_color2">#65D5FF</color>
-    <color name="hint_color">#C7C7C7</color>
-    <color name="disable_btn_color">#B4B4B4</color>
     <color name="btn_color">#003FAB</color>
+    <color name="grey_title">#F3F3F3</color>
+    <color name="hint_color">#C7C7C7</color>
+    <color name="progress_color">#FFC832</color>
+    <color name="disable_btn_color">#B4B4B4</color>
+    <color name="login_hint">#b2c5e6</color>
+    <color name="login_divider">#e5ebf6</color>
+    <color name="grey_back">#EBEBEB</color>
+    <color name="adapter_text_color">#707070</color>
+    <color name="dot_disconnected_color">#DF0F0F</color>
+    <color name="dot_ready_color">#98E400</color>
+    <color name="dot_not_ready_color">#FF5722</color>
+    <color name="copyrighttext_color">#A1A1A1</color>
     <color name="dialog_text_title_color">#0B54C2</color>
+    <color name="calender_spinner_back">#F6F6F6</color>
+    <color name="gray">#C2C2C2</color>
+
+    <color name="transparent_white">#77FFFFFF</color>
+    <color name="color_terms">#404040</color>
+
+    <color name="rect_gray_stroke">#ACACAC</color>
+    <color name="rect_gray_fill">#F1F1F1</color>
+    <color name="update_restart">#98E400</color>
+    <color name="warn_text_red">#FF0000</color>
 
 
 </resources>

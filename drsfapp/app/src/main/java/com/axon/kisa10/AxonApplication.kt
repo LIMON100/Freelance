@@ -19,8 +19,8 @@ import com.kakao.sdk.common.KakaoSdk
  */
 class AxonApplication : Application() {
 
-//    private val appLocale = "en"
-    private val appLocale = "ko"
+    private val appLocale = "en"
+//    private val appLocale = "ko"
 
     override fun onCreate() {
         super.onCreate()

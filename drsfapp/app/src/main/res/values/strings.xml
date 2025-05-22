@@ -15,6 +15,15 @@
     <string name="terms_privacy_commission_agree" translatable="false">I agree with the information about the privacy commission.</string>
     <string name="terms_agree_all" translatable="false">I agree with all of the terms</string>
 
+    <string name="i_agree_with_all_of_the_terms" translatable="false">I agree with all of the terms</string>
+    <string name="i_agree_with_the_collecting_about_private_info" translatable="false">I agree with the collecting about private info.</string>
+    <string name="search" translatable="false">Search</string>
+    <string name="downloaded_nvideo_list" translatable="false">Downloaded\nVideo List</string>
+    <string name="size" translatable="false">Size</string>
+    <string name="driving" translatable="false">Driving</string>
+    <string name="event" translatable="false">Event</string>
+    <string name="downloading_data" translatable="false">Downloading Data</string>
+
     <string name="firmware_update">Firmware Update</string>
     <string name="db_update">DB Update</string>
     <string name="device">Device Settings</string>
