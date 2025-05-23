@@ -304,13 +304,49 @@ class TermsAndConditionActivity : BaseActivity() { // Removed View.OnClickListen
 
     // Presumed to be in SplashActivity.kt or a similar initial routing Activity
 
+//    private fun navigateToNextScreen() {
+//        if (BuildConfig.IS_DISTRIBUTOR) {
+//            // ----- DISTRIBUTOR / INSTALLER FLOW -----
+//            val isLoggedIn = !sharedPrefManager.getString(SharedPrefKeys.DISTRIBUTOR_TOKEN).isNullOrBlank()
+//            val intent = if (isLoggedIn) {
+//                // If already logged in as distributor, go to BLE search (then Main for distributor)
+//                Intent(this, SearchDeviceActivity::class.java)
+//            } else {
+//                // If not logged in as distributor, go to Distributor Login screen
+//                Intent(this, LoginDistributorActivity::class.java)
+//            }
+//            startActivity(intent)
+//        } else {
+//            // ----- REGULAR END-USER FLOW (MODIFIED TO SKIP SOCIAL LOGIN UI) -----
+//
+//            // Check if the user is fully registered with your backend (has your app's specific token)
+//            val isFullyRegisteredWithBackend = !sharedPrefManager.getString(SharedPrefKeys.TOKEN).isNullOrBlank()
+//
+//            val intent: Intent
+//            if (isFullyRegisteredWithBackend) {
+//                // User has a backend token, meaning they have completed the full registration process before.
+//                // Proceed to SearchDeviceActivity (which will then likely lead to MainActivity if BLE connects).
+//                // This handles the "Auto Login" scenario.
+//                intent = Intent(this, SearchDeviceActivity::class.java)
+//            } else {
+//                // User does NOT have a backend token. This means they are either:
+//                // 1. A brand new user.
+//                // 2. A user who only completed social login previously but not the vehicle registration step.
+//                // In both cases, after terms, we want them to connect to BLE and then register vehicle details.
+//                // So, we go directly to SearchDeviceActivity, bypassing LoginActivity.
+//                intent = Intent(this, SearchDeviceActivity::class.java)
+//            }
+//            startActivity(intent)
+//        }
+//        finish() // Finish this Splash/Routing activity
+//    }
     private fun navigateToNextScreen() {
         if (BuildConfig.IS_DISTRIBUTOR) {
             // ----- DISTRIBUTOR / INSTALLER FLOW -----
             val isLoggedIn = !sharedPrefManager.getString(SharedPrefKeys.DISTRIBUTOR_TOKEN).isNullOrBlank()
             val intent = if (isLoggedIn) {
                 // If already logged in as distributor, go to BLE search (then Main for distributor)
-                Intent(this, SearchDeviceActivity::class.java)
+                Intent(this, RegisterUserActivity::class.java)
             } else {
                 // If not logged in as distributor, go to Distributor Login screen
                 Intent(this, LoginDistributorActivity::class.java)
@@ -327,14 +363,14 @@ class TermsAndConditionActivity : BaseActivity() { // Removed View.OnClickListen
                 // User has a backend token, meaning they have completed the full registration process before.
                 // Proceed to SearchDeviceActivity (which will then likely lead to MainActivity if BLE connects).
                 // This handles the "Auto Login" scenario.
-                intent = Intent(this, SearchDeviceActivity::class.java)
+                intent = Intent(this, RegisterUserActivity::class.java)
             } else {
                 // User does NOT have a backend token. This means they are either:
                 // 1. A brand new user.
                 // 2. A user who only completed social login previously but not the vehicle registration step.
                 // In both cases, after terms, we want them to connect to BLE and then register vehicle details.
                 // So, we go directly to SearchDeviceActivity, bypassing LoginActivity.
-                intent = Intent(this, SearchDeviceActivity::class.java)
+                intent = Intent(this, RegisterUserActivity::class.java)
             }
             startActivity(intent)
         }
