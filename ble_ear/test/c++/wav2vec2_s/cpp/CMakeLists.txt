@@ -53,5 +53,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/test.wav DESTINATION ./model)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/test_en.wav DESTINATION ./model)
 file(GLOB RKNN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../model/*.rknn")
 install(FILES ${RKNN_FILES} DESTINATION model)
