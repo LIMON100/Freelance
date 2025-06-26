@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppState extends ChangeNotifier {
-  // Store three full, independent URLs
-  String _cam1Url = 'rtsp://192.168.0.184:8554/cam1'; // <-- YOUR PC's URL
-  String _cam2Url = 'rtsp://192.168.0.184:8555/cam2'; // <-- YOUR PC's 2nd URL
-  String _cam3Url = 'rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov'; // A public URL for testing
-  // Keep track of the robot's IP for sending commands
-  String _robotIpAddress = '192.168.1.100'; // Default IP for commands
+  // --- UPDATED: Default URLs now point to your working RK3588 server ---
+  String _cam1Url = 'rtsp://192.168.0.211:8554/cam0';
+  String _cam2Url = 'rtsp://192.168.0.211:8554/cam1';
+  String _cam3Url = 'rtsp://invalid.url/test'; // A bad URL for testing
+
+  // --- UPDATED: Default command IP now points to your RK3588 ---
+  String _robotIpAddress = '192.168.0.211';
 
   // Getters that the UI will use
   String get robotIpAddress => _robotIpAddress;
@@ -32,10 +33,11 @@ class AppState extends ChangeNotifier {
   // Load all saved settings from phone storage
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _robotIpAddress = prefs.getString('robotIpAddress') ?? '192.168.1.100';
-    _cam1Url = prefs.getString('cam1Url') ?? 'rtsp://192.168.1.100:8554/cam1';
-    _cam2Url = prefs.getString('cam2Url') ?? 'rtsp://192.168.1.100:8554/cam2';
-    _cam3Url = prefs.getString('cam3Url') ?? 'rtsp://192.168.1.100:8554/cam3';
+    // Load saved settings, but if they don't exist, keep the new defaults from above.
+    _robotIpAddress = prefs.getString('robotIpAddress') ?? _robotIpAddress;
+    _cam1Url = prefs.getString('cam1Url') ?? _cam1Url;
+    _cam2Url = prefs.getString('cam2Url') ?? _cam2Url;
+    _cam3Url = prefs.getString('cam3Url') ?? _cam3Url;
     notifyListeners();
   }
 
