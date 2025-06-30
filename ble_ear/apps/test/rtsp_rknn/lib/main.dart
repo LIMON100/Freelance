@@ -1,362 +1,63 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_vlc_player/flutter_vlc_player.dart';
-//
-// void main() {
-//   runApp(const MyApp());
-// }
-//
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Robot Control App',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//         visualDensity: VisualDensity.adaptivePlatformDensity,
-//       ),
-//       home: const HomePage(),
-//     );
-//   }
-// }
-//
-// class HomePage extends StatefulWidget {
-//   const HomePage({super.key});
-//
-//   @override
-//   State<HomePage> createState() => _HomePageState();
-// }
-//
-// class _HomePageState extends State<HomePage> {
-//   VlcPlayerController? _vlcPlayerController;
-//   final TextEditingController _urlController = TextEditingController(
-//     text: 'rtsp://192.168.0.158:8554/cam0',
-//   );
-//   bool _isPlaying = false;
-//   String? _errorMessage;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _initializePlayer(_urlController.text);
-//   }
-//
-//   void _initializePlayer(String url) {
-//     _vlcPlayerController?.dispose();
-//     // _vlcPlayerController = VlcPlayerController.network(
-//     //   url,
-//     //   hwAcc: HwAcc.auto,
-//     //   autoPlay: true,
-//     //   options: VlcPlayerOptions(
-//     //     advanced: VlcAdvancedOptions([
-//     //       VlcAdvancedOptions.networkCaching(10),
-//     //     ]),
-//     //     rtp: VlcRtpOptions([
-//     //       VlcRtpOptions.rtpOverRtsp(false),
-//     //     ]),
-//     //   ),
-//     // )
-//
-//     _vlcPlayerController =  VlcPlayerController.network(
-//       url,
-//       hwAcc: HwAcc.disabled,
-//       autoPlay: true,
-//       options: VlcPlayerOptions(
-//           video: VlcVideoOptions([VlcVideoOptions.dropLateFrames(true),
-//             VlcVideoOptions.skipFrames(false)],),
-//           rtp: VlcRtpOptions([
-//             VlcRtpOptions.rtpOverRtsp(true),
-//             ":rtsp-tcp",
-//           ]),
-//           advanced: VlcAdvancedOptions([
-//             VlcAdvancedOptions.networkCaching(100),
-//             VlcAdvancedOptions.clockJitter(0),
-//             VlcAdvancedOptions.fileCaching(30),
-//             VlcAdvancedOptions.liveCaching(30),
-//             VlcAdvancedOptions.clockSynchronization(1),
-//           ]),
-//           sout: VlcStreamOutputOptions([
-//             VlcStreamOutputOptions.soutMuxCaching(0),
-//           ]),
-//           extras: ['--h264-fps=60']
-//       ),
-//      )..addListener(() {
-//       final state = _vlcPlayerController!.value;
-//       setState(() {
-//         _isPlaying = state.isPlaying;
-//         if (state.errorDescription != null && state.errorDescription!.isNotEmpty) {
-//           _errorMessage = state.errorDescription;
-//           _isPlaying = false;
-//         } else {
-//           _errorMessage = null;
-//         }
-//       });
-//      }
-//     );
-//   }
-//
-//   @override
-//   void dispose() {
-//     _vlcPlayerController?.dispose();
-//     _urlController.dispose();
-//     super.dispose();
-//   }
-//
-//   void _updateStreamUrl() async {
-//     if (_vlcPlayerController != null) {
-//       if (_vlcPlayerController!.value.isPlaying) {
-//         await _vlcPlayerController!.stop();
-//       }
-//     }
-//     setState(() {
-//       _isPlaying = false;
-//       _errorMessage = null;
-//       _initializePlayer(_urlController.text);
-//     });
-//   }
-//
-//   void _sendCommand(String command) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(content: Text('Command sent: $command')),
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Robot Control App'),
-//         elevation: 2,
-//       ),
-//       body: Row(
-//         children: [
-//           // Left side: Command buttons (20% width) with scroll
-//           Container(
-//             width: MediaQuery.of(context).size.width * 0.20,
-//             color: Colors.lightGreen[100],
-//             child: ListView(
-//               padding: const EdgeInsets.all(8.0),
-//               children: [
-//                 _buildCommandButton('Driving', () => _sendCommand('CMD_MODE_DRIVE')),
-//                 _buildCommandButton('Petrol', () => _sendCommand('CMD_MODE_PATROL')),
-//                 _buildCommandButton('Recon', () => _sendCommand('CMD_MODE_RECON')),
-//                 _buildCommandButton('Manual Attack', () => _sendCommand('CMD_MANU_ATTACK')),
-//                 _buildCommandButton('Auto Attack', () => _sendCommand('CMD_AUTO_ATTACK')),
-//                 _buildCommandButton('Drone', () => _sendCommand('CMD_MODE_DRONE')),
-//                 _buildCommandButton('Return', () => _sendCommand('CMD_RETURN')),
-//               ],
-//             ),
-//           ),
-//           // Right side: Camera view and bottom buttons
-//           Expanded(
-//             child: Column(
-//               children: [
-//                 // Camera view (flexible height with Expanded)
-//                 Expanded(
-//                   flex: 7,
-//                   child: Container(
-//                     margin: const EdgeInsets.all(8.0),
-//                     child: _vlcPlayerController != null
-//                         ? _errorMessage != null
-//                         ? Center(
-//                       child: Column(
-//                         mainAxisAlignment: MainAxisAlignment.center,
-//                         children: [
-//                           Text(
-//                             'Error: $_errorMessage',
-//                             style: const TextStyle(color: Colors.red, fontSize: 16),
-//                           ),
-//                           const SizedBox(height: 10),
-//                           ElevatedButton(
-//                             onPressed: _updateStreamUrl,
-//                             child: const Text('Retry'),
-//                           ),
-//                         ],
-//                       ),
-//                     )
-//                         : VlcPlayer(
-//                       controller: _vlcPlayerController!,
-//                       aspectRatio: 16 / 9,
-//                       placeholder: const Center(child: CircularProgressIndicator()),
-//                     )
-//                         : const Center(child: Text('Loading camera...')),
-//                   ),
-//                 ),
-//                 // Bottom buttons (flexible height with Expanded)
-//                 Expanded(
-//                   flex: 3,
-//                   child: Container(
-//                     color: Colors.grey[200],
-//                     padding: const EdgeInsets.all(8.0),
-//                     child: Row(
-//                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                       children: [
-//                         Flexible(
-//                           child: Padding(
-//                             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-//                             child: ElevatedButton(
-//                               onPressed: () => _sendCommand('CMD_ATTACK'),
-//                               style: ElevatedButton.styleFrom(
-//                                 backgroundColor: Colors.orange,
-//                                 padding: const EdgeInsets.symmetric(vertical: 8),
-//                               ),
-//                               child: const Text('Attack'),
-//                             ),
-//                           ),
-//                         ),
-//                         Flexible(
-//                           child: Padding(
-//                             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-//                             child: ElevatedButton(
-//                               onPressed: () => _sendCommand('CMD_STOP'),
-//                               style: ElevatedButton.styleFrom(
-//                                 padding: const EdgeInsets.symmetric(vertical: 8),
-//                               ),
-//                               child: const Text('STOP'),
-//                             ),
-//                           ),
-//                         ),
-//                         Flexible(
-//                           child: Padding(
-//                             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-//                             child: ElevatedButton(
-//                               onPressed: () => _sendCommand('CMD_ZOOM_IN'),
-//                               style: ElevatedButton.styleFrom(
-//                                 padding: const EdgeInsets.symmetric(vertical: 8),
-//                               ),
-//                               child: const Text('+'),
-//                             ),
-//                           ),
-//                         ),
-//                         Flexible(
-//                           child: Padding(
-//                             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-//                             child: ElevatedButton(
-//                               onPressed: () => _sendCommand('CMD_ZOOM_OUT'),
-//                               style: ElevatedButton.styleFrom(
-//                                 padding: const EdgeInsets.symmetric(vertical: 8),
-//                               ),
-//                               child: const Text('-'),
-//                             ),
-//                           ),
-//                         ),
-//                         Flexible(
-//                           child: Padding(
-//                             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-//                             child: ElevatedButton(
-//                               onPressed: () => _sendCommand('CMD_EXIT'),
-//                               style: ElevatedButton.styleFrom(
-//                                 backgroundColor: Colors.blue,
-//                                 padding: const EdgeInsets.symmetric(vertical: 8),
-//                               ),
-//                               child: const Text('EXIT'),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildCommandButton(String label, VoidCallback onPressed) {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(vertical: 4.0),
-//       child: ElevatedButton(
-//         onPressed: onPressed,
-//         style: ElevatedButton.styleFrom(
-//           minimumSize: const Size(double.infinity, 50),
-//           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-//         ),
-//         child: Text(
-//           label,
-//           style: const TextStyle(fontSize: 16),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 
-// It's good practice to put new pages in their own files,
-// but for simplicity, it's included here.
-// You could create a new file `settings_page.dart` and move this class there.
-
+// SettingsPage remains the same...
 class SettingsPage extends StatefulWidget {
-  final String currentUrl;
-
-  const SettingsPage({super.key, required this.currentUrl});
-
+  final List<String> cameraUrls;
+  const SettingsPage({super.key, required this.cameraUrls});
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
-
 class _SettingsPageState extends State<SettingsPage> {
-  late TextEditingController _urlController;
-
+  late List<TextEditingController> _urlControllers;
   @override
   void initState() {
     super.initState();
-    _urlController = TextEditingController(text: widget.currentUrl);
+    _urlControllers = widget.cameraUrls.map((url) => TextEditingController(text: url)).toList();
   }
-
   @override
   void dispose() {
-    _urlController.dispose();
+    for (var controller in _urlControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Colors.grey[200],
-        foregroundColor: Colors.black87,
-      ),
-      body: Padding(
+      appBar: AppBar(title: const Text('Settings'), backgroundColor: Colors.grey[200], foregroundColor: Colors.black87),
+      body: ListView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'RTSP Stream URL',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'e.g., rtsp://192.168.1.100:8554/stream',
+        children: [
+          for (int i = 0; i < _urlControllers.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Camera ${i + 1} URL', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _urlControllers[i],
+                    decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'e.g., rtsp://...'),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Return the new URL back to the HomePage
-                Navigator.pop(context, _urlController.text);
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Save and Restart Stream'),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              final newUrls = _urlControllers.map((controller) => controller.text).toList();
+              Navigator.pop(context, newUrls);
+            },
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
             ),
-          ],
-        ),
+            child: const Text('Save Changes'),
+          ),
+        ],
       ),
     );
   }
@@ -398,65 +99,90 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   VlcPlayerController? _vlcPlayerController;
-  final TextEditingController _urlController = TextEditingController(
-    text: 'rtsp://192.168.0.158:8554/cam0', // Default URL
-  );
 
-  // State variables for toggle buttons
+  List<String> _cameraUrls = [
+    'rtsp://192.168.0.158:8554/cam0',
+    'rtsp://192.168.0.158:8554/cam0',
+    'rtsp://192.168.0.158:8554/cam0',
+  ];
+  int _currentCameraIndex = -1; // Start at -1 to ensure first switch runs
+
   bool _isStarted = false;
   bool _isAutoAttack = false;
-
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _initializePlayer(_urlController.text);
+    // Initialize with the first camera URL
+    _switchCamera(0);
   }
 
-  void _initializePlayer(String url) {
-    _vlcPlayerController?.dispose();
-    _vlcPlayerController = VlcPlayerController.network(
-      url,
+  // --- REFACTORED AND CORRECTED CAMERA SWITCHING LOGIC ---
+  Future<void> _switchCamera(int index) async {
+    // If the selected camera is already active, do nothing.
+    if (_vlcPlayerController != null && index == _currentCameraIndex) {
+      return;
+    }
+
+    // Store the old controller so we can dispose of it cleanly.
+    final VlcPlayerController? oldController = _vlcPlayerController;
+
+    // **STEP 1: Remove the player from the UI immediately.**
+    // This is crucial to start the teardown process of the native view.
+    setState(() {
+      _currentCameraIndex = index;
+      _vlcPlayerController = null; // Show a loading spinner
+      _errorMessage = null;
+    });
+
+    // **STEP 2: Dispose of the old controller.**
+    await oldController?.dispose();
+
+    // **STEP 3 (THE CRITICAL FIX): Wait for a brief moment.**
+    // This gives the native side time to fully release all resources (sockets, surfaces)
+    // and prevents the race condition that causes both errors.
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    // STEP 4: Create the new controller only after the system is clean.
+    final newController = VlcPlayerController.network(
+      _cameraUrls[index],
       hwAcc: HwAcc.disabled,
       autoPlay: true,
       options: VlcPlayerOptions(
+        advanced: VlcAdvancedOptions([VlcAdvancedOptions.networkCaching(150)]),
         video: VlcVideoOptions([
           VlcVideoOptions.dropLateFrames(true),
-          VlcVideoOptions.skipFrames(false),
+          VlcVideoOptions.skipFrames(true),
         ]),
-        rtp: VlcRtpOptions([
-          VlcRtpOptions.rtpOverRtsp(true),
-          ":rtsp-tcp",
-        ]),
-        advanced: VlcAdvancedOptions([
-          VlcAdvancedOptions.networkCaching(100),
-        ]),
-        extras: ['--h264-fps=60', '--aspect-ratio=16:9'],
+        extras: ['--h264-fps=60', '--aspect-ratio=16:9', '--no-audio'],
       ),
-    )..addListener(() {
+    );
+
+    // Add a listener for the new controller.
+    newController.addListener(() {
       if (!mounted) return;
-      final state = _vlcPlayerController!.value;
-      if (state.hasError) {
+      final state = newController.value;
+      // Update the error message only if it has changed, to avoid extra rebuilds.
+      if (state.hasError && _errorMessage != state.errorDescription) {
         setState(() {
           _errorMessage = state.errorDescription;
         });
-      } else {
-        if (_errorMessage != null) {
-          setState(() {
-            _errorMessage = null;
-          });
-        }
       }
     });
-    // Force a rebuild to show the new player instance
-    setState(() {});
+
+    // STEP 5: Assign the new controller to the state to display it.
+    if (mounted) {
+      setState(() {
+        _vlcPlayerController = newController;
+      });
+    }
   }
+
 
   @override
   void dispose() {
     _vlcPlayerController?.dispose();
-    _urlController.dispose();
     super.dispose();
   }
 
@@ -466,25 +192,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Navigate to settings page and handle result
   void _navigateToSettings() async {
-    final newUrl = await Navigator.push<String>(
+    final newUrls = await Navigator.push<List<String>>(
       context,
       MaterialPageRoute(
-        builder: (context) => SettingsPage(currentUrl: _urlController.text),
+        builder: (context) => SettingsPage(cameraUrls: _cameraUrls),
       ),
     );
 
-    // If a new URL was returned and it's different, update the player
-    if (newUrl != null && newUrl != _urlController.text) {
-      setState(() {
-        _urlController.text = newUrl;
-        _errorMessage = null; // Clear old errors
-      });
-      _initializePlayer(newUrl);
+    if (newUrls != null) {
+      bool hasUrlChanged = false;
+      for (int i = 0; i < _cameraUrls.length; i++) {
+        if (_cameraUrls[i] != newUrls[i]) {
+          hasUrlChanged = true;
+          break;
+        }
+      }
+
+      if (hasUrlChanged) {
+        setState(() {
+          _cameraUrls = newUrls;
+        });
+        // Re-initialize the player with the potentially updated URL
+        _switchCamera(_currentCameraIndex);
+      }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -497,12 +230,10 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          // Top section: 70% of screen height
           Expanded(
             flex: 7,
             child: Row(
               children: [
-                // Left side: Command buttons
                 Container(
                   width: MediaQuery.of(context).size.width * 0.30,
                   color: Colors.lightGreen[100],
@@ -513,6 +244,7 @@ class _HomePageState extends State<HomePage> {
                       _buildCommandButton('Patrol', () => _sendCommand('CMD_MODE_PATROL')),
                       _buildCommandButton('Recon', () => _sendCommand('CMD_MODE_RECON')),
                       _buildCommandButton('Drone', () => _sendCommand('CMD_MODE_DRONE')),
+                      _buildCommandButton('Return', () => _sendCommand('CMD_RETURN')),
                       _buildCommandButton('Forward', () => _sendCommand('CMD_FORWARD')),
                       _buildCommandButton('Backward', () => _sendCommand('CMD_BACKWARD')),
                       _buildCommandButton('Left', () => _sendCommand('CMD_LEFT')),
@@ -523,34 +255,60 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-                // Right side: Camera view
                 Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(8.0),
-                    color: Colors.black,
-                    child: _errorMessage != null
-                        ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'Error: $_errorMessage',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.red, fontSize: 16),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                        child: Row(
+                          children: [
+                            for (int i = 0; i < 3; i++)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: ElevatedButton(
+                                    onPressed: () => _switchCamera(i),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: _currentCameraIndex == i ? Theme.of(context).primaryColor : Colors.grey[300],
+                                      foregroundColor: _currentCameraIndex == i ? Colors.white : Colors.black87,
+                                    ),
+                                    child: Text('Cam ${i + 1}'),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    )
-                        : VlcPlayer(
-                      controller: _vlcPlayerController!,
-                      placeholder: const Center(
-                        child: CircularProgressIndicator(),
-                      ), aspectRatio: 1/1,
-                    ),
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.all(8.0),
+                          color: Colors.black,
+                          child: _errorMessage != null
+                              ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                'Error: $_errorMessage',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.red, fontSize: 16),
+                              ),
+                            ),
+                          )
+                          // This now correctly shows the placeholder during the switch
+                              : _vlcPlayerController == null
+                              ? const Center(child: CircularProgressIndicator())
+                              : VlcPlayer(
+                            controller: _vlcPlayerController!,
+                            placeholder: const Center(child: CircularProgressIndicator()), aspectRatio: 1/1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          // Bottom section: 30% of screen height
           Expanded(
             flex: 3,
             child: Container(
@@ -562,39 +320,24 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Toggle Attack Button
                       _buildBottomButton(
                         _isAutoAttack ? 'Auto Attack' : 'Attack',
                         _isAutoAttack ? Colors.redAccent : Colors.orange,
                             () {
-                          setState(() {
-                            _isAutoAttack = !_isAutoAttack;
-                          });
-                          if (_isAutoAttack) {
-                            _sendCommand('CMD_AUTO_ATTACK');
-                          } else {
-                            _sendCommand('CMD_ATTACK');
-                          }
+                          setState(() => _isAutoAttack = !_isAutoAttack);
+                          _sendCommand(_isAutoAttack ? 'CMD_AUTO_ATTACK' : 'CMD_ATTACK');
                         },
                       ),
-                      // Toggle Start/Stop Button
                       _buildBottomButton(
                         _isStarted ? 'Stop' : 'Start',
                         _isStarted ? Colors.green : Colors.grey[300],
                             () {
-                          setState(() {
-                            _isStarted = !_isStarted;
-                          });
-                          if (_isStarted) {
-                            _sendCommand('CMD_START');
-                          } else {
-                            _sendCommand('CMD_STOP');
-                          }
+                          setState(() => _isStarted = !_isStarted);
+                          _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START');
                         },
                       ),
-                      _buildBottomButton('+', Colors.grey[300], () => _sendCommand('CMD_ZOOM_IN')),
-                      _buildBottomButton('-', Colors.grey[300], () => _sendCommand('CMD_ZOOM_OUT')),
-                      // Settings Button
+                      _buildIconBottomButton(Icons.add, () => _sendCommand('CMD_ZOOM_IN')),
+                      _buildIconBottomButton(Icons.remove, () => _sendCommand('CMD_ZOOM_OUT')),
                       _buildBottomButton('Settings', Colors.grey[400], _navigateToSettings),
                       _buildBottomButton('EXIT', Colors.blue, () => _sendCommand('CMD_EXIT')),
                     ],
@@ -611,45 +354,20 @@ class _HomePageState extends State<HomePage> {
   Widget _buildCommandButton(String label, VoidCallback onPressed) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(0, 50),
-          backgroundColor: Colors.grey[300],
-          shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
-          ),
-        ),
-      ),
+      child: ElevatedButton(onPressed: onPressed, style: ElevatedButton.styleFrom(minimumSize: const Size(0, 50), backgroundColor: Colors.grey[300], shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero), padding: const EdgeInsets.symmetric(horizontal: 4.0)), child: SizedBox(width: double.infinity, child: Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal)))),
     );
   }
-
-  Widget _buildBottomButton(String label, Color? color, VoidCallback onPressed) {
-    final textColor = (label == 'EXIT' || _isAutoAttack && label == 'Auto Attack') ? Colors.white : Colors.black87;
-
+  Widget _buildIconBottomButton(IconData icon, VoidCallback onPressed) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(60, 50),
-          backgroundColor: color,
-          foregroundColor: textColor,
-          shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
-        ),
-      ),
+      child: ElevatedButton(onPressed: onPressed, style: ElevatedButton.styleFrom(minimumSize: const Size(60, 50), backgroundColor: Colors.grey[300], shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero)), child: Icon(icon, size: 30.0)),
+    );
+  }
+  Widget _buildBottomButton(String label, Color? color, VoidCallback onPressed) {
+    final textColor = (label == 'EXIT' || (label == 'Auto Attack')) ? Colors.white : Colors.black87;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: ElevatedButton(onPressed: onPressed, style: ElevatedButton.styleFrom(minimumSize: const Size(60, 50), backgroundColor: color, foregroundColor: textColor, shape: const BeveledRectangleBorder(borderRadius: BorderRadius.zero)), child: Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal))),
     );
   }
 }
