@@ -34,3 +34,18 @@ const String ICON_PATH_PLUS = 'assets/icons/03_Main_D_Zoom_In_Icon_off.png';
 const String ICON_PATH_MINUS = 'assets/icons/03_Main_D_Zoom_Out_Icon_off.png';
 const String ICON_PATH_EXIT = 'assets/icons/03_Main_D_Exit_Icon_on.png';
 const String ICON_PATH_WIFI = 'assets/icons/03_Main_sen4.png'; // Using a placeholder for the BLE/WiFi icon
+
+
+
+
+const String ICON_PATH_FORWARD_ACTIVE = 'assets/icons/03_Main_move_up_off.png';
+const String ICON_PATH_FORWARD_INACTIVE = 'assets/icons/03_Main_move_up_on.png';
+
+const String ICON_PATH_BACKWARD_ACTIVE = 'assets/icons/03_Main_move_down_off.png';
+const String ICON_PATH_BACKWARD_INACTIVE = 'assets/icons/03_Main_move_down_on.png';
+
+const String ICON_PATH_LEFT_ACTIVE = 'assets/icons/03_Main_move_left_off.png';
+const String ICON_PATH_LEFT_INACTIVE = 'assets/icons/03_Main_move_left_on.png';
+
+const String ICON_PATH_RIGHT_ACTIVE = 'assets/icons/03_Main_move_right_off.png';
+const String ICON_PATH_RIGHT_INACTIVE = 'assets/icons/03_Main_move_right_on.png';
