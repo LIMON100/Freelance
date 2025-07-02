@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Make sure you have a file named 'icon_constants.dart' in your lib/ folder
-// with all the icon paths.
 import 'icon_constants.dart';
+import 'splash_screen.dart';
 
 // --- CONFIGURATION FOR ROBOT CONNECTION ---
 const String ROBOT_IP_ADDRESS = '192.168.0.158';
@@ -94,12 +93,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Robot Control App',
+      title: '',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         textTheme: GoogleFonts.rajdhaniTextTheme(),
       ),
-      home: const HomePage(),
+      home: const SplashScreen(),
     );
   }
 }
@@ -117,8 +116,8 @@ class _HomePageState extends State<HomePage> {
   VlcPlayerController? _vlcPlayerController;
   List<String> _cameraUrls = [
     'rtsp://192.168.0.158:8554/cam0',
-    'rtsp://192.168.0.158:8554/cam1',
-    'rtsp://192.168.0.158:8554/cam2',
+    'rtsp://192.168.0.158:8554/cam0',
+    'rtsp://192.168.0.158:8554/cam0',
   ];
   int _currentCameraIndex = -1;
   String? _errorMessage;
@@ -317,8 +316,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- UI HELPER FUNCTIONS & WIDGET BUILDERS ---
-
   void _onLeftButtonPressed(int index, String command) {
     setState(() => _activeLeftButtonIndex = index);
     _sendCommand(command);
@@ -426,7 +423,8 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2)),
+                      letterSpacing: 1.2),
+              ),
             ]
           ],
         ),
