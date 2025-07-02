@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-// Import the new package
+// Import the package
 import 'package:wifi_iot/wifi_iot.dart';
 
 import 'main.dart'; // To navigate to the HomePage
@@ -20,7 +20,6 @@ class WifiConnectionScreen extends StatefulWidget {
   State<WifiConnectionScreen> createState() => _WifiConnectionScreenState();
 }
 
-// Add WidgetsBindingObserver to detect when the user returns to the app
 class _WifiConnectionScreenState extends State<WifiConnectionScreen> with WidgetsBindingObserver {
   WifiConnectionState _currentState = WifiConnectionState.initial;
   Timer? _pollingTimer;
@@ -28,15 +27,12 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
   @override
   void initState() {
     super.initState();
-    // Listen for app lifecycle changes (e.g., user returns from settings)
     WidgetsBinding.instance.addObserver(this);
-    // Check the connection status as soon as the screen loads
     _checkConnectionStatus();
   }
 
   @override
   void dispose() {
-    // Clean up the observer and timer to prevent memory leaks
     WidgetsBinding.instance.removeObserver(this);
     _pollingTimer?.cancel();
     super.dispose();
@@ -44,15 +40,11 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // When the user returns to the app, check the connection status again.
     if (state == AppLifecycleState.resumed) {
       _checkConnectionStatus();
     }
   }
 
-  // --- REAL WIFI LOGIC using wifi_iot ---
-
-  /// Checks the current connection status and updates the UI.
   Future<void> _checkConnectionStatus() async {
     bool isConnected = await WiFiForIoTPlugin.isConnected();
     if (isConnected) {
@@ -61,7 +53,6 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
       }
       _pollingTimer?.cancel();
     } else {
-      // If we aren't connected and not already waiting, reset to initial.
       if (_currentState != WifiConnectionState.waitingForConnection) {
         if(mounted) {
           setState(() => _currentState = WifiConnectionState.initial);
@@ -70,17 +61,10 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
     }
   }
 
-  /// Opens the native WiFi settings and starts polling for a connection.
   Future<void> _openWifiSettingsAndPoll() async {
-    // Update UI to show we are waiting
     setState(() => _currentState = WifiConnectionState.waitingForConnection);
-
-    // This is the key function: It ensures WiFi is on and opens settings.
     await WiFiForIoTPlugin.setEnabled(true, shouldOpenSettings: true);
-
-    // Start a timer that checks for a connection every 2 seconds.
-    // This runs after the user comes back from the settings page.
-    _pollingTimer?.cancel(); // Cancel any old timer
+    _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _checkConnectionStatus();
     });
@@ -106,18 +90,21 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
     );
   }
 
+  // --- MODIFIED: This function now passes the status text ---
   Widget _buildContentForState() {
     switch (_currentState) {
       case WifiConnectionState.waitingForConnection:
         return _buildStateUI(
             iconPath: 'assets/icons/03_Main_sen4.png',
-            buttonText: "Waiting for Connection...",
-            onPressed: null, // Disable button while waiting
-            showSpinner: true); // Show a loading spinner
+            statusText: "Waiting for Connection...", // Status text for this state
+            buttonText: "Open Settings Again",
+            onPressed: _openWifiSettingsAndPoll,
+            showSpinner: true);
 
       case WifiConnectionState.connected:
         return _buildStateUI(
           iconPath: 'assets/icons/02_Bluetooth_Reconnect_icon.png',
+          statusText: "WiFi Connected", // Status text for this state
           buttonText: "Go to Home",
           onPressed: _navigateToHome,
         );
@@ -126,14 +113,17 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
       default:
         return _buildStateUI(
           iconPath: 'assets/icons/03_Main_sen4.png',
+          statusText: "Please connect WiFi", // Status text for this state
           buttonText: "Connect WiFi",
           onPressed: _openWifiSettingsAndPoll,
         );
     }
   }
 
+  // --- MODIFIED: This widget now includes the status text ---
   Widget _buildStateUI({
     required String iconPath,
+    required String statusText, // New parameter for the status text
     required String buttonText,
     required VoidCallback? onPressed,
     bool showSpinner = false,
@@ -141,6 +131,7 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // The main icon
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -160,6 +151,26 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
               : Image.asset(iconPath, height: 60, width: 60),
         ),
         const SizedBox(height: 40),
+
+        // --- NEW WIDGET: The status text ---
+        Text(
+          statusText,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            shadows: [
+              Shadow(
+                blurRadius: 4.0,
+                color: Colors.black,
+                offset: Offset(1.0, 1.0),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20), // Spacing between status text and button
+
+        // The main button
         GestureDetector(
           onTap: onPressed,
           child: Container(

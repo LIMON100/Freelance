@@ -127,6 +127,11 @@ class _HomePageState extends State<HomePage> {
   int _activeRightButtonIndex = 0;
   bool _isStarted = false;
 
+  bool _isForwardPressed = false;
+  bool _isBackPressed = false;
+  bool _isLeftPressed = false;
+  bool _isRightPressed = false;
+
   @override
   void initState() {
     super.initState();
@@ -239,12 +244,10 @@ class _HomePageState extends State<HomePage> {
           Positioned.fill(child: buildPlayerWidget()),
 
           // Layer 2: UI Controls Overlay
+
           // Left Side Buttons
           Positioned(
-            left: 15,
-            top: 20, // Padding from top
-            bottom: 80, // Padding from bottom to avoid the bottom bar
-            width: 120, // Give the list view a defined width
+            left: 15, top: 20, bottom: 80, width: 120,
             child: ListView(
               children: [
                 _buildSideButton(0, _activeLeftButtonIndex == 0, ICON_PATH_DRIVING_ACTIVE, ICON_PATH_DRIVING_INACTIVE, "Driving", () => _onLeftButtonPressed(0, 'CMD_MODE_DRIVE')),
@@ -262,12 +265,9 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // --- FIXED: Right Side Buttons are now in a scrollable ListView ---
+          // Right Side Buttons
           Positioned(
-            right: 15,
-            top: 20,  // Padding from top
-            bottom: 80, // Padding from bottom
-            width: 120, // Give the list view a defined width
+            right: 15, top: 20, bottom: 80, width: 120,
             child: ListView(
               children: [
                 _buildSideButton(0, _activeRightButtonIndex == 0, ICON_PATH_ATTACK_VIEW_ACTIVE, ICON_PATH_ATTACK_VIEW_INACTIVE, "Attack View", () => _onRightButtonPressed(0)),
@@ -275,10 +275,52 @@ class _HomePageState extends State<HomePage> {
                 _buildSideButton(1, _activeRightButtonIndex == 1, ICON_PATH_TOP_VIEW_ACTIVE, ICON_PATH_TOP_VIEW_INACTIVE, "Top View", () => _onRightButtonPressed(1)),
                 const SizedBox(height: 20),
                 _buildSideButton(2, _activeRightButtonIndex == 2, ICON_PATH_3D_VIEW_ACTIVE, ICON_PATH_3D_VIEW_INACTIVE, "3D View", () => _onRightButtonPressed(2)),
-                const SizedBox(height: 120), // Fixed gap
+                const SizedBox(height: 120),
                 _buildSideButton(-1, false, ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, "Setting", () => _navigateToSettings()),
               ],
             ),
+          ),
+
+          // --- NEW: Directional Control Buttons ---
+          _buildDirectionalButton(
+            alignment: Alignment.topCenter,
+            padding: const EdgeInsets.only(top: 20),
+            isPressed: _isForwardPressed,
+            activeIcon: ICON_PATH_FORWARD_ACTIVE,
+            inactiveIcon: ICON_PATH_FORWARD_INACTIVE,
+            command: 'CMD_FORWARD',
+            onPress: () => setState(() => _isForwardPressed = true),
+            onRelease: () => setState(() => _isForwardPressed = false),
+          ),
+          _buildDirectionalButton(
+            alignment: Alignment.bottomCenter,
+            padding: const EdgeInsets.only(bottom: 80), // Pushes it above the bottom bar
+            isPressed: _isBackPressed,
+            activeIcon: ICON_PATH_BACKWARD_ACTIVE,
+            inactiveIcon: ICON_PATH_BACKWARD_INACTIVE,
+            command: 'CMD_BACKWARD',
+            onPress: () => setState(() => _isBackPressed = true),
+            onRelease: () => setState(() => _isBackPressed = false),
+          ),
+          _buildDirectionalButton(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 140), // Pushes it away from the side buttons
+            isPressed: _isLeftPressed,
+            activeIcon: ICON_PATH_LEFT_ACTIVE,
+            inactiveIcon: ICON_PATH_LEFT_INACTIVE,
+            command: 'CMD_LEFT',
+            onPress: () => setState(() => _isLeftPressed = true),
+            onRelease: () => setState(() => _isLeftPressed = false),
+          ),
+          _buildDirectionalButton(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 140), // Pushes it away from the side buttons
+            isPressed: _isRightPressed,
+            activeIcon: ICON_PATH_RIGHT_ACTIVE,
+            inactiveIcon: ICON_PATH_RIGHT_INACTIVE,
+            command: 'CMD_RIGHT',
+            onPress: () => setState(() => _isRightPressed = true),
+            onRelease: () => setState(() => _isRightPressed = false),
           ),
 
           // Bottom Control Bar (already scrollable, no changes needed)
@@ -363,6 +405,39 @@ class _HomePageState extends State<HomePage> {
       placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)),
     );
   }
+
+
+  Widget _buildDirectionalButton({
+    required Alignment alignment,
+    required EdgeInsets padding,
+    required bool isPressed,
+    required String activeIcon,
+    required String inactiveIcon,
+    required String command,
+    required VoidCallback onPress,
+    required VoidCallback onRelease,
+  }) {
+    return Padding(
+      padding: padding,
+      child: Align(
+        alignment: alignment,
+        child: GestureDetector(
+          onTapDown: (_) {
+            onPress();
+            _sendCommand(command);
+          },
+          onTapUp: (_) => onRelease(),
+          onTapCancel: () => onRelease(),
+          child: Image.asset(
+            isPressed ? activeIcon : inactiveIcon,
+            height: 60,
+            width: 60,
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildSideButton(int index, bool isActive, String activeIcon,
       String inactiveIcon, String label, VoidCallback onPressed) {

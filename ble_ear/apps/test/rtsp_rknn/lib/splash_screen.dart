@@ -21,6 +21,7 @@ class SplashScreen extends StatelessWidget {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,52 +30,69 @@ class SplashScreen extends StatelessWidget {
         children: [
           // 1. Full-screen background image
           Image.asset(
-            'assets/icons/01_Intro_BG.png', // Your camouflage background
+            'assets/icons/01_Intro_BG.png', // Your camo background
             fit: BoxFit.cover,
           ),
 
           // 2. Main content layered on top
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // This spacer pushes the content down from the top edge
-                  const Spacer(flex: 3),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // This LayoutBuilder gives us the actual available height
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      // Make the content at least as tall as the screen
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight( // Ensures the Column tries to be its 'natural' height
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                        child: Column(
+                          children: [
+                            // This spacer pushes content down from the top edge.
+                            // Using SizedBox is more reliable in this structure.
+                            const SizedBox(height: 40),
 
-                  // Emblem at the top
-                  Image.asset('assets/icons/01_Intro_logo.png', height: 100), // Adjust size if needed
-                  const SizedBox(height: 24),
+                            // Emblem at the top
+                            Image.asset('assets/icons/01_Intro_logo.png', height: 100),
+                            const SizedBox(height: 24),
 
-                  // Main STR Logo
-                  Image.asset('assets/icons/01_Intro_str_logo.png', width: 280), // Adjust size if needed
-                  const SizedBox(height: 8),
+                            // Main STR Logo
+                            Image.asset('assets/icons/01_Intro_str_logo.png', width: 280),
+                            const SizedBox(height: 8),
 
-                  // Subtitle Text
-                  const Text(
-                    'Small Tactical Robot',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: 1.5,
+                            // Subtitle Text
+                            const Text(
+                              'Small Tactical Robot',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w300,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+
+                            // --- FIX: Use a Spacer() to push content apart ---
+                            // This works now because the Column has a defined minHeight from the ConstrainedBox.
+                            const Spacer(),
+
+                            // The "Start STR" Button
+                            _buildStartButton(context),
+
+                            // Use another Spacer to create a gap between the button and the bottom logo.
+                            const Spacer(),
+
+                            // SkyAutoNet Logo at the bottom
+                            Image.asset('assets/icons/01_Intro_skyautonet_logo.png', height: 25),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-
-                  // This spacer creates the large gap above the button
-                  const Spacer(flex: 4),
-
-                  // The "Start STR" Button
-                  _buildStartButton(context),
-
-                  // This spacer pushes the bottom logo down
-                  const Spacer(flex: 2),
-
-                  // SkyAutoNet Logo at the bottom
-                  Image.asset('assets/icons/01_Intro_skyautonet_logo.png', height: 25), // Adjust size if needed
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
