@@ -772,9 +772,9 @@ class _HomePageState extends State<HomePage> {
   // All state variables and backend logic functions remain the same.
   VlcPlayerController? _vlcPlayerController;
   List<String> _cameraUrls = [
-    'rtsp://192.168.0.158:8554/cam0',
-    'rtsp://192.168.0.158:8554/cam1',
-    'rtsp://192.168.0.158:8554/cam2',
+    'rtsp://192.168.0.158:8554/cam0', // Corresponds to Attack View (index 0)
+    'rtsp://192.168.0.158:8554/cam0', // Corresponds to Top View (index 1)
+    'rtsp://192.168.0.158:8554/cam0', // Corresponds to 3D View (index 2)
   ];
   int _currentCameraIndex = -1;
   String? _errorMessage;
@@ -789,7 +789,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _switchCamera(0);
+    _switchCamera(0); // Start with the first camera
   }
 
   @override
@@ -817,12 +817,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _switchCamera(int index) async {
+    // If the selected camera is already active, do nothing.
+    if (index == _currentCameraIndex && _vlcPlayerController != null && !_vlcPlayerController!.value.hasError) {
+      return;
+    }
+
     final VlcPlayerController? oldController = _vlcPlayerController;
+
     setState(() {
-      if (index == _currentCameraIndex && _vlcPlayerController != null) {
-      } else if (index == _currentCameraIndex) {
-        return;
-      }
       _currentCameraIndex = index;
       _vlcPlayerController = null;
       _errorMessage = null;
@@ -887,32 +889,33 @@ class _HomePageState extends State<HomePage> {
         children: [
           Positioned.fill(child: buildPlayerWidget()),
 
-          // --- Side and Directional buttons remain the same ---
+          // --- Left Side Buttons ---
           _buildSideButton(30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE, _activeLeftButtonIndex == 0, () => _onLeftButtonPressed(0, 'CMD_MODE_DRIVE')),
           _buildSideButton(30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE, _activeLeftButtonIndex == 1, () => _onLeftButtonPressed(1, 'CMD_MODE_PATROL')),
           _buildSideButton(30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE, _activeLeftButtonIndex == 2, () => _onLeftButtonPressed(2, 'CMD_MODE_RECON')),
           _buildSideButton(30, 485, "Manual Attack", ICON_PATH_MANUAL_ATTACK_INACTIVE, ICON_PATH_MANUAL_ATTACK_ACTIVE, _activeLeftButtonIndex == 3, () => _onLeftButtonPressed(3, 'CMD_MANU_ATTACK')),
           _buildSideButton(30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE, _activeLeftButtonIndex == 4, () => _onLeftButtonPressed(4, 'CMD_MODE_DRONE')),
           _buildSideButton(30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE, _activeLeftButtonIndex == 5, () => _onLeftButtonPressed(5, 'CMD_RETUR')),
-          _buildSideButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0, 'CMD_ATTACK_VIEW')),
-          _buildSideButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1, 'CMD_TOP_VIEW')),
-          _buildSideButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2, 'CMD_FRONT_3D')),
+
+          // --- Right Side Buttons ---
+          // FIX: The onPressed callbacks now correctly call _onRightButtonPressed with the correct camera index.
+          _buildSideButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
+          _buildSideButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
+          _buildSideButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
           _buildSideButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
+
+          // Directional Arrows
           _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, 'CMD_FORWARD', () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
           _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE, 'CMD_BACKWARD', () => setState(() => _isBackPressed = true), () => setState(() => _isBackPressed = false)),
           _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE, 'CMD_LEFT', () => setState(() => _isLeftPressed = true), () => setState(() => _isLeftPressed = false)),
           _buildDirectionalButton(1560, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE, 'CMD_RIGHT', () => setState(() => _isRightPressed = true), () => setState(() => _isRightPressed = false)),
 
-          // --- FIX: REWRITTEN BOTTOM BAR USING A ROBUST ROW LAYOUT ---
+          // --- Bottom Bar ---
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.only(
-                bottom: 20 * heightScale,
-                left: 30 * widthScale,
-                right: 30 * widthScale,
-              ),
-              child: _buildBottomBar(), // Call the new helper widget
+              padding: EdgeInsets.only(bottom: 20 * heightScale, left: 30 * widthScale, right: 30 * widthScale),
+              child: _buildBottomBar(),
             ),
           ),
         ],
@@ -920,16 +923,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // --- UI STATE HANDLERS ---
   void _onLeftButtonPressed(int index, String command) {
     setState(() => _activeLeftButtonIndex = index);
     _sendCommand(command);
   }
 
-  void _onRightButtonPressed(int index, String command) {
+  // --- FIX: Corrected function to handle camera switching ---
+  void _onRightButtonPressed(int index) {
     setState(() => _activeRightButtonIndex = index);
-    _sendCommand(command);
+    _switchCamera(index);
   }
 
+  // --- UI HELPER WIDGETS ---
   Widget buildPlayerWidget() {
     if (_errorMessage != null) {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -947,6 +953,7 @@ class _HomePageState extends State<HomePage> {
     return VlcPlayer(controller: _vlcPlayerController!, aspectRatio: 16 / 9, placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)));
   }
 
+  // The rest of your build helpers remain the same as the last working version.
   Widget _buildSideButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -1007,13 +1014,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- NEW: This widget builds the entire bottom row of controls ---
   Widget _buildBottomBar() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Left-side button cluster
         _buildBottomBarButton("ATTACK", ICON_PATH_ATTACK, [const Color(0xffc32121), const Color(0xff831616)], () => _sendCommand('CMD_MODE_ATTACK')),
         const SizedBox(width: 12),
         _buildBottomBarButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () { setState(() => _isStarted = !_isStarted); _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START'); }),
@@ -1021,11 +1026,7 @@ class _HomePageState extends State<HomePage> {
         _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_IN')),
         const SizedBox(width: 12),
         _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_OUT')),
-
-        // This spacer pushes everything apart
         const Spacer(),
-
-        // Middle status cluster
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -1036,20 +1037,14 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-
         const SizedBox(width: 20),
         Image.asset(ICON_PATH_WIFI, height: 40),
-
         const Spacer(),
-
-        // Right-side exit button
         _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () => _sendCommand('CMD_EXIT')),
       ],
     );
   }
 
-  // --- REWRITTEN HELPER FOR BOTTOM BUTTONS ---
-  // This no longer returns a Positioned widget and is much more stable.
   Widget _buildBottomBarButton(String label, String iconPath,
       List<Color> gradientColors, VoidCallback onPressed) {
 
