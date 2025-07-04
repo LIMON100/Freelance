@@ -1,3 +1,13 @@
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 // import 'dart:io';
 // import 'package:flutter/material.dart';
 // import 'package:flutter_vlc_player/flutter_vlc_player.dart';
@@ -112,21 +122,18 @@
 // }
 //
 // class _HomePageState extends State<HomePage> {
-//   // --- Backend State ---
+//   // All state variables and backend logic functions remain the same.
 //   VlcPlayerController? _vlcPlayerController;
 //   List<String> _cameraUrls = [
-//     'rtsp://192.168.0.158:8554/cam0',
-//     'rtsp://192.168.0.158:8554/cam0',
-//     'rtsp://192.168.0.158:8554/cam0',
+//     'rtsp://192.168.0.158:8554/cam0', // Corresponds to Attack View (index 0)
+//     'rtsp://192.168.0.158:8554/cam0', // Corresponds to Top View (index 1)
+//     'rtsp://192.168.0.158:8554/cam0', // Corresponds to 3D View (index 2)
 //   ];
 //   int _currentCameraIndex = -1;
 //   String? _errorMessage;
-//
-//   // --- UI State ---
 //   int _activeLeftButtonIndex = 0;
 //   int _activeRightButtonIndex = 0;
 //   bool _isStarted = false;
-//
 //   bool _isForwardPressed = false;
 //   bool _isBackPressed = false;
 //   bool _isLeftPressed = false;
@@ -135,7 +142,7 @@
 //   @override
 //   void initState() {
 //     super.initState();
-//     _switchCamera(0);
+//     _switchCamera(0); // Start with the first camera
 //   }
 //
 //   @override
@@ -144,7 +151,6 @@
 //     super.dispose();
 //   }
 //
-//   // --- BACKEND LOGIC ---
 //   Future<void> _sendCommand(String command) async {
 //     try {
 //       final socket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT,
@@ -163,101 +169,47 @@
 //     }
 //   }
 //
-//   // Future<void> _switchCamera(int index) async {
-//   //   if (index == _currentCameraIndex && _vlcPlayerController != null) return;
-//   //   final VlcPlayerController? oldController = _vlcPlayerController;
-//   //
-//   //   setState(() {
-//   //     _currentCameraIndex = index;
-//   //     _vlcPlayerController = null;
-//   //     _errorMessage = null;
-//   //   });
-//   //
-//   //   await oldController?.dispose();
-//   //   await Future.delayed(const Duration(milliseconds: 200));
-//   //
-//   //   final newController = VlcPlayerController.network(
-//   //     _cameraUrls[index],
-//   //     hwAcc: HwAcc.disabled,
-//   //     autoPlay: true,
-//   //     options: VlcPlayerOptions(
-//   //       advanced: VlcAdvancedOptions([VlcAdvancedOptions.networkCaching(150)]),
-//   //       video: VlcVideoOptions(
-//   //           [VlcVideoOptions.dropLateFrames(true), VlcVideoOptions.skipFrames(true)]),
-//   //       extras: ['--h264-fps=60', '--no-audio'],
-//   //     ),
-//   //   );
-//   //
-//   //   newController.addListener(() {
-//   //     if (!mounted) return;
-//   //     if (newController.value.hasError &&
-//   //         _errorMessage != newController.value.errorDescription) {
-//   //       setState(() => _errorMessage = newController.value.errorDescription);
-//   //     }
-//   //   });
-//   //
-//   //   if (mounted) {
-//   //     setState(() => _vlcPlayerController = newController);
-//   //   }
-//   // }
-//
-//   Future<void> _switchCamera(int index, {bool force = false}) async {
-//     // If not forcing a retry, and the camera is the same and valid, do nothing.
-//     if (!force && index == _currentCameraIndex && _vlcPlayerController != null) {
+//   Future<void> _switchCamera(int index) async {
+//     // If the selected camera is already active, do nothing.
+//     if (index == _currentCameraIndex && _vlcPlayerController != null && !_vlcPlayerController!.value.hasError) {
 //       return;
 //     }
 //
-//     // Immediately dispose of any existing controller.
-//     await _vlcPlayerController?.dispose();
+//     final VlcPlayerController? oldController = _vlcPlayerController;
 //
-//     // Set UI to loading state
 //     setState(() {
 //       _currentCameraIndex = index;
 //       _vlcPlayerController = null;
 //       _errorMessage = null;
 //     });
 //
-//     // A small delay to ensure the native view is fully gone.
-//     await Future.delayed(const Duration(milliseconds: 100));
+//     await oldController?.dispose();
+//     await Future.delayed(const Duration(milliseconds: 200));
 //
-//     // Create the new controller.
 //     final newController = VlcPlayerController.network(
 //       _cameraUrls[index],
 //       hwAcc: HwAcc.disabled,
 //       autoPlay: true,
 //       options: VlcPlayerOptions(
-//         advanced: VlcAdvancedOptions([VlcAdvancedOptions.networkCaching(200)]), // Slightly increased caching for stability
-//         video: VlcVideoOptions([VlcVideoOptions.dropLateFrames(true), VlcVideoOptions.skipFrames(true)]),
+//         advanced: VlcAdvancedOptions([VlcAdvancedOptions.networkCaching(150)]),
+//         video: VlcVideoOptions([
+//           VlcVideoOptions.dropLateFrames(true),
+//           VlcVideoOptions.skipFrames(true),
+//         ]),
 //         extras: ['--h264-fps=60', '--no-audio'],
 //       ),
 //     );
 //
-//     // Add a one-time listener to check for initialization success or failure.
-//     void listener() {
+//     newController.addListener(() {
 //       if (!mounted) return;
-//       final value = newController.value;
-//
-//       // If an error occurs during initialization
-//       if (value.hasError) {
-//         // Clean up the failed controller immediately
-//         newController.removeListener(listener);
-//         newController.dispose();
-//         // Update the UI to show the error and ensure the controller state is null
+//       final state = newController.value;
+//       if (state.hasError && _errorMessage != state.errorDescription) {
 //         setState(() {
-//           _errorMessage = value.errorDescription ?? 'Unknown connection error.';
-//           _vlcPlayerController = null;
+//           _errorMessage = state.errorDescription ?? 'An Unknown Error Occurred!';
 //         });
 //       }
-//       // If the player is initialized and playing, we can remove the listener.
-//       else if (value.isPlaying) {
-//         newController.removeListener(listener);
-//       }
-//     }
+//     });
 //
-//     newController.addListener(listener);
-//
-//     // Assign the new controller to the state. The UI will show a spinner.
-//     // The listener above will handle updating the UI on error.
 //     if (mounted) {
 //       setState(() {
 //         _vlcPlayerController = newController;
@@ -268,7 +220,8 @@
 //   Future<void> _navigateToSettings() async {
 //     final newUrls = await Navigator.push<List<String>>(
 //       context,
-//       MaterialPageRoute(builder: (context) => SettingsPage(cameraUrls: _cameraUrls)),
+//       MaterialPageRoute(
+//           builder: (context) => SettingsPage(cameraUrls: _cameraUrls)),
 //     );
 //     if (newUrls != null) {
 //       setState(() => _cameraUrls = newUrls);
@@ -276,338 +229,204 @@
 //     }
 //   }
 //
-//   Future<bool> _showConfirmationDialog(
-//       BuildContext context, String title, String content) async {
-//     return await showDialog<bool>(
-//       context: context,
-//       builder: (BuildContext context) => AlertDialog(
-//         title: Text(title, style: Theme.of(context).textTheme.headlineSmall),
-//         content: Text(content),
-//         actions: <Widget>[
-//           TextButton(
-//               onPressed: () => Navigator.of(context).pop(false),
-//               child: const Text('Cancel')),
-//           TextButton(
-//               onPressed: () => Navigator.of(context).pop(true),
-//               child: const Text('OK')),
-//         ],
-//       ),
-//     ) ??
-//         false;
-//   }
-//
-//   // --- UI BUILD METHOD ---
 //   @override
 //   Widget build(BuildContext context) {
+//     final screenWidth = MediaQuery.of(context).size.width;
+//     final screenHeight = MediaQuery.of(context).size.height;
+//     final widthScale = screenWidth / 1920.0;
+//     final heightScale = screenHeight / 1080.0;
+//
 //     return Scaffold(
 //       backgroundColor: Colors.black,
 //       body: Stack(
-//         fit: StackFit.expand,
 //         children: [
-//           // Layer 1: Video Player Background
 //           Positioned.fill(child: buildPlayerWidget()),
 //
-//           // Layer 2: UI Controls Overlay
+//           // --- Left Side Buttons ---
+//           _buildSideButton(30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE, _activeLeftButtonIndex == 0, () => _onLeftButtonPressed(0, 'CMD_MODE_DRIVE')),
+//           _buildSideButton(30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE, _activeLeftButtonIndex == 1, () => _onLeftButtonPressed(1, 'CMD_MODE_PATROL')),
+//           _buildSideButton(30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE, _activeLeftButtonIndex == 2, () => _onLeftButtonPressed(2, 'CMD_MODE_RECON')),
+//           _buildSideButton(30, 485, "Manual Attack", ICON_PATH_MANUAL_ATTACK_INACTIVE, ICON_PATH_MANUAL_ATTACK_ACTIVE, _activeLeftButtonIndex == 3, () => _onLeftButtonPressed(3, 'CMD_MANU_ATTACK')),
+//           _buildSideButton(30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE, _activeLeftButtonIndex == 4, () => _onLeftButtonPressed(4, 'CMD_MODE_DRONE')),
+//           _buildSideButton(30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE, _activeLeftButtonIndex == 5, () => _onLeftButtonPressed(5, 'CMD_RETUR')),
 //
-//           // Left Side Buttons
-//           Positioned(
-//             left: 15, top: 20, bottom: 80, width: 120,
-//             child: ListView(
-//               children: [
-//                 _buildSideButton(0, _activeLeftButtonIndex == 0, ICON_PATH_DRIVING_ACTIVE, ICON_PATH_DRIVING_INACTIVE, "Driving", () => _onLeftButtonPressed(0, 'CMD_MODE_DRIVE')),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(1, _activeLeftButtonIndex == 1, ICON_PATH_PETROL_ACTIVE, ICON_PATH_PETROL_INACTIVE, "Petrol", () => _onLeftButtonPressed(1, 'CMD_MODE_PATROL')),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(2, _activeLeftButtonIndex == 2, ICON_PATH_RECON_ACTIVE, ICON_PATH_RECON_INACTIVE, "Recon", () => _onLeftButtonPressed(2, 'CMD_MODE_RECON')),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(3, _activeLeftButtonIndex == 3, ICON_PATH_MANUAL_ATTACK_ACTIVE, ICON_PATH_MANUAL_ATTACK_INACTIVE, "Manual Attack", () => _onLeftButtonPressed(3, 'CMD_MANU_ATTACK')),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(4, _activeLeftButtonIndex == 4, ICON_PATH_DRONE_ACTIVE, ICON_PATH_DRONE_INACTIVE, "Drone", () => _onLeftButtonPressed(4, 'CMD_MODE_DRONE')),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(5, _activeLeftButtonIndex == 5, ICON_PATH_RETURN_ACTIVE, ICON_PATH_RETURN_INACTIVE, "Return", () => _onLeftButtonPressed(5, 'CMD_RETURN')),
-//               ],
-//             ),
-//           ),
+//           // --- Right Side Buttons ---
+//           // FIX: The onPressed callbacks now correctly call _onRightButtonPressed with the correct camera index.
+//           _buildSideButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
+//           _buildSideButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
+//           _buildSideButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
+//           _buildSideButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
 //
-//           // Right Side Buttons
-//           Positioned(
-//             right: 15, top: 20, bottom: 80, width: 120,
-//             child: ListView(
-//               children: [
-//                 _buildSideButton(0, _activeRightButtonIndex == 0, ICON_PATH_ATTACK_VIEW_ACTIVE, ICON_PATH_ATTACK_VIEW_INACTIVE, "Attack View", () => _onRightButtonPressed(0)),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(1, _activeRightButtonIndex == 1, ICON_PATH_TOP_VIEW_ACTIVE, ICON_PATH_TOP_VIEW_INACTIVE, "Top View", () => _onRightButtonPressed(1)),
-//                 const SizedBox(height: 20),
-//                 _buildSideButton(2, _activeRightButtonIndex == 2, ICON_PATH_3D_VIEW_ACTIVE, ICON_PATH_3D_VIEW_INACTIVE, "3D View", () => _onRightButtonPressed(2)),
-//                 const SizedBox(height: 120),
-//                 _buildSideButton(-1, false, ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, "Setting", () => _navigateToSettings()),
-//               ],
-//             ),
-//           ),
+//           // Directional Arrows
+//           _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, 'CMD_FORWARD', () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
+//           _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE, 'CMD_BACKWARD', () => setState(() => _isBackPressed = true), () => setState(() => _isBackPressed = false)),
+//           _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE, 'CMD_LEFT', () => setState(() => _isLeftPressed = true), () => setState(() => _isLeftPressed = false)),
+//           _buildDirectionalButton(1560, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE, 'CMD_RIGHT', () => setState(() => _isRightPressed = true), () => setState(() => _isRightPressed = false)),
 //
-//           // --- NEW: Directional Control Buttons ---
-//           _buildDirectionalButton(
-//             alignment: Alignment.topCenter,
-//             padding: const EdgeInsets.only(top: 20),
-//             isPressed: _isForwardPressed,
-//             activeIcon: ICON_PATH_FORWARD_ACTIVE,
-//             inactiveIcon: ICON_PATH_FORWARD_INACTIVE,
-//             command: 'CMD_FORWARD',
-//             onPress: () => setState(() => _isForwardPressed = true),
-//             onRelease: () => setState(() => _isForwardPressed = false),
-//           ),
-//           _buildDirectionalButton(
+//           // --- Bottom Bar ---
+//           Align(
 //             alignment: Alignment.bottomCenter,
-//             padding: const EdgeInsets.only(bottom: 80), // Pushes it above the bottom bar
-//             isPressed: _isBackPressed,
-//             activeIcon: ICON_PATH_BACKWARD_ACTIVE,
-//             inactiveIcon: ICON_PATH_BACKWARD_INACTIVE,
-//             command: 'CMD_BACKWARD',
-//             onPress: () => setState(() => _isBackPressed = true),
-//             onRelease: () => setState(() => _isBackPressed = false),
-//           ),
-//           _buildDirectionalButton(
-//             alignment: Alignment.centerLeft,
-//             padding: const EdgeInsets.only(left: 140), // Pushes it away from the side buttons
-//             isPressed: _isLeftPressed,
-//             activeIcon: ICON_PATH_LEFT_ACTIVE,
-//             inactiveIcon: ICON_PATH_LEFT_INACTIVE,
-//             command: 'CMD_LEFT',
-//             onPress: () => setState(() => _isLeftPressed = true),
-//             onRelease: () => setState(() => _isLeftPressed = false),
-//           ),
-//           _buildDirectionalButton(
-//             alignment: Alignment.centerRight,
-//             padding: const EdgeInsets.only(right: 140), // Pushes it away from the side buttons
-//             isPressed: _isRightPressed,
-//             activeIcon: ICON_PATH_RIGHT_ACTIVE,
-//             inactiveIcon: ICON_PATH_RIGHT_INACTIVE,
-//             command: 'CMD_RIGHT',
-//             onPress: () => setState(() => _isRightPressed = true),
-//             onRelease: () => setState(() => _isRightPressed = false),
-//           ),
-//
-//           // Bottom Control Bar (already scrollable, no changes needed)
-//           Positioned(
-//             bottom: 10,
-//             left: 15,
-//             right: 15,
-//             child: SingleChildScrollView(
-//               scrollDirection: Axis.horizontal,
-//               child: Row(
-//                 children: [
-//                   _buildBottomButton("ATTACK", ICON_PATH_ATTACK, [const Color(0xffc32121), const Color(0xff831616)], () async {
-//                     final proceed = await _showConfirmationDialog(context, 'Confirm Attack', 'Do you want to proceed?');
-//                     if (proceed) _sendCommand('CMD_MODE_ATTACK');
-//                   }),
-//                   const SizedBox(width: 12),
-//                   _buildBottomButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () {
-//                     setState(() => _isStarted = !_isStarted);
-//                     _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START');
-//                   }),
-//                   const SizedBox(width: 12),
-//                   _buildBottomButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_IN')),
-//                   const SizedBox(width: 12),
-//                   _buildBottomButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_OUT')),
-//                   const SizedBox(width: 12),
-//                   Image.asset(ICON_PATH_WIFI, height: 40, width: 40),
-//                   const SizedBox(width: 12),
-//                   _buildBottomButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () => _sendCommand('CMD_EXIT')),
-//                 ],
-//               ),
+//             child: Padding(
+//               padding: EdgeInsets.only(bottom: 20 * heightScale, left: 30 * widthScale, right: 30 * widthScale),
+//               child: _buildBottomBar(),
 //             ),
-//           )
+//           ),
 //         ],
 //       ),
 //     );
 //   }
 //
+//   // --- UI STATE HANDLERS ---
 //   void _onLeftButtonPressed(int index, String command) {
 //     setState(() => _activeLeftButtonIndex = index);
 //     _sendCommand(command);
 //   }
 //
+//   // --- FIX: Corrected function to handle camera switching ---
 //   void _onRightButtonPressed(int index) {
 //     setState(() => _activeRightButtonIndex = index);
 //     _switchCamera(index);
 //   }
 //
-//   // --- FIXED: Player widget with Retry button ---
-//   // Widget buildPlayerWidget() {
-//   //   if (_vlcPlayerController == null) {
-//   //     return const Center(child: CircularProgressIndicator(color: Colors.white));
-//   //   }
-//   //   if (_errorMessage != null) {
-//   //     return Center(
-//   //       child: Column(
-//   //         mainAxisAlignment: MainAxisAlignment.center,
-//   //         children: [
-//   //           Padding(
-//   //             padding: const EdgeInsets.symmetric(horizontal: 24.0),
-//   //             child: Text(
-//   //               'Error: $_errorMessage',
-//   //               textAlign: TextAlign.center,
-//   //               style: const TextStyle(
-//   //                   color: Colors.red,
-//   //                   fontSize: 16,
-//   //                   fontWeight: FontWeight.bold),
-//   //             ),
-//   //           ),
-//   //           const SizedBox(height: 20),
-//   //           ElevatedButton(
-//   //             onPressed: () => _switchCamera(_currentCameraIndex),
-//   //             style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[700]),
-//   //             child: const Text('Retry', style: TextStyle(color: Colors.white)),
-//   //           ),
-//   //         ],
-//   //       ),
-//   //     );
-//   //   }
-//   //   return VlcPlayer(
-//   //     controller: _vlcPlayerController!,
-//   //     aspectRatio: 16 / 9,
-//   //     placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)),
-//   //   );
-//   // }
-//
+//   // --- UI HELPER WIDGETS ---
 //   Widget buildPlayerWidget() {
-//     // If there is an error message, show the error UI.
-//     // The controller is guaranteed to be null in this state now.
 //     if (_errorMessage != null) {
-//       return Center(
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Padding(
-//               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-//               child: Text(
-//                 'Error: $_errorMessage',
-//                 textAlign: TextAlign.center,
-//                 style: const TextStyle(
-//                     color: Colors.red,
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.bold),
-//               ),
-//             ),
-//             const SizedBox(height: 20),
-//             // Call _switchCamera. The `force` parameter is no longer needed
-//             // because the logic now correctly handles retries.
-//             ElevatedButton(
-//               onPressed: () => _switchCamera(_currentCameraIndex),
-//               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[700]),
-//               child: const Text('Retry', style: TextStyle(color: Colors.white)),
-//             ),
-//           ],
-//         ),
-//       );
+//       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+//         Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: 24.0),
+//             child: Text('Error: $_errorMessage', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold))),
+//         const SizedBox(height: 20),
+//         ElevatedButton(onPressed: () => _switchCamera(_currentCameraIndex), style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[700]), child: const Text('Retry', style: TextStyle(color: Colors.white))),
+//       ],
+//       ));
 //     }
-//
-//     // If the controller is null and there is no error, we are loading.
 //     if (_vlcPlayerController == null) {
 //       return const Center(child: CircularProgressIndicator(color: Colors.white));
 //     }
-//
-//     // Otherwise, show the player.
-//     return VlcPlayer(
-//       controller: _vlcPlayerController!,
-//       aspectRatio: 16 / 9,
-//       placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)),
-//     );
+//     return VlcPlayer(controller: _vlcPlayerController!, aspectRatio: 16 / 9, placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)));
 //   }
 //
+//   // The rest of your build helpers remain the same as the last working version.
+//   Widget _buildSideButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+//     final screenWidth = MediaQuery.of(context).size.width;
+//     final screenHeight = MediaQuery.of(context).size.height;
+//     final widthScale = screenWidth / 1920.0;
+//     final heightScale = screenHeight / 1080.0;
 //
-//   Widget _buildDirectionalButton({
-//     required Alignment alignment,
-//     required EdgeInsets padding,
-//     required bool isPressed,
-//     required String activeIcon,
-//     required String inactiveIcon,
-//     required String command,
-//     required VoidCallback onPress,
-//     required VoidCallback onRelease,
-//   }) {
-//     return Padding(
-//       padding: padding,
-//       child: Align(
-//         alignment: alignment,
-//         child: GestureDetector(
-//           onTapDown: (_) {
-//             onPress();
-//             _sendCommand(command);
-//           },
-//           onTapUp: (_) => onRelease(),
-//           onTapCancel: () => onRelease(),
-//           child: Image.asset(
-//             isPressed ? activeIcon : inactiveIcon,
-//             height: 60,
-//             width: 60,
+//     return Positioned(
+//       left: left * widthScale,
+//       top: top * heightScale,
+//       child: GestureDetector(
+//         onTap: onPressed,
+//         child: Container(
+//           width: 200 * widthScale,
+//           height: 120 * heightScale,
+//           padding: const EdgeInsets.all(8.0),
+//           decoration: BoxDecoration(
+//             color: Colors.black.withOpacity(0.6),
+//             borderRadius: BorderRadius.circular(10),
+//             border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
+//           ),
+//           child: FittedBox(
+//             fit: BoxFit.contain,
+//             child: Column(
+//               mainAxisAlignment: MainAxisAlignment.center,
+//               children: [
+//                 Image.asset(isActive ? activeIcon : inactiveIcon, height: 50),
+//                 const SizedBox(height: 10),
+//                 Text(label, textAlign: TextAlign.center, style: GoogleFonts.notoSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFFFFFFFF))),
+//               ],
+//             ),
 //           ),
 //         ),
 //       ),
 //     );
 //   }
 //
+//   Widget _buildDirectionalButton(double left, double top, bool isPressed, String inactiveIcon, String activeIcon, String command, VoidCallback onPress, VoidCallback onRelease) {
+//     final screenWidth = MediaQuery.of(context).size.width;
+//     final screenHeight = MediaQuery.of(context).size.height;
+//     final widthScale = screenWidth / 1920.0;
+//     final heightScale = screenHeight / 1080.0;
 //
-//   Widget _buildSideButton(int index, bool isActive, String activeIcon,
-//       String inactiveIcon, String label, VoidCallback onPressed) {
-//     return GestureDetector(
-//       onTap: onPressed,
-//       child: Container(
-//         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-//         decoration: BoxDecoration(
-//             color: Colors.black.withOpacity(0.6),
-//             borderRadius: BorderRadius.circular(10),
-//             border: Border.all(
-//                 color: isActive ? Colors.white : Colors.transparent,
-//                 width: 1.5)),
-//         child: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Image.asset(isActive ? activeIcon : inactiveIcon,
-//                 height: 40, width: 40),
-//             const SizedBox(height: 5),
-//             Text(label,
-//                 style: const TextStyle(
-//                     color: Colors.white,
-//                     fontSize: 14,
-//                     fontWeight: FontWeight.bold)),
-//           ],
-//         ),
+//     return Positioned(
+//       left: left * widthScale,
+//       top: top * heightScale,
+//       child: GestureDetector(
+//         onTapDown: (_) {
+//           onPress();
+//           _sendCommand(command);
+//         },
+//         onTapUp: (_) {
+//           onRelease();
+//           _sendCommand('CMD_STOP');
+//         },
+//         onTapCancel: () => onRelease(),
+//         child: Image.asset(isPressed ? activeIcon : inactiveIcon, height: 100 * heightScale, width: 100 * widthScale, fit: BoxFit.contain),
 //       ),
 //     );
 //   }
 //
-//   Widget _buildBottomButton(String label, String iconPath,
+//   Widget _buildBottomBar() {
+//     return Row(
+//       mainAxisAlignment: MainAxisAlignment.center,
+//       crossAxisAlignment: CrossAxisAlignment.center,
+//       children: [
+//         _buildBottomBarButton("ATTACK", ICON_PATH_ATTACK, [const Color(0xffc32121), const Color(0xff831616)], () => _sendCommand('CMD_MODE_ATTACK')),
+//         const SizedBox(width: 12),
+//         _buildBottomBarButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () { setState(() => _isStarted = !_isStarted); _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START'); }),
+//         const SizedBox(width: 12),
+//         _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_IN')),
+//         const SizedBox(width: 12),
+//         _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_OUT')),
+//         const Spacer(),
+//         Row(
+//           crossAxisAlignment: CrossAxisAlignment.end,
+//           children: [
+//             Text("0", style: GoogleFonts.notoSans(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.white, height: 1.0)),
+//             Padding(
+//               padding: const EdgeInsets.only(bottom: 12.0),
+//               child: Text("Km/h", style: GoogleFonts.notoSans(fontSize: 36, fontWeight: FontWeight.w500, color: Colors.white)),
+//             ),
+//           ],
+//         ),
+//         const SizedBox(width: 20),
+//         Image.asset(ICON_PATH_WIFI, height: 40),
+//         const Spacer(),
+//         _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () => _sendCommand('CMD_EXIT')),
+//       ],
+//     );
+//   }
+//
+//   Widget _buildBottomBarButton(String label, String iconPath,
 //       List<Color> gradientColors, VoidCallback onPressed) {
+//
+//     final screenHeight = MediaQuery.of(context).size.height;
+//     final heightScale = screenHeight / 1080.0;
+//
 //     return GestureDetector(
 //       onTap: onPressed,
 //       child: Container(
-//         padding: EdgeInsets.symmetric(
-//             horizontal: label.isNotEmpty ? 16 : 12, vertical: 10),
+//         height: 80 * heightScale,
+//         padding: EdgeInsets.symmetric(horizontal: label.isEmpty ? 25 : 35),
 //         decoration: BoxDecoration(
-//             gradient: LinearGradient(
-//                 colors: gradientColors,
-//                 begin: Alignment.topCenter,
-//                 end: Alignment.bottomCenter),
-//             borderRadius: BorderRadius.circular(30),
-//             boxShadow: [
-//               BoxShadow(
-//                   color: Colors.black.withOpacity(0.5),
-//                   blurRadius: 5,
-//                   offset: const Offset(0, 3))
-//             ]),
+//           gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
+//           borderRadius: BorderRadius.circular(40 * heightScale),
+//         ),
 //         child: Row(
-//           mainAxisSize: MainAxisSize.min,
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           crossAxisAlignment: CrossAxisAlignment.center,
 //           children: [
-//             Image.asset(iconPath, height: 24, width: 24),
+//             Image.asset(iconPath, height: 36 * heightScale),
 //             if (label.isNotEmpty) ...[
-//               const SizedBox(width: 8),
-//               Text(label,
-//                   style: const TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 18,
-//                       fontWeight: FontWeight.bold,
-//                       letterSpacing: 1.2),
+//               const SizedBox(width: 12),
+//               Text(
+//                 label,
+//                 style: GoogleFonts.notoSans(
+//                   fontSize: 36 * heightScale,
+//                   fontWeight: FontWeight.bold,
+//                   color: Colors.white,
+//                 ),
 //               ),
 //             ]
 //           ],
@@ -616,21 +435,6 @@
 //     );
 //   }
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -769,12 +573,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // All state variables and backend logic functions remain the same.
+  // All state variables and backend logic functions remain the same...
   VlcPlayerController? _vlcPlayerController;
   List<String> _cameraUrls = [
-    'rtsp://192.168.0.158:8554/cam0', // Corresponds to Attack View (index 0)
-    'rtsp://192.168.0.158:8554/cam0', // Corresponds to Top View (index 1)
-    'rtsp://192.168.0.158:8554/cam0', // Corresponds to 3D View (index 2)
+    'rtsp://192.168.0.158:8554/cam0',
+    'rtsp://192.168.0.158:8554/cam1',
+    'rtsp://192.168.0.158:8554/cam2',
   ];
   int _currentCameraIndex = -1;
   String? _errorMessage;
@@ -785,11 +589,12 @@ class _HomePageState extends State<HomePage> {
   bool _isBackPressed = false;
   bool _isLeftPressed = false;
   bool _isRightPressed = false;
+  bool _isAutoAttackMode = false;
 
   @override
   void initState() {
     super.initState();
-    _switchCamera(0); // Start with the first camera
+    _switchCamera(0);
   }
 
   @override
@@ -816,15 +621,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // --- RESTORED STABLE CAMERA SWITCHING LOGIC ---
   Future<void> _switchCamera(int index) async {
-    // If the selected camera is already active, do nothing.
-    if (index == _currentCameraIndex && _vlcPlayerController != null && !_vlcPlayerController!.value.hasError) {
-      return;
-    }
-
     final VlcPlayerController? oldController = _vlcPlayerController;
 
     setState(() {
+      if (index == _currentCameraIndex && _vlcPlayerController != null) {
+      } else if (index == _currentCameraIndex) {
+        return;
+      }
       _currentCameraIndex = index;
       _vlcPlayerController = null;
       _errorMessage = null;
@@ -876,6 +681,80 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // --- ADDED DIALOG FUNCTIONALITY ---
+  Future<bool> _showCustomConfirmationDialog({
+    required BuildContext context,
+    required String iconPath,
+    required String title,
+    required Color titleColor,
+    required String content,
+  }) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+          child: Container(
+            width: 500,
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Image.asset(iconPath, height: 40, width: 40),
+                    const SizedBox(width: 16),
+                    Text(title, style: GoogleFonts.notoSans(fontSize: 28, fontWeight: FontWeight.bold, color: titleColor)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(content, textAlign: TextAlign.center, style: GoogleFonts.notoSans(fontSize: 22, color: Colors.black87)),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text('Cancel', style: GoogleFonts.notoSans(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                    SizedBox(height: 40, child: VerticalDivider(color: Colors.grey.shade400, thickness: 1)),
+                    TextButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: Text('OK', style: GoogleFonts.notoSans(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue.shade700))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ) ?? false;
+  }
+
+  Future<void> _handleManualAutoAttackToggle() async {
+    if (_isAutoAttackMode) {
+      final proceed = await _showCustomConfirmationDialog(
+        context: context,
+        iconPath: ICON_PATH_AUTO_ATTACK_ACTIVE,
+        title: "DANGERS",
+        titleColor: Colors.red,
+        content: 'Are you sure you want to stop\n"Auto Attack" mode?',
+      );
+      if (proceed) {
+        _sendCommand('CMD_MANU_ATTACK');
+        setState(() => _isAutoAttackMode = false);
+      }
+    } else {
+      final proceed = await _showCustomConfirmationDialog(
+        context: context,
+        iconPath: ICON_PATH_MANUAL_ATTACK_ACTIVE,
+        title: "DANGERS",
+        titleColor: Colors.red,
+        content: 'Are you sure you want to start\n"Auto Attack" mode?',
+      );
+      if (proceed) {
+        _sendCommand('CMD_AUTO_ATTACK');
+        setState(() => _isAutoAttackMode = true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -889,28 +768,37 @@ class _HomePageState extends State<HomePage> {
         children: [
           Positioned.fill(child: buildPlayerWidget()),
 
-          // --- Left Side Buttons ---
           _buildSideButton(30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE, _activeLeftButtonIndex == 0, () => _onLeftButtonPressed(0, 'CMD_MODE_DRIVE')),
           _buildSideButton(30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE, _activeLeftButtonIndex == 1, () => _onLeftButtonPressed(1, 'CMD_MODE_PATROL')),
           _buildSideButton(30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE, _activeLeftButtonIndex == 2, () => _onLeftButtonPressed(2, 'CMD_MODE_RECON')),
-          _buildSideButton(30, 485, "Manual Attack", ICON_PATH_MANUAL_ATTACK_INACTIVE, ICON_PATH_MANUAL_ATTACK_ACTIVE, _activeLeftButtonIndex == 3, () => _onLeftButtonPressed(3, 'CMD_MANU_ATTACK')),
+
+          _buildSideButton(
+              30, 485,
+              _isAutoAttackMode ? "Auto Attack" : "Manual Attack",
+              _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_INACTIVE : ICON_PATH_MANUAL_ATTACK_INACTIVE,
+              _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_ACTIVE : ICON_PATH_MANUAL_ATTACK_ACTIVE,
+              _activeLeftButtonIndex == 3,
+                  () {
+                setState(() => _activeLeftButtonIndex = 3);
+                _handleManualAutoAttackToggle();
+              }
+          ),
+
           _buildSideButton(30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE, _activeLeftButtonIndex == 4, () => _onLeftButtonPressed(4, 'CMD_MODE_DRONE')),
           _buildSideButton(30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE, _activeLeftButtonIndex == 5, () => _onLeftButtonPressed(5, 'CMD_RETUR')),
 
-          // --- Right Side Buttons ---
-          // FIX: The onPressed callbacks now correctly call _onRightButtonPressed with the correct camera index.
-          _buildSideButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
-          _buildSideButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
-          _buildSideButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
+          // Right buttons now switch cameras again
+          _buildSideButton(1690, 30, "Cam 1", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
+          _buildSideButton(1690, 250, "Cam 2", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
+          _buildSideButton(1690, 470, "Cam 3", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
+
           _buildSideButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
 
-          // Directional Arrows
           _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, 'CMD_FORWARD', () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
           _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE, 'CMD_BACKWARD', () => setState(() => _isBackPressed = true), () => setState(() => _isBackPressed = false)),
           _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE, 'CMD_LEFT', () => setState(() => _isLeftPressed = true), () => setState(() => _isLeftPressed = false)),
           _buildDirectionalButton(1560, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE, 'CMD_RIGHT', () => setState(() => _isRightPressed = true), () => setState(() => _isRightPressed = false)),
 
-          // --- Bottom Bar ---
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -923,24 +811,22 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- UI STATE HANDLERS ---
   void _onLeftButtonPressed(int index, String command) {
     setState(() => _activeLeftButtonIndex = index);
     _sendCommand(command);
   }
 
-  // --- FIX: Corrected function to handle camera switching ---
+  // Restored right button logic to switch cameras
   void _onRightButtonPressed(int index) {
     setState(() => _activeRightButtonIndex = index);
     _switchCamera(index);
   }
 
-  // --- UI HELPER WIDGETS ---
+  // --- RESTORED STABLE PLAYER WIDGET ---
   Widget buildPlayerWidget() {
     if (_errorMessage != null) {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text('Error: $_errorMessage', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold))),
         const SizedBox(height: 20),
         ElevatedButton(onPressed: () => _switchCamera(_currentCameraIndex), style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[700]), child: const Text('Retry', style: TextStyle(color: Colors.white))),
@@ -953,7 +839,7 @@ class _HomePageState extends State<HomePage> {
     return VlcPlayer(controller: _vlcPlayerController!, aspectRatio: 16 / 9, placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)));
   }
 
-  // The rest of your build helpers remain the same as the last working version.
+  // The rest of the helper methods can remain the same
   Widget _buildSideButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -1019,14 +905,27 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _buildBottomBarButton("ATTACK", ICON_PATH_ATTACK, [const Color(0xffc32121), const Color(0xff831616)], () => _sendCommand('CMD_MODE_ATTACK')),
+        _buildBottomBarButton("ATTACK", ICON_PATH_ATTACK, [const Color(0xffc32121), const Color(0xff831616)],
+                () async {
+              final proceed = await _showCustomConfirmationDialog(
+                context: context,
+                iconPath: ICON_PATH_ATTACK,
+                title: 'DANGERS',
+                titleColor: Colors.red,
+                content: 'Do you want to proceed the command?',
+              );
+              if (proceed) _sendCommand('CMD_MODE_ATTACK');
+            }
+        ),
         const SizedBox(width: 12),
         _buildBottomBarButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () { setState(() => _isStarted = !_isStarted); _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START'); }),
         const SizedBox(width: 12),
         _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_IN')),
         const SizedBox(width: 12),
         _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_OUT')),
+
         const Spacer(),
+
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -1040,7 +939,18 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(width: 20),
         Image.asset(ICON_PATH_WIFI, height: 40),
         const Spacer(),
-        _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () => _sendCommand('CMD_EXIT')),
+        _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)],
+                () async {
+              final proceed = await _showCustomConfirmationDialog(
+                context: context,
+                iconPath: ICON_PATH_EXIT,
+                title: 'Information',
+                titleColor: Colors.blue.shade700,
+                content: 'Do you want to finish?',
+              );
+              if (proceed) _sendCommand('CMD_EXIT');
+            }
+        ),
       ],
     );
   }
@@ -1067,14 +977,7 @@ class _HomePageState extends State<HomePage> {
             Image.asset(iconPath, height: 36 * heightScale),
             if (label.isNotEmpty) ...[
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: GoogleFonts.notoSans(
-                  fontSize: 36 * heightScale,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              Text(label, style: GoogleFonts.notoSans(fontSize: 36 * heightScale, fontWeight: FontWeight.bold, color: Colors.white)),
             ]
           ],
         ),
