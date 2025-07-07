@@ -1,0 +1,4 @@
+-keep class com.longdo.zingswift.vlc.** { *; }
+-dontwarn com.longdo.zingswift.vlc.**
+-keep class org.videolan.libvlc.** { *; }
+-dontwarn org.videolan.libvlc.**
