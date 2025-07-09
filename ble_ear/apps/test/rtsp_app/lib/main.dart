@@ -798,11 +798,24 @@ class _HomePageState extends State<HomePage> {
           _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE, 'CMD_LEFT', () => setState(() => _isLeftPressed = true), () => setState(() => _isLeftPressed = false)),
           _buildDirectionalButton(1560, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE, 'CMD_RIGHT', () => setState(() => _isRightPressed = true), () => setState(() => _isRightPressed = false)),
 
+          // Align(
+          //   alignment: Alignment.bottomCenter,
+          //   child: Padding(
+          //     padding: EdgeInsets.only(bottom: 20 * heightScale, left: 30 * widthScale, right: 30 * widthScale),
+          //     child: _buildBottomBar(),
+          //   ),
+          // ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 20 * heightScale, left: 30 * widthScale, right: 30 * widthScale),
-              child: _buildBottomBar(),
+            child: Container(
+              // The container for the black bar background
+              margin: const EdgeInsets.only(bottom: 5), // Margin from the screen edge
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 4), // Padding inside the bar
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6), // Semi-transparent black
+                borderRadius: BorderRadius.circular(40), // Fully rounded ends
+              ),
+              child: _buildBottomBar(), // Your existing Row of buttons goes here
             ),
           ),
         ],
@@ -850,55 +863,9 @@ class _HomePageState extends State<HomePage> {
     // We added the aspect ratio hint to the VLC options instead.
     return VlcPlayer(
         controller: _vlcPlayerController!,
-        placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)), aspectRatio: 1/1,);
+        placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)), aspectRatio: 16/12,);
   }
 
-  // Widget _buildSideButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final heightScale = screenHeight / 1080.0;
-  //
-  //   return Positioned(
-  //     left: left * widthScale,
-  //     top: top * heightScale,
-  //     child: GestureDetector(
-  //       onTap: onPressed,
-  //       child: Container(
-  //         width: 200 * widthScale,
-  //         height: 120 * heightScale,
-  //         padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
-  //         decoration: BoxDecoration(
-  //           color: Colors.black.withOpacity(0.6),
-  //           borderRadius: BorderRadius.circular(10),
-  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
-  //         ),
-  //         child: Column(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           crossAxisAlignment: CrossAxisAlignment.center,
-  //           children: [
-  //             // Use Expanded to give the icon more space
-  //             Expanded(
-  //               flex: 2,
-  //               child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
-  //             ),
-  //             SizedBox(height: 5 * heightScale),
-  //             // Use a fixed but scaled font size
-  //             Text(
-  //               label,
-  //               textAlign: TextAlign.center,
-  //               style: GoogleFonts.notoSans(
-  //                 fontSize: 24 * heightScale, // Scaled font size
-  //                 fontWeight: FontWeight.bold,
-  //                 color: const Color(0xFFFFFFFF),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildLeftButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -934,20 +901,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- NEW: This is the dedicated widget for the RIGHT side ---
   Widget _buildRightButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
     final heightScale = screenHeight / 1080.0;
 
-    // We can make the buttons larger by increasing their base size here.
     const double buttonWidth = 220;
     const double buttonHeight = 175;
 
     return Positioned(
-      // We subtract half the width to keep it centered on the 'left' coordinate
-      left: (left - buttonWidth / 2) * widthScale,
+      // The `left` coordinate is the starting edge, not the center.
+      // This was the main error.
+      left: left * widthScale,
       top: top * heightScale,
       child: GestureDetector(
         onTap: onPressed,
@@ -957,20 +923,18 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(15), // Slightly more rounded
-            border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5), // Bolder border
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Giving the icon more space makes it appear larger
               Expanded(
                 flex: 3,
                 child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
               ),
               SizedBox(height: 8 * heightScale),
-              // Using a slightly larger font size
               Text(label, textAlign: TextAlign.center, style: GoogleFonts.notoSans(fontSize: 26 * heightScale, fontWeight: FontWeight.bold, color: const Color(0xFFFFFFFF))),
             ],
           ),
@@ -1015,82 +979,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- FIX: This is the new, simple, and robust scrollable bottom bar ---
-  // Widget _buildBottomBar() {
-  //   return SingleChildScrollView(
-  //     scrollDirection: Axis.horizontal,
-  //     child: Padding(
-  //       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-  //       // Add padding so it doesn't touch the edges
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         crossAxisAlignment: CrossAxisAlignment.center,
-  //         children: [
-  //           _buildBottomBarButton("ATTACK", ICON_PATH_ATTACK,
-  //               [const Color(0xffc32121), const Color(0xff831616)],
-  //                   () async {
-  //                 final proceed = await _showCustomConfirmationDialog(
-  //                     context: context,
-  //                     iconPath: ICON_PATH_ATTACK,
-  //                     title: 'DANGERS',
-  //                     titleColor: Colors.red,
-  //                     content: 'Do you want to proceed the command?');
-  //                 if (proceed) _sendCommand('CMD_MODE_ATTACK');
-  //               }
-  //           ),
-  //           const SizedBox(width: 12),
-  //           _buildBottomBarButton(_isStarted ? "STOP" : "START",
-  //               _isStarted ? ICON_PATH_STOP : ICON_PATH_START,
-  //               [const Color(0xff25a625), const Color(0xff127812)], () {
-  //                 setState(() => _isStarted = !_isStarted);
-  //                 _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START');
-  //               }),
-  //           const SizedBox(width: 12),
-  //           _buildBottomBarButton("", ICON_PATH_PLUS,
-  //               [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () =>
-  //                   _sendCommand('CMD_ZOOM_IN')),
-  //           const SizedBox(width: 12),
-  //           _buildBottomBarButton("", ICON_PATH_MINUS,
-  //               [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () =>
-  //                   _sendCommand('CMD_ZOOM_OUT')),
-  //           const SizedBox(width: 24),
-  //           Row(
-  //             crossAxisAlignment: CrossAxisAlignment.end,
-  //             children: [
-  //               Text("0", style: GoogleFonts.notoSans(fontSize: 80,
-  //                   fontWeight: FontWeight.bold,
-  //                   color: Colors.white,
-  //                   height: 1.0)),
-  //               Padding(
-  //                 padding: const EdgeInsets.only(bottom: 12.0),
-  //                 child: Text("Km/h", style: GoogleFonts.notoSans(fontSize: 36,
-  //                     fontWeight: FontWeight.w500,
-  //                     color: Colors.white)),
-  //               ),
-  //             ],
-  //           ),
-  //           const SizedBox(width: 20),
-  //           Image.asset(ICON_PATH_WIFI, height: 40),
-  //           const SizedBox(width: 24),
-  //           _buildBottomBarButton("EXIT", ICON_PATH_EXIT,
-  //               [const Color(0xff1e78c3), const Color(0xff12569b)],
-  //                   () async {
-  //                 final proceed = await _showCustomConfirmationDialog(
-  //                     context: context,
-  //                     iconPath: ICON_PATH_EXIT,
-  //                     title: 'Information',
-  //                     titleColor: Colors.blue.shade400,
-  //                     content: 'Do you want to finish?');
-  //                 if (proceed) _sendCommand('CMD_EXIT');
-  //               }
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 
-  // --- FIX: REWRITTEN BOTTOM BAR WITH CORRECT SPACING ---
+  // --- FIX: FINAL ROBUST BOTTOM BAR WITH PERFECT TEXT ALIGNMENT ---
   Widget _buildBottomBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     final widthScale = screenWidth / 1920.0;
@@ -1099,61 +989,78 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // --- Left Cluster of Buttons ---
         _buildBottomBarButton("ATTACK", ICON_PATH_ATTACK, [const Color(0xffc32121), const Color(0xff831616)],
                 () async {
-              final proceed = await _showCustomConfirmationDialog(
-                context: context,
-                iconPath: ICON_PATH_ATTACK,
-                title: 'DANGERS',
-                titleColor: Colors.red,
-                content: 'Do you want to proceed the command?',
-              );
+              final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_ATTACK, title: 'DANGERS', titleColor: Colors.red, content: 'Do you want to proceed the command?');
               if (proceed) _sendCommand('CMD_MODE_ATTACK');
             }
         ),
         SizedBox(width: 12 * widthScale),
-        _buildBottomBarButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () { setState(() => _isStarted = !_isStarted); _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START'); }),
-        SizedBox(width: 12 * widthScale),
+        // _buildBottomBarButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () { setState(() => _isStarted = !_isStarted); _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START'); }),
+
+        _buildWideBottomBarButton(_isStarted ? "STOP" : "START", _isStarted ? ICON_PATH_STOP : ICON_PATH_START, [const Color(0xff25a625), const Color(0xff127812)], () { setState(() => _isStarted = !_isStarted); _sendCommand(_isStarted ? 'CMD_STOP' : 'CMD_START'); }),
+        SizedBox(width: 65 * widthScale),
         _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_IN')),
         SizedBox(width: 12 * widthScale),
         _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () => _sendCommand('CMD_ZOOM_OUT')),
 
-        // --- THE FIX: Using Flexible instead of Spacer ---
-        Flexible(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Middle status cluster
-              Text("0", style: GoogleFonts.notoSans(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.white, height: 1.0)),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12.0, left: 8.0),
-                child: Text("Km/h", style: GoogleFonts.notoSans(fontSize: 36, fontWeight: FontWeight.w500, color: Colors.white)),
-              ),
-              SizedBox(width: 20 * widthScale),
-              // Vertically aligning the WiFi icon with the text
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Image.asset(ICON_PATH_WIFI, height: 40),
-              ),
-            ],
-          ),
-        ),
+        const Spacer(),
+        SizedBox(width: 47 * widthScale),
 
-        // --- Right Cluster (just the EXIT button) ---
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text("0", style: GoogleFonts.notoSans(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.white)),
+            SizedBox(width: 8 * widthScale),
+            Text("Km/h", style: GoogleFonts.notoSans(fontSize: 36, fontWeight: FontWeight.w500, color: Colors.white)),
+          ],
+        ),
+        SizedBox(width: 45 * widthScale),
+        Image.asset(ICON_PATH_WIFI, height: 40),
+
+        const Spacer(),
+
         _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)],
                 () async {
-              final proceed = await _showCustomConfirmationDialog(
-                context: context,
-                iconPath: ICON_PATH_EXIT,
-                title: 'Information',
-                titleColor: Colors.blue.shade700,
-                content: 'Do you want to finish?',
-              );
+              final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_EXIT, title: 'Information', titleColor: Colors.blue.shade700, content: 'Do you want to finish?');
               if (proceed) _sendCommand('CMD_EXIT');
             }
         ),
       ],
+    );
+  }
+
+  Widget _buildWideBottomBarButton(String label, String iconPath, List<Color> gradientColors, VoidCallback onPressed) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final heightScale = screenHeight / 1080.0;
+    final widthScale = screenWidth / 1920.0;
+
+    return GestureDetector(
+      onTap: onPressed,
+      // This Container enforces a minimum width, making it as wide as the ATTACK button.
+      child: Container(
+        constraints: BoxConstraints(
+          minWidth: 220 * widthScale, // Enforce a minimum width
+        ),
+        height: 80 * heightScale,
+        padding: const EdgeInsets.symmetric(horizontal: 74),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
+          borderRadius: BorderRadius.circular(25 * heightScale),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(iconPath, height: 36 * heightScale),
+            const SizedBox(width: 12),
+            Text(label, style: GoogleFonts.notoSans(fontSize: 36 * heightScale, fontWeight: FontWeight.bold, color: Colors.white)),
+          ],
+        ),
+      ),
     );
   }
 
