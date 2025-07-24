@@ -15,7 +15,7 @@ link_directories(${ONNXRUNTIME_DIR}/lib)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/single_header)
 
 # --- Create the executable ---
-add_executable(predictor_v2 inference.cpp)
+add_executable(predictor_v2 voice_command_small.cpp)
 
 # --- Link libraries ---
 target_link_libraries(predictor_v2 PRIVATE onnxruntime)
