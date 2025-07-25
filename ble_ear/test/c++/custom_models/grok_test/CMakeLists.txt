@@ -17,7 +17,7 @@ set(FFTW_INSTALL_DIR /userdata/libb/install_fftw)
 
 
 # --- Create the executable ---
-add_executable(final_predictor main.cpp)
+add_executable(final_predictor combined_gk.cpp)
 
 
 # --- Configure Include Directories ---

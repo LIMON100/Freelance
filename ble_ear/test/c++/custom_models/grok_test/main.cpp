@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Use your properly quantized INT8 model for best performance
-    const char* rknn_model_path = "../models/grok3_fp.rknn"; 
+    const char* rknn_model_path = "../models/groknewmodel_fp.rknn"; 
     const std::string label_path = "../models/labels.txt";
     const std::string wav_path = argv[1];
 
