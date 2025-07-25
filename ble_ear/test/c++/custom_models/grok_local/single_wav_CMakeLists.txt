@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 3.10)
+project(OnnxGrokPredictor CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# --- Define paths to LOCAL libraries ---
+set(ONNXRUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/onnxruntime)
+set(SINGLE_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/single_header)
+
+# --- Create the executable ---
+add_executable(onnx_predictor multi_infer.cpp)
+
+# --- Configure Include Directories ---
+target_include_directories(onnx_predictor PRIVATE
+    ${ONNXRUNTIME_DIR}/include
+    ${SINGLE_HEADER_DIR}
+    # No need to specify FFTW include path, it's now in /usr/include
+)
+
+# --- Find the system-installed FFTW library ---
+find_library(FFTW3F_LIBRARY NAMES fftw3f)
+if(NOT FFTW3F_LIBRARY)
+    message(FATAL_ERROR "FFTW3F library not found! Please run 'sudo apt-get install libfftw3-dev'.")
+endif()
+message(STATUS "Found system FFTW library at: ${FFTW3F_LIBRARY}")
+
+
+# --- Configure Link Libraries ---
+target_link_libraries(onnx_predictor
+    PRIVATE
+    # Link to the local ONNX Runtime library
+    ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so
+    # Link to the system-wide FFTW library that we found
+    ${FFTW3F_LIBRARY}
+)
