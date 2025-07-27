@@ -1,0 +1,1 @@
+python convert_groktorknn.py /home/limonubuntu/Work/Limon/other_task/ble_project/training/models/testC++/models/groknewmodel.onnx fp
