@@ -28,6 +28,7 @@ const String ICON_PATH_SETTINGS = 'assets/icons/03_Main_r_setting_icon_off.png';
 
 // --- Bottom Bar Icons ---
 const String ICON_PATH_ATTACK = 'assets/icons/03_Main_D_Attack_Icon_off.png';
+const String ICON_PATH_ATTACK_of = 'assets/icons/03_Main_D_Attack_Icon_deep.png';
 const String ICON_PATH_START = 'assets/icons/03_Main_D_Start_Icon_on.png';
 const String ICON_PATH_STOP = 'assets/icons/03_Main_D_Stop_Icon_on.png';
 const String ICON_PATH_PLUS = 'assets/icons/03_Main_D_Zoom_In_Icon_off.png';
