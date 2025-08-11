@@ -701,9 +701,10 @@
 
 
 
-// 3rd
+// game controller
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
@@ -719,17 +720,13 @@ const String ROBOT_IP_ADDRESS = '192.168.0.158';
 const int ROBOT_COMMAND_PORT = 65432;
 
 // --- MAIN APP ENTRY POINT ---
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 3. Set the full-screen mode and orientation right at the start
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-
-
   runApp(const MyApp());
 }
 
@@ -750,14 +747,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// --- DART CLASS REPRESENTING THE COMMAND PACKET ---
 class UserCommand {
-  int commandId = 0; // Default to idle
+  int commandId = 1;
   int moveSpeed = 0;
   int turnAngle = 0;
   bool gunTrigger = false;
-  bool gunPermission = false;
+  bool gunPermission = true;
 
-  // Converts the class fields into a 5-byte packet
   Uint8List toBytes() {
     final buffer = ByteData(5);
     buffer.setUint8(0, commandId);
@@ -778,7 +775,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // All state variables and backend logic functions remain the same.
+  // Video and UI State
   VlcPlayerController? _vlcPlayerController;
   List<String> _cameraUrls = [
     'rtsp://192.168.0.158:8554/cam0',
@@ -789,76 +786,133 @@ class _HomePageState extends State<HomePage> {
   String? _errorMessage;
   int _activeLeftButtonIndex = 0;
   int _activeRightButtonIndex = 0;
-  bool _isStarted = false;
   bool _isAutoAttackMode = false;
   bool _isAttackModeOn = false;
   final List<Color> _attackInactiveColors = [const Color(0xffc32121), const Color(0xff831616)];
   final List<Color> _attackActiveColors = [const Color(0xFF424242), const Color(0xFF212121)];
 
-  // --- State for joystick/gamepad values ---
-  double _joystickSpeed = 0.0; // From -1.0 to 1.0
-  double _joystickAngle = 0.0; // From -1.0 to 1.0
-  bool _gunTrigger = false;
-
-  // --- NEW: For managing gamepad events ---
+  // Command & Control State
   UserCommand _currentCommand = UserCommand();
-  Timer? _commandTimer;
-  bool _gamepadConnected = false;
   StreamSubscription? _gamepadSubscription;
   bool _isForwardPressed = false;
   bool _isBackPressed = false;
   bool _isLeftPressed = false;
   bool _isRightPressed = false;
+  bool _isStarted = false; // For START/STOP button state
   bool _isGunTriggerPressed = false;
+
+
+  static const platform = MethodChannel('com.yourcompany/gamepad');
+  bool _gamepadConnected = false;
+  // Command & Control State
+  Timer? _commandTimer;
+
 
   @override
   void initState() {
     super.initState();
     _switchCamera(0);
-    _initGamepadListener();
-    // _startCommandTimer(); // Start the timer that continuously sends commands
+    // --- NEW: Initialize the native plugin listener ---
+    platform.setMethodCallHandler(_handleGamepadEvent);
   }
 
   @override
   void dispose() {
     _commandTimer?.cancel();
-    _gamepadSubscription?.cancel();
     _vlcPlayerController?.dispose();
     super.dispose();
   }
 
-  // --- NEW: Gamepad Listener (More Robust) ---
-  void _initGamepadListener() {
-    _gamepadSubscription = Gamepads.events.listen((GamepadEvent event) {
-      if (!mounted) return;
+  // --- NEW: This function is called from MainActivity.kt ---
+  // Future<void> _handleGamepadEvent(MethodCall call) async {
+  //   if (!mounted) return;
+  //
+  //   if (!_gamepadConnected) {
+  //     setState(() => _gamepadConnected = true);
+  //     print("Gamepad connected (via native plugin)");
+  //   }
+  //
+  //   switch (call.method) {
+  //     case "onMotionEvent":
+  //       final Map<dynamic, dynamic> axes = call.arguments;
+  //
+  //       // --- IMPORTANT: Use the correct axis names you discovered from the debug app! ---
+  //       // These are the standard names, but you might need to change them.
+  //       final double leftStickX = axes['AXIS_X'] ?? 0.0;
+  //       final double leftStickY = axes['AXIS_Y'] ?? 0.0;
+  //       final double rightTrigger = axes['AXIS_RTRIGGER'] ?? 0.0;
+  //
+  //       _currentCommand.turnAngle = (leftStickX * 100).round();
+  //       _currentCommand.moveSpeed = (leftStickY * -100).round(); // Invert Y
+  //       _currentCommand.gunTrigger = rightTrigger > 0.5;
+  //       break;
+  //
+  //   // We can add button handling here later if needed, e.g., for the gun trigger.
+  //     case "onButtonDown":
+  //       break;
+  //     case "onButtonUp":
+  //       break;
+  //   }
+  // }
 
-      int? speed;
-      int? angle;
-      bool? trigger;
+  Future<void> _handleGamepadEvent(MethodCall call) async {
+    if (!mounted) return;
 
-      switch (event.key) {
-        case 'leftStickY':
-          speed = (event.value * -100).round();
-          if (speed.abs() < 10) speed = 0; // Deadzone
-          break;
-        case 'leftStickX':
-          angle = (event.value * 100).round();
-          if (angle.abs() < 10) angle = 0; // Deadzone
-          break;
-        case 'rightTrigger':
-          trigger = event.value > 0.5;
-          break;
-      }
+    // We can infer the gamepad is connected if we get any event.
+    if (!_gamepadConnected) {
+      setState(() => _gamepadConnected = true);
+      print("Gamepad connected (via native plugin)");
+    }
 
-      // If any of the values changed, send a packet with the new value.
-      if (speed != null || angle != null || trigger != null) {
-        _sendCommandPacket(moveSpeed: speed, turnAngle: angle, gunTrigger: trigger);
-      }
-    });
+    // A flag to check if we need to send a packet
+    bool needsSend = false;
+
+    switch (call.method) {
+      case "onMotionEvent":
+        final Map<dynamic, dynamic> axes = call.arguments;
+
+        // --- This logic correctly implements the spec from your client and the Android docs ---
+
+        // HORIZONTAL MOVEMENT (turn_left_right_angle)
+        // Check for left stick X-axis, fall back to right stick X-axis (Z), fall back to D-pad hat X-axis.
+        double horizontalValue = axes['AXIS_X'] ?? axes['AXIS_Z'] ?? axes['AXIS_HAT_X'] ?? 0.0;
+        int newAngle = (horizontalValue * 100).round();
+        if(newAngle.abs() < 15) newAngle = 0; // Deadzone
+
+        // VERTICAL MOVEMENT (move_front_back_speed)
+        // Check for left stick Y-axis, fall back to right stick Y-axis (RZ), fall back to D-pad hat Y-axis.
+        double verticalValue = axes['AXIS_Y'] ?? axes['AXIS_RZ'] ?? axes['AXIS_HAT_Y'] ?? 0.0;
+        int newSpeed = (verticalValue * -100).round(); // Invert Y-axis for standard controls
+        if(newSpeed.abs() < 15) newSpeed = 0; // Deadzone
+
+        // GUN TRIGGER
+        // Check for right trigger, fall back to left trigger.
+        double triggerValue = axes['AXIS_RTRIGGER'] ?? axes['AXIS_LTRIGGER'] ?? 0.0;
+        bool newTrigger = triggerValue > 0.5;
+
+        // Only update the command and mark for sending if a value actually changed.
+        if (newAngle != _currentCommand.turnAngle || newSpeed != _currentCommand.moveSpeed || newTrigger != _currentCommand.gunTrigger) {
+          _currentCommand.turnAngle = newAngle;
+          _currentCommand.moveSpeed = newSpeed;
+          _currentCommand.gunTrigger = newTrigger;
+          needsSend = true;
+        }
+        break;
+
+    // We can add button handling here later if needed
+      case "onButtonDown":
+      // Example: if (call.arguments['button'] == 'KEYCODE_BUTTON_A') { ... }
+        break;
+      case "onButtonUp":
+        break;
+    }
+
+    // If any axis value changed, send the updated packet immediately.
+    if(needsSend) {
+      _sendCommandPacket();
+    }
   }
 
-
-  // --- NEW, SIMPLIFIED PACKET SENDING FUNCTION ---
   Future<void> _sendCommandPacket({
     int? commandId,
     int? moveSpeed,
@@ -866,54 +920,40 @@ class _HomePageState extends State<HomePage> {
     bool? gunTrigger,
     bool? gunPermission,
   }) async {
-    // Update the central command state with any new values that were passed in.
-    // If a value is null, it keeps its old state.
+    // Update the central command state with any new values.
     _currentCommand.commandId = commandId ?? _currentCommand.commandId;
     _currentCommand.moveSpeed = moveSpeed ?? _currentCommand.moveSpeed;
     _currentCommand.turnAngle = turnAngle ?? _currentCommand.turnAngle;
     _currentCommand.gunTrigger = gunTrigger ?? _currentCommand.gunTrigger;
     _currentCommand.gunPermission = gunPermission ?? _currentCommand.gunPermission;
 
-    // Now send the updated command object
     try {
       final socket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT, timeout: const Duration(seconds: 1));
       socket.add(_currentCommand.toBytes());
       await socket.flush();
       socket.close();
-      print('Sent Packet: ID=${_currentCommand.commandId}, Speed=${_currentCommand.moveSpeed}, Angle=${_currentCommand.turnAngle}');
+      print('Sent Packet: ID=${_currentCommand.commandId}, Spd=${_currentCommand.moveSpeed}, Ang=${_currentCommand.turnAngle}, Trig=${_currentCommand.gunTrigger}');
     } catch (e) {
       print('Error sending command packet: $e');
     }
   }
 
-
+  // void _onLeftButtonPressed(int index, int commandId) {
+  //   setState(() => _activeLeftButtonIndex = index);
+  //   _sendCommandPacket(commandId: commandId);
+  // }
 
   void _onLeftButtonPressed(int index, int commandId) {
-    setState(() => _activeLeftButtonIndex = index);
-    _sendCommandPacket(commandId: commandId);
+    setState(() {
+      _activeLeftButtonIndex = index;
+      _currentCommand.commandId = commandId;
+    });
+    _sendCommandPacket(); // Send command immediately
   }
 
   void _onRightButtonPressed(int index) {
     setState(() => _activeRightButtonIndex = index);
     _switchCamera(index);
-  }
-
-  // --- All backend logic functions remain unchanged ---
-  Future<void> _sendCommand(String command) async {
-    try {
-      final socket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT,
-          timeout: const Duration(seconds: 5));
-      socket.write(command);
-      await socket.flush();
-      socket.close();
-      print('Command sent: $command');
-    } catch (e) {
-      print('Error sending command: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('Error: Could not connect to robot.'),
-          backgroundColor: Colors.red)
-      );
-    }
   }
 
   Future<void> _switchCamera(int index) async {
@@ -1126,7 +1166,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   Widget buildPlayerWidget() {
     if (_errorMessage != null) {
