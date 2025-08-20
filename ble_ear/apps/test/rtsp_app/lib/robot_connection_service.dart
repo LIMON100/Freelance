@@ -2,17 +2,17 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-// --- CONFIGURATION (from main.dart) ---
+// --- CONFIGURATION ---
 const String ROBOT_IP_ADDRESS = '192.168.0.158';
 const int ROBOT_COMMAND_PORT = 65432;
 
 // --- DART CLASSES FOR DATA STRUCTURES ---
 class UserCommand {
-  int commandId = 1;
+  int commandId = 0; // Default to Idle
   int moveSpeed = 0;
   int turnAngle = 0;
   bool gunTrigger = false;
-  bool gunPermission = true;
+  bool gunPermission = false;
 
   Uint8List toBytes() {
     final buffer = ByteData(5);
@@ -31,9 +31,9 @@ class RobotState {
 
   RobotState({required this.currentState, required this.gunTriggerPermissionRequest});
 
-  // Factory to create a RobotState object from the 2-byte packet
   factory RobotState.fromBytes(Uint8List bytes) {
     if (bytes.length < 2) {
+      print("Warning: Received incomplete RobotState packet.");
       return RobotState(currentState: 0, gunTriggerPermissionRequest: false);
     }
     final buffer = ByteData.sublistView(bytes);
@@ -46,11 +46,11 @@ class RobotState {
 
 // --- THE CONNECTION SERVICE ---
 class RobotConnectionService {
-  Socket? _socket;
+  Socket? _commandSocket;
   final StreamController<RobotState> _stateController = StreamController<RobotState>.broadcast();
   Timer? _reconnectTimer;
+  bool _isConnecting = false;
 
-  // Public stream for the UI to listen to
   Stream<RobotState> get stateStream => _stateController.stream;
 
   RobotConnectionService() {
@@ -58,56 +58,51 @@ class RobotConnectionService {
   }
 
   void _connect() async {
-    if (_socket != null) return; // Already connected or connecting
-
+    if (_commandSocket != null || _isConnecting) return;
+    _isConnecting = true;
     print("Service: Trying to connect...");
     try {
-      _socket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT, timeout: const Duration(seconds: 3));
-      print("Service: Connected to ${_socket!.remoteAddress.address}");
+      _commandSocket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT, timeout: const Duration(seconds: 3));
+      print("Service: Connected to ${_commandSocket!.remoteAddress.address}");
+      _isConnecting = false;
 
-      // Listen for incoming data from the robot
-      _socket!.listen(
+      _commandSocket!.listen(
             (Uint8List data) {
           final robotState = RobotState.fromBytes(data);
-          _stateController.add(robotState); // Push the new state to the UI
+          _stateController.add(robotState);
         },
-        onError: (error) {
-          print("Service: Connection error: $error");
-          _disconnect();
-        },
-        onDone: () {
-          print("Service: Server closed the connection.");
-          _disconnect();
-        },
+        onError: (error) => _disconnect("Connection error: $error"),
+        onDone: () => _disconnect("Server closed connection."),
         cancelOnError: true,
       );
-      // Stop trying to reconnect if successful
       _reconnectTimer?.cancel();
+      _reconnectTimer = null;
     } catch (e) {
-      print("Service: Failed to connect: $e");
-      _disconnect();
+      _isConnecting = false;
+      _disconnect("Failed to connect: $e");
     }
   }
 
-  void _disconnect() {
-    _socket?.destroy();
-    _socket = null;
-    // Try to reconnect every 5 seconds
+  void _disconnect(String reason) {
+    print("Service: Disconnecting. Reason: $reason");
+    _commandSocket?.destroy();
+    _commandSocket = null;
     _reconnectTimer ??= Timer.periodic(const Duration(seconds: 5), (_) => _connect());
   }
 
-  // Method for the UI to send commands
   void sendCommand(UserCommand command) {
-    if (_socket != null) {
-      _socket!.add(command.toBytes());
-    } else {
-      print("Service: Not connected. Command not sent.");
+    if (_commandSocket != null) {
+      try {
+        _commandSocket!.add(command.toBytes());
+      } catch (e) {
+        _disconnect("Error sending command: $e");
+      }
     }
   }
 
   void dispose() {
     _reconnectTimer?.cancel();
-    _socket?.destroy();
+    _commandSocket?.destroy();
     _stateController.close();
   }
 }

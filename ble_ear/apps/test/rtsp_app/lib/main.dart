@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:rtest1/settings_service.dart';
 
+import 'TouchCoord.dart';
+import 'UserCommand.dart';
 import 'icon_constants.dart';
 import 'splash_screen.dart';
 import 'settings_menu_page.dart';
@@ -13,6 +16,7 @@ import 'settings_menu_page.dart';
 // --- CONFIGURATION FOR ROBOT CONNECTION ---
 const String ROBOT_IP_ADDRESS = '192.168.0.158';
 const int ROBOT_COMMAND_PORT = 65432;
+
 
 // --- MAIN APP ENTRY POINT ---
 void main() async {
@@ -43,23 +47,40 @@ class MyApp extends StatelessWidget {
 }
 
 // --- DART CLASS REPRESENTING THE COMMAND PACKET ---
-class UserCommand {
-  int commandId = 1;
-  int moveSpeed = 0;
-  int turnAngle = 0;
-  bool gunTrigger = false;
-  bool gunPermission = true;
+// class UserCommand {
+//   int commandId = 0;
+//   int moveSpeed = 0;
+//   int turnAngle = 0;
+//   bool gunTrigger = false;
+//   bool gunPermission = false;
+//   // We use -1.0 as a sentinel value to indicate "no touch event"
+//   double touchX = -1.0;
+//   double touchY = -1.0;
+//
+//   Uint8List toBytes() {
+//     final buffer = ByteData(13); // 5 bytes for ints/bools + 8 for floats
+//     buffer.setUint8(0, commandId);
+//     buffer.setInt8(1, moveSpeed);
+//     buffer.setInt8(2, turnAngle);
+//     buffer.setUint8(3, gunTrigger ? 1 : 0);
+//     buffer.setUint8(4, gunPermission ? 1 : 0);
+//     buffer.setFloat32(5, touchX, Endian.little);
+//     buffer.setFloat32(9, touchY, Endian.little);
+//     return buffer.buffer.asUint8List();
+//   }
+// }
 
-  Uint8List toBytes() {
-    final buffer = ByteData(5);
-    buffer.setUint8(0, commandId);
-    buffer.setInt8(1, moveSpeed);
-    buffer.setInt8(2, turnAngle);
-    buffer.setUint8(3, gunTrigger ? 1 : 0);
-    buffer.setUint8(4, gunPermission ? 1 : 0);
-    return buffer.buffer.asUint8List();
-  }
-}
+// class TouchCoord {
+//   double x = 0.0;
+//   double y = 0.0;
+//
+//   Uint8List toBytes() {
+//     final buffer = ByteData(8); // 2 floats = 8 bytes
+//     buffer.setFloat32(0, x, Endian.little);
+//     buffer.setFloat32(4, y, Endian.little);
+//     return buffer.buffer.asUint8List();
+//   }
+// }
 
 // --- HOME PAGE WIDGET ---
 class HomePage extends StatefulWidget {
@@ -72,11 +93,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   // Video and UI State
   VlcPlayerController? _vlcPlayerController;
-  List<String> _cameraUrls = [
-    'rtsp://192.168.0.158:8554/cam0',
-    'rtsp://192.168.0.158:8554/cam0',
-    'rtsp://192.168.0.158:8554/cam0',
-  ];
+  String _robotIpAddress = ''; // Initialize as empty
+  List<String> _cameraUrls = []; // Initialize as empty
   int _currentCameraIndex = -1;
   String? _errorMessage;
   int _activeLeftButtonIndex = 0;
@@ -94,6 +112,7 @@ class _HomePageState extends State<HomePage> {
   bool _isRightPressed = false;
   bool _isStarted = false; // For START/STOP button state
   bool _isGunTriggerPressed = false;
+  final GlobalKey _playerKey = GlobalKey();
 
 
   static const platform = MethodChannel('com.yourcompany/gamepad');
@@ -101,186 +120,150 @@ class _HomePageState extends State<HomePage> {
   // Command & Control State
   Timer? _commandTimer;
   Timer? _joystickIdleTimer;
+  Map<String, double> _gamepadAxisValues = {};
+  Uint8List? _lastSentPacket;
+  final SettingsService _settingsService = SettingsService();
+  bool _isLoading = true; // NEW: Loading state flag
 
 
   @override
   void initState() {
     super.initState();
-    _switchCamera(0);
-    // --- NEW: Initialize the native plugin listener ---
-    platform.setMethodCallHandler(_handleGamepadEvent);
+    _loadSettingsAndInitialize();
+    // _switchCamera(0);
+    // platform.setMethodCallHandler(_handleGamepadEvent);
+    // _startCommandTimer();
   }
 
   @override
   void dispose() {
-    // _commandTimer?.cancel();
-    _joystickIdleTimer?.cancel();
+    _commandTimer?.cancel();
     _vlcPlayerController?.dispose();
     super.dispose();
   }
 
-  // Future<void> _handleGamepadEvent(MethodCall call) async {
-  //   if (!mounted) return;
-  //
-  //   // We can infer the gamepad is connected if we get any event.
-  //   if (!_gamepadConnected) {
-  //     setState(() => _gamepadConnected = true);
-  //     print("Gamepad connected (via native plugin)");
-  //   }
-  //
-  //   // A flag to check if we need to send a packet
-  //   bool needsSend = false;
-  //
-  //   switch (call.method) {
-  //     case "onMotionEvent":
-  //       final Map<dynamic, dynamic> axes = call.arguments;
-  //
-  //       // --- This logic correctly implements the spec from your client and the Android docs ---
-  //
-  //       // HORIZONTAL MOVEMENT (turn_left_right_angle)
-  //       // Check for left stick X-axis, fall back to right stick X-axis (Z), fall back to D-pad hat X-axis.
-  //       double horizontalValue = axes['AXIS_X'] ?? axes['AXIS_Z'] ?? axes['AXIS_HAT_X'] ?? 0.0;
-  //       int newAngle = (horizontalValue * 100).round();
-  //       if(newAngle.abs() < 15) newAngle = 0; // Deadzone
-  //
-  //       // VERTICAL MOVEMENT (move_front_back_speed)
-  //       // Check for left stick Y-axis, fall back to right stick Y-axis (RZ), fall back to D-pad hat Y-axis.
-  //       double verticalValue = axes['AXIS_Y'] ?? axes['AXIS_RZ'] ?? axes['AXIS_HAT_Y'] ?? 0.0;
-  //       int newSpeed = (verticalValue * -100).round(); // Invert Y-axis for standard controls
-  //       if(newSpeed.abs() < 15) newSpeed = 0; // Deadzone
-  //
-  //       // GUN TRIGGER
-  //       // Check for right trigger, fall back to left trigger.
-  //       double triggerValue = axes['AXIS_RTRIGGER'] ?? axes['AXIS_LTRIGGER'] ?? 0.0;
-  //       bool newTrigger = triggerValue > 0.5;
-  //
-  //       // Only update the command and mark for sending if a value actually changed.
-  //       if (newAngle != _currentCommand.turnAngle || newSpeed != _currentCommand.moveSpeed || newTrigger != _currentCommand.gunTrigger) {
-  //         _currentCommand.turnAngle = newAngle;
-  //         _currentCommand.moveSpeed = newSpeed;
-  //         _currentCommand.gunTrigger = newTrigger;
-  //         needsSend = true;
-  //       }
-  //       break;
-  //
-  //   // We can add button handling here later if needed
-  //     case "onButtonDown":
-  //     // Example: if (call.arguments['button'] == 'KEYCODE_BUTTON_A') { ... }
-  //       break;
-  //     case "onButtonUp":
-  //       break;
-  //   }
-  //
-  //   // If any axis value changed, send the updated packet immediately.
-  //   if(needsSend) {
-  //     _sendCommandPacket();
-  //   }
-  // }
-  //
-  // Future<void> _sendCommandPacket({
-  //   int? commandId,
-  //   int? moveSpeed,
-  //   int? turnAngle,
-  //   bool? gunTrigger,
-  //   bool? gunPermission,
-  // }) async {
-  //   // Update the central command state with any new values.
-  //   _currentCommand.commandId = commandId ?? _currentCommand.commandId;
-  //   _currentCommand.moveSpeed = moveSpeed ?? _currentCommand.moveSpeed;
-  //   _currentCommand.turnAngle = turnAngle ?? _currentCommand.turnAngle;
-  //   _currentCommand.gunTrigger = gunTrigger ?? _currentCommand.gunTrigger;
-  //   _currentCommand.gunPermission = gunPermission ?? _currentCommand.gunPermission;
-  //
-  //   try {
-  //     final socket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT, timeout: const Duration(seconds: 1));
-  //     socket.add(_currentCommand.toBytes());
-  //     await socket.flush();
-  //     socket.close();
-  //     print('Sent Packet: ID=${_currentCommand.commandId}, Spd=${_currentCommand.moveSpeed}, Ang=${_currentCommand.turnAngle}, Trig=${_currentCommand.gunTrigger}');
-  //   } catch (e) {
-  //     print('Error sending command packet: $e');
-  //   }
-  // }
+  Future<void> _loadSettingsAndInitialize() async {
+    // Load settings from storage
+    _robotIpAddress = await _settingsService.loadIpAddress();
+    _cameraUrls = await _settingsService.loadCameraUrls();
 
-  // void _onLeftButtonPressed(int index, int commandId) {
-  //   setState(() {
-  //     _activeLeftButtonIndex = index;
-  //     _currentCommand.commandId = commandId;
-  //   });
-  //   _sendCommandPacket(); // Send command immediately
-  // }
+    if (mounted) {
+      // Once settings are loaded, initialize the app
+      _switchCamera(0);
+      platform.setMethodCallHandler(_handleGamepadEvent);
+      _startCommandTimer();
 
-  Future<void> _handleGamepadEvent(MethodCall call) async {
-    if (!mounted) return;
-
-    if (!_gamepadConnected) {
-      setState(() => _gamepadConnected = true);
-      print("Gamepad connected (via native plugin)");
-    }
-
-    if (call.method == "onMotionEvent") {
-      // 1. Cancel any pending "idle" timer because we just received new data.
-      _joystickIdleTimer?.cancel();
-
-      final Map<dynamic, dynamic> axes = call.arguments;
-
-      double horizontalValue = axes['AXIS_X'] ?? axes['AXIS_Z'] ?? axes['AXIS_HAT_X'] ?? 0.0;
-      int newAngle = (horizontalValue * 100).round();
-      if (newAngle.abs() < 15) newAngle = 0;
-
-      double verticalValue = axes['AXIS_Y'] ?? axes['AXIS_RZ'] ?? axes['AXIS_HAT_Y'] ?? 0.0;
-      int newSpeed = (verticalValue * -100).round();
-      if (newSpeed.abs() < 15) newSpeed = 0;
-
-      double triggerValue = axes['AXIS_RTRIGGER'] ?? axes['AXIS_LTRIGGER'] ?? 0.0;
-      bool newTrigger = triggerValue > 0.5;
-
-      // Only send a packet if a value actually changed.
-      if (newAngle != _currentCommand.turnAngle || newSpeed != _currentCommand.moveSpeed || newTrigger != _currentCommand.gunTrigger) {
-        _currentCommand.turnAngle = newAngle;
-        _currentCommand.moveSpeed = newSpeed;
-        _currentCommand.gunTrigger = newTrigger;
-        _sendCommandPacket();
-      }
-
-      // 2. Start a new timer. If this timer completes without being cancelled,
-      //    it means the user has stopped moving the joystick.
-      _joystickIdleTimer = Timer(const Duration(milliseconds: 150), () {
-        // Check if the robot is currently moving before sending a stop command.
-        if (_currentCommand.moveSpeed != 0 || _currentCommand.turnAngle != 0) {
-          print("Joystick Idle: Sending stop command.");
-          _currentCommand.moveSpeed = 0;
-          _currentCommand.turnAngle = 0;
-          _sendCommandPacket();
-        }
+      // Finally, remove the loading screen
+      setState(() {
+        _isLoading = false;
       });
     }
   }
 
-  // --- Simplified Sending Function ---
-  Future<void> _sendCommandPacket() async {
-    try {
-      final socket = await Socket.connect(ROBOT_IP_ADDRESS, ROBOT_COMMAND_PORT, timeout: const Duration(seconds: 1));
-      socket.add(_currentCommand.toBytes());
-      await socket.flush();
-      socket.close();
-      print('Sent Packet: ID=${_currentCommand.commandId}, Speed=${_currentCommand.moveSpeed}, Angle=${_currentCommand.turnAngle}');
-    } catch (e) {
-      print('Error sending command packet: $e');
+  // --- GAMEPAD HANDLER: ONLY UPDATES STATE ---
+  Future<void> _handleGamepadEvent(MethodCall call) async {
+    if (!mounted) return;
+    if (!_gamepadConnected) {
+      setState(() => _gamepadConnected = true);
+    }
+    if (call.method == "onMotionEvent") {
+      _gamepadAxisValues = Map<String, double>.from(call.arguments);
+    }
+    if (call.method == "onButtonDown") {
+      final String button = call.arguments['button'];
+      if (button == 'KEYCODE_BUTTON_A') {
+        setState(() => _currentCommand.commandId = 0); // STOP/IDLE
+      }
+      if (button == 'KEYCODE_BUTTON_X') {
+        setState(() => _currentCommand.gunPermission = true);
+      }
+    }
+    if (call.method == "onButtonUp") {
+      final String button = call.arguments['button'];
+      if (button == 'KEYCODE_BUTTON_X') {
+        setState(() => _currentCommand.gunPermission = false);
+      }
     }
   }
 
-  void _onLeftButtonPressed(int index, int commandId) {
-    setState(() => _activeLeftButtonIndex = index);
-    _currentCommand.commandId = commandId;
-    _sendCommandPacket();
+
+  void _startCommandTimer() {
+    _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      // 1. Prioritize Gamepad Input if connected
+      if (_gamepadConnected) {
+        double horizontalValue = _gamepadAxisValues['AXIS_X'] ?? _gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
+        _currentCommand.turnAngle = (horizontalValue * 100).round();
+        if (_currentCommand.turnAngle.abs() < 15) _currentCommand.turnAngle = 0;
+
+        double verticalValue = _gamepadAxisValues['AXIS_Y'] ?? _gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_HAT_Y'] ?? 0.0;
+        _currentCommand.moveSpeed = (verticalValue * -100).round();
+        if (_currentCommand.moveSpeed.abs() < 15) _currentCommand.moveSpeed = 0;
+
+        double triggerValue = _gamepadAxisValues['AXIS_RTRIGGER'] ?? _gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0;
+        _currentCommand.gunTrigger = triggerValue > 0.5;
+      }
+      // 2. Fall back to On-Screen Buttons if no gamepad
+      else {
+        if (_isForwardPressed) _currentCommand.moveSpeed = 100;
+        else if (_isBackPressed) _currentCommand.moveSpeed = -100;
+        else _currentCommand.moveSpeed = 0;
+
+        if (_isLeftPressed) _currentCommand.turnAngle = -100;
+        else if (_isRightPressed) _currentCommand.turnAngle = 100;
+        else _currentCommand.turnAngle = 0;
+
+        _currentCommand.gunTrigger = _isGunTriggerPressed;
+      }
+
+      // 3. Send the single, consolidated command packet
+      _sendCommandPacket(_currentCommand);
+
+      // --- THE FIX: Reset one-time touch coordinates AFTER they've been sent ---
+      if (_currentCommand.touchX != -1.0) {
+        _currentCommand.touchX = -1.0;
+        _currentCommand.touchY = -1.0;
+      }
+    });
   }
 
+  // --- The actual network sending functions ---
+  Future<void> _sendCommandPacket(UserCommand command) async {
+    try {
+      final socket = await Socket.connect(_robotIpAddress, ROBOT_COMMAND_PORT, timeout: const Duration(milliseconds: 50));
+      socket.add(command.toBytes());
+      await socket.flush();
+      socket.close();
+    } catch (e) {
+        print(e);
+    }
+  }
+
+  Future<void> _sendTouchPacket(TouchCoord coord) async {
+    try {
+      final socket = await Socket.connect(_robotIpAddress, 65433, timeout: const Duration(seconds: 1));
+      socket.add(coord.toBytes());
+      await socket.flush();
+      socket.close();
+      print('Sent Touch Packet: X=${coord.x}, Y=${coord.y}');
+    } catch (e) {
+      print('Error sending touch packet: $e');
+    }
+  }
+
+
+  // Button handlers now ONLY update state. The timer does the sending.
+  void _onLeftButtonPressed(int index, int commandId) {
+    setState(() {
+      _activeLeftButtonIndex = index;
+      _currentCommand.commandId = commandId;
+    });
+  }
 
   void _onRightButtonPressed(int index) {
     setState(() => _activeRightButtonIndex = index);
     _switchCamera(index);
   }
+
 
   Future<void> _switchCamera(int index) async {
     final VlcPlayerController? oldController = _vlcPlayerController;
@@ -295,7 +278,6 @@ class _HomePageState extends State<HomePage> {
     });
     await oldController?.dispose();
     await Future.delayed(const Duration(milliseconds: 200));
-    // final newController = VlcPlayerController.network(_cameraUrls[index], hwAcc: HwAcc.disabled, autoPlay: true, options: VlcPlayerOptions(advanced: VlcAdvancedOptions([VlcAdvancedOptions.networkCaching(150)]), video: VlcVideoOptions([VlcVideoOptions.dropLateFrames(true), VlcVideoOptions.skipFrames(true)]), extras: ['--h264-fps=60', '--no-audio']));
     final newController = VlcPlayerController.network(
       _cameraUrls[index],
       hwAcc: HwAcc.disabled,
@@ -335,12 +317,23 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _navigateToSettings() async {
-    final newUrls = await Navigator.push<List<String>>(context,
-        MaterialPageRoute(
-            builder: (context) => SettingsMenuPage(cameraUrls: _cameraUrls)));
-    if (newUrls != null) {
-      setState(() => _cameraUrls = newUrls);
-      _switchCamera(_currentCameraIndex);
+    // Navigate and wait for a boolean result
+    final bool? settingsChanged = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        // We no longer need to pass any data TO the settings page
+        builder: (context) => const SettingsMenuPage(),
+      ),
+    );
+
+    // If settings were saved, reload them.
+    if (settingsChanged == true && mounted) {
+      print("Settings changed, reloading...");
+      // Stop the current command timer to prevent using the old IP
+      _commandTimer?.cancel();
+
+      // Reload all settings and re-initialize the app's connections
+      await _loadSettingsAndInitialize();
     }
   }
 
@@ -390,13 +383,35 @@ class _HomePageState extends State<HomePage> {
     ) ?? false;
   }
 
+  // After retrun from MANUAL ATTACK it goes ID 1
+  // Future<void> _handleManualAutoAttackToggle() async {
+  //   if (_isAutoAttackMode) {
+  //     final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_AUTO_ATTACK_ACTIVE, title: "DANGERS", titleColor: Colors.red, content: 'Are you sure you want to stop\n"Auto Attack" mode?');
+  //     if (proceed) {
+  //       setState(() {
+  //         _isAutoAttackMode = false;
+  //         _currentCommand.commandId = 1; // Revert to Move state
+  //       });
+  //     }
+  //   } else {
+  //     final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_MANUAL_ATTACK_ACTIVE, title: "DANGERS", titleColor: Colors.red, content: 'Are you sure you want to start\n"Auto Attack" mode?');
+  //     if (proceed) {
+  //       setState(() {
+  //         _isAutoAttackMode = true;
+  //         _currentCommand.commandId = 4; // 4 = Attack
+  //       });
+  //     }
+  //   }
+  // }
+
   Future<void> _handleManualAutoAttackToggle() async {
     if (_isAutoAttackMode) {
       final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_AUTO_ATTACK_ACTIVE, title: "DANGERS", titleColor: Colors.red, content: 'Are you sure you want to stop\n"Auto Attack" mode?');
       if (proceed) {
         setState(() {
           _isAutoAttackMode = false;
-          _currentCommand.commandId = 1; // Revert to Move state
+          _currentCommand.commandId = 0;
+          _activeLeftButtonIndex = 0;
         });
       }
     } else {
@@ -409,7 +424,6 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -424,7 +438,6 @@ class _HomePageState extends State<HomePage> {
         children: [
           Positioned.fill(child: buildPlayerWidget()),
 
-          // --- Left Side Buttons ---
           _buildLeftButton(30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE, _activeLeftButtonIndex == 0, () => _onLeftButtonPressed(0, 1)),
           _buildLeftButton(30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE, _activeLeftButtonIndex == 1, () => _onLeftButtonPressed(1, 2)),
           _buildLeftButton(30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE, _activeLeftButtonIndex == 2, () => _onLeftButtonPressed(2, 2)),
@@ -432,102 +445,15 @@ class _HomePageState extends State<HomePage> {
           _buildLeftButton(30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE, _activeLeftButtonIndex == 4, () => _onLeftButtonPressed(4, 3)),
           _buildLeftButton(30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE, _activeLeftButtonIndex == 5, () => _onLeftButtonPressed(5, 0)),
 
-          // --- Right Side Buttons ---
           _buildRightButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
           _buildRightButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
           _buildRightButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
           _buildRightButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
 
-          // --- UPDATED Directional Arrow Buttons ---
-          // _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE,
-          //       () { // onPress
-          //     setState(() => _isForwardPressed = true);
-          //     _sendCommandPacket(moveSpeed: 100);
-          //   },
-          //       () { // onRelease
-          //     setState(() => _isForwardPressed = false);
-          //     _sendCommandPacket(moveSpeed: 0);
-          //   },
-          // ),
-          // _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE,
-          //         () { // onPress
-          //       setState(() => _isBackPressed = true);
-          //       _sendCommandPacket(moveSpeed: -100);
-          //     },
-          //         () { // onRelease
-          //       setState(() => _isBackPressed = false);
-          //       _sendCommandPacket(moveSpeed: 0);
-          //     }
-          // ),
-          // _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE,
-          //         () { // onPress
-          //       setState(() => _isLeftPressed = true);
-          //       _sendCommandPacket(turnAngle: -100);
-          //     },
-          //         () { // onRelease
-          //       setState(() => _isLeftPressed = false);
-          //       _sendCommandPacket(turnAngle: 0);
-          //     }
-          // ),
-          // _buildDirectionalButton(1540, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE,
-          //         () { // onPress
-          //       setState(() => _isRightPressed = true);
-          //       _sendCommandPacket(turnAngle: 100);
-          //     },
-          //         () { // onRelease
-          //       setState(() => _isRightPressed = false);
-          //       _sendCommandPacket(turnAngle: 0);
-          //     }
-          // ),
-
-          _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE,
-                () { // onPress
-              setState(() => _isForwardPressed = true);
-              _currentCommand.moveSpeed = 100;
-              _sendCommandPacket();
-            },
-                () { // onRelease
-              setState(() => _isForwardPressed = false);
-              _currentCommand.moveSpeed = 0;
-              _sendCommandPacket();
-            },
-          ),
-          _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE,
-                  () { // onPress
-                setState(() => _isBackPressed = true);
-                _currentCommand.moveSpeed = -100;
-                _sendCommandPacket();
-              },
-                  () { // onRelease
-                setState(() => _isBackPressed = false);
-                _currentCommand.moveSpeed = 0;
-                _sendCommandPacket();
-              }
-          ),
-          _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE,
-                  () { // onPress
-                setState(() => _isLeftPressed = true);
-                _currentCommand.turnAngle = -100;
-                _sendCommandPacket();
-              },
-                  () { // onRelease
-                setState(() => _isLeftPressed = false);
-                _currentCommand.turnAngle = 0;
-                _sendCommandPacket();
-              }
-          ),
-          _buildDirectionalButton(1540, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE,
-                  () { // onPress
-                setState(() => _isRightPressed = true);
-                _currentCommand.turnAngle = 100;
-                _sendCommandPacket();
-              },
-                  () { // onRelease
-                setState(() => _isRightPressed = false);
-                _currentCommand.turnAngle = 0;
-                _sendCommandPacket();
-              }
-          ),
+          _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
+          _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE, () => setState(() => _isBackPressed = true), () => setState(() => _isBackPressed = false)),
+          _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE, () => setState(() => _isLeftPressed = true), () => setState(() => _isLeftPressed = false)),
+          _buildDirectionalButton(1540, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE, () => setState(() => _isRightPressed = true), () => setState(() => _isRightPressed = false)),
 
           Align(
             alignment: Alignment.bottomCenter,
@@ -561,20 +487,54 @@ class _HomePageState extends State<HomePage> {
                   onPressed: () => _switchCamera(_currentCameraIndex),
                   style:
                   ElevatedButton.styleFrom(backgroundColor: Colors.grey[700]),
-                  child: const Text('Retry', style: TextStyle(color: Colors.white))),
+                  child:
+                  const Text('Retry', style: TextStyle(color: Colors.white))),
             ],
           ));
     }
     if (_vlcPlayerController == null) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
-    // No aspectRatio here allows the player to fill the space.
-    // We added the aspect ratio hint to the VLC options instead.
-    return VlcPlayer(
-      controller: _vlcPlayerController!,
-      placeholder: const Center(child: CircularProgressIndicator(color: Colors.white)), aspectRatio: 16/12,);
-  }
 
+    return GestureDetector(
+      key: _playerKey,
+      onTapUp: (details) {
+        // Only process taps if in Manual Attack mode (index 3).
+        if (_activeLeftButtonIndex == 3) {
+          final RenderBox? box =
+          _playerKey.currentContext?.findRenderObject() as RenderBox?;
+          if (box == null) return;
+
+          final Offset localPosition = box.globalToLocal(details.globalPosition);
+          final double x = localPosition.dx / box.size.width;
+          final double y = localPosition.dy / box.size.height;
+
+          if (x >= 0.0 && x <= 1.0 && y >= 0.0 && y <= 1.0) {
+            setState(() {
+              _currentCommand.touchX = x;
+              _currentCommand.touchY = y;
+              _sendCommandPacket(_currentCommand);
+            });
+
+          }
+        }
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          SizedBox.expand(
+            child: VlcPlayer(
+              controller: _vlcPlayerController!,
+              placeholder: const Center(
+                  child: CircularProgressIndicator(color: Colors.white)), aspectRatio: 16/12,
+            ),
+          ),
+          // A transparent container ensures the GestureDetector is always hit.
+          Container(color: Colors.transparent),
+        ],
+      ),
+    );
+  }
 
   Widget _buildLeftButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -620,8 +580,6 @@ class _HomePageState extends State<HomePage> {
     const double buttonHeight = 175;
 
     return Positioned(
-      // The `left` coordinate is the starting edge, not the center.
-      // This was the main error.
       left: left * widthScale,
       top: top * heightScale,
       child: GestureDetector(
@@ -653,7 +611,6 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-  // --- FIX: UPDATED WIDGET TO ACCEPT CALLBACKS INSTEAD OF STRINGS ---
   Widget _buildDirectionalButton(
       double left,
       double top,
@@ -677,8 +634,7 @@ class _HomePageState extends State<HomePage> {
         onTapUp: (_) => onRelease(),
         onTapCancel: () => onRelease(),
         child: Image.asset(
-          // The isPressed state is now managed outside this widget, so we don't need to track it here.
-          // However, for visual feedback, we'll keep the icon change. Let's adjust the main build method.
+
           isPressed ? activeIcon : inactiveIcon,
           height: 100 * heightScale,
           width: 100 * widthScale,
@@ -688,7 +644,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- FINAL, ROBUST, AND CONDITIONALLY SCROLLABLE BOTTOM BAR ---
   Widget _buildBottomBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     final widthScale = screenWidth / 1920.0;
@@ -697,41 +652,29 @@ class _HomePageState extends State<HomePage> {
       builder: (context, constraints) {
         const double scrollBreakpoint = 1200.0;
 
-        // final List<Widget> leftCluster = [
-        //   _buildBottomBarButton(
-        //     "ATTACK",
-        //     _isAttackModeOn ? ICON_PATH_ATTACK_of : ICON_PATH_ATTACK,
-        //     _isAttackModeOn ? _attackActiveColors : _attackInactiveColors,
-        //         () async {
-        //       if (!_isAttackModeOn) {
-        //         final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_ATTACK, title: 'DANGERS', titleColor: Colors.red, content: 'Do you want to proceed the command?');
-        //         if (proceed) {
-        //           setState(() => _isAttackModeOn = true);
-        //           _sendCommandPacket(commandId: 4); // 4 = attack
-        //         }
-        //       } else {
-        //         setState(() => _isAttackModeOn = false);
-        //         _sendCommandPacket(commandId: 0); // 0 = stop/idle
-        //       }
-        //     },
-        //   ),
-        //   SizedBox(width: 12 * widthScale),
-        //   _buildWideBottomBarButton(
-        //       _isStarted ? "STOP" : "START",
-        //       _isStarted ? ICON_PATH_STOP : ICON_PATH_START,
-        //       [const Color(0xff25a625), const Color(0xff127812)],
-        //           () {
-        //         setState(() => _isStarted = !_isStarted);
-        //         _sendCommandPacket(gunTrigger: _isStarted);
-        //       }
-        //   ),
-        //   SizedBox(width: 12 * widthScale),
-        //   _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () { /* Zoom logic would go here */ }),
-        //   SizedBox(width: 12 * widthScale),
-        //   _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () { /* Zoom logic would go here */ }),
-        // ];
-
         final List<Widget> leftCluster = [
+          // After retrun from ATTACK it goes ID 1
+          // _buildBottomBarButton(
+          //   "ATTACK",
+          //   _isAttackModeOn ? ICON_PATH_ATTACK_of : ICON_PATH_ATTACK,
+          //   _isAttackModeOn ? _attackActiveColors : _attackInactiveColors,
+          //       () async {
+          //     if (!_isAttackModeOn) {
+          //       final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_ATTACK, title: 'DANGERS', titleColor: Colors.red, content: 'Do you want to proceed the command?');
+          //       if (proceed) {
+          //         setState(() {
+          //           _isAttackModeOn = true;
+          //           _currentCommand.commandId = 4; // attack
+          //         });
+          //       }
+          //     } else {
+          //       setState(() {
+          //         _isAttackModeOn = false;
+          //         _currentCommand.commandId = 1; // back to move mode
+          //       });
+          //     }
+          //   },
+          // ),
           _buildBottomBarButton(
             "ATTACK",
             _isAttackModeOn ? ICON_PATH_ATTACK_of : ICON_PATH_ATTACK,
@@ -740,14 +683,17 @@ class _HomePageState extends State<HomePage> {
               if (!_isAttackModeOn) {
                 final proceed = await _showCustomConfirmationDialog(context: context, iconPath: ICON_PATH_ATTACK, title: 'DANGERS', titleColor: Colors.red, content: 'Do you want to proceed the command?');
                 if (proceed) {
-                  setState(() => _isAttackModeOn = true);
-                  _currentCommand.commandId = 4; // 4 = attack
-                  _sendCommandPacket();
+                  setState(() {
+                    _isAttackModeOn = true;
+                    _currentCommand.commandId = 4; // 4 = attack
+                  });
                 }
               } else {
-                setState(() => _isAttackModeOn = false);
-                _currentCommand.commandId = 0; // 0 = stop/idle
-                _sendCommandPacket();
+                setState(() {
+                  _isAttackModeOn = false;
+                  // --- THE FIX: Revert to Idle state, not Move state ---
+                  _currentCommand.commandId = 0;
+                });
               }
             },
           ),
@@ -759,15 +705,14 @@ class _HomePageState extends State<HomePage> {
                   () {
                 setState(() {
                   _isStarted = !_isStarted;
-                  _currentCommand.gunTrigger = _isStarted;
+                  _isGunTriggerPressed = _isStarted;
                 });
-                _sendCommandPacket();
               }
           ),
           SizedBox(width: 12 * widthScale),
-          _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () { /* Zoom logic would go here, then call _sendCommandPacket() */ }),
+          _buildBottomBarButton("", ICON_PATH_PLUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () { /* Zoom logic here */ }),
           SizedBox(width: 12 * widthScale),
-          _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () { /* Zoom logic would go here, then call _sendCommandPacket() */ }),
+          _buildBottomBarButton("", ICON_PATH_MINUS, [const Color(0xffc0c0c0), const Color(0xffa0a0a0)], () { /* Zoom logic here */ }),
         ];
 
         final List<Widget> middleCluster = [
@@ -829,7 +774,6 @@ class _HomePageState extends State<HomePage> {
 
     return GestureDetector(
       onTap: onPressed,
-      // This Container enforces a minimum width, making it as wide as the ATTACK button.
       child: Container(
         constraints: BoxConstraints(
           minWidth: 220 * widthScale, // Enforce a minimum width
@@ -885,5 +829,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-

@@ -1,12 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // It's good practice to import this for styling
+import 'settings_service.dart';
 
-// Import the RTSP settings page we just created.
-import 'rtsp_settings_page.dart';
+class SettingsMenuPage extends StatefulWidget {
+  const SettingsMenuPage({super.key});
 
-class SettingsMenuPage extends StatelessWidget {
-  // This page needs the camera URLs to pass them along to the next page.
-  final List<String> cameraUrls;
-  const SettingsMenuPage({super.key, required this.cameraUrls});
+  @override
+  State<SettingsMenuPage> createState() => _SettingsMenuPageState();
+}
+
+class _SettingsMenuPageState extends State<SettingsMenuPage> {
+  final SettingsService _settingsService = SettingsService();
+
+  late List<TextEditingController> _urlControllers;
+  late TextEditingController _ipController;
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final ip = await _settingsService.loadIpAddress();
+    final urls = await _settingsService.loadCameraUrls();
+
+    if (mounted) {
+      setState(() {
+        _ipController = TextEditingController(text: ip);
+        _urlControllers = urls.map((url) => TextEditingController(text: url)).toList();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    if (!_isLoading) {
+      _ipController.dispose();
+      for (var controller in _urlControllers) {
+        controller.dispose();
+      }
+    }
+    super.dispose();
+  }
+
+  Future<void> _saveAndReturn() async {
+    await _settingsService.saveSettings(
+      ipAddress: _ipController.text,
+      cameraUrls: _urlControllers.map((c) => c.text).toList(),
+    );
+
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,49 +66,49 @@ class SettingsMenuPage extends StatelessWidget {
         backgroundColor: Colors.grey[200],
         foregroundColor: Colors.black87,
       ),
-      body: ListView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          // Option 1: RTSP Settings
-          ListTile(
-            leading: const Icon(Icons.router_outlined, size: 30),
-            title: const Text('RTSP Settings', style: TextStyle(fontSize: 18)),
-            subtitle: const Text('Configure camera stream URLs'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () async {
-              // Navigate to the RtspSettingsPage and wait for a result.
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RtspSettingsPage(cameraUrls: cameraUrls),
-                ),
-              );
-
-              // If the RtspSettingsPage returns data (the new URLs),
-              // then pop this menu page and pass the data back to the HomePage.
-              if (result != null && context.mounted) {
-                Navigator.pop(context, result);
-              }
-            },
+          const Text('Robot IP Address', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _ipController,
+            decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'e.g., 192.168.0.158'),
+            keyboardType: TextInputType.phone,
           ),
+          const SizedBox(height: 24),
           const Divider(),
+          const SizedBox(height: 16),
 
-          // Option 2: WiFi Settings (Placeholder)
-          ListTile(
-            leading: const Icon(Icons.wifi, size: 30),
-            title: const Text('WiFi Settings', style: TextStyle(fontSize: 18)),
-            subtitle: const Text('Connect to a WiFi network'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              // For now, this does nothing but show a message.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(''),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
+          // --- THIS IS THE MISSING PART ---
+          for (int i = 0; i < _urlControllers.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Camera ${i + 1} URL', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _urlControllers[i],
+                    decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'e.g., rtsp://...'),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _saveAndReturn,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Save Changes', style: GoogleFonts.rajdhani(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
-          const Divider(),
         ],
       ),
     );

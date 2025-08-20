@@ -8,10 +8,8 @@ class SplashScreen extends StatelessWidget {
   // This function handles the navigation when the button is pressed.
   void _navigateToHome(BuildContext context) {
     // Navigate to the HomePage and remove the splash screen from the navigation stack,
-    // so the user can't go back to it.
     Navigator.pushReplacement(
       context,
-      // We use a FadeTransition for a smoother screen change
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => const WifiConnectionScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -73,14 +71,11 @@ class SplashScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // --- FIX: Use a Spacer() to push content apart ---
-                            // This works now because the Column has a defined minHeight from the ConstrainedBox.
                             const Spacer(),
 
                             // The "Start STR" Button
                             _buildStartButton(context),
 
-                            // Use another Spacer to create a gap between the button and the bottom logo.
                             const Spacer(),
 
                             // SkyAutoNet Logo at the bottom
@@ -100,7 +95,6 @@ class SplashScreen extends StatelessWidget {
     );
   }
 
-  /// A helper method to create the styled "Start STR" button.
   Widget _buildStartButton(BuildContext context) {
     return GestureDetector(
       onTap: () => _navigateToHome(context),
