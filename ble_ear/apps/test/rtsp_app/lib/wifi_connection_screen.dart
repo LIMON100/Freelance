@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
-// Import the package
 import 'package:wifi_iot/wifi_iot.dart';
-
-import 'main.dart'; // To navigate to the HomePage
+import 'main.dart';
 
 // Enum to manage the different UI states cleanly
 enum WifiConnectionState {
