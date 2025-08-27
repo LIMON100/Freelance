@@ -1,4 +1,3 @@
-// SENT touch coordinates
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -40,7 +39,7 @@ class MyApp extends StatelessWidget {
       title: '',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        textTheme: GoogleFonts.rajdhaniTextTheme(),
+        // textTheme: GoogleFonts.rajdhaniTextTheme(),
       ),
       home: const SplashScreen(),
     );
@@ -87,6 +86,11 @@ class _HomePageState extends State<HomePage> {
   bool _gstreamerHasError = false;
   MethodChannel? _gstreamerChannel;
   bool _isGStreamerInitialized = false;
+  bool _novalidurl = false;
+  Timer? _streamTimeoutTimer;
+  int? _pressedLeftButtonIndex;
+  int? _pressedRightButtonIndex;
+
 
   @override
   void initState() {
@@ -140,111 +144,244 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // void _onGStreamerPlatformViewCreated(int id) {
+  //   _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
+  //   setState(() {
+  //     _isGStreamerReady = true;
+  //     _isGStreamerLoading = false;
+  //   });
+  //   _playCurrentCameraStream();
+  // }
+
+  // void _onGStreamerPlatformViewCreated(int id) {
+  //   _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
+  //   setState(() {
+  //     _isGStreamerReady = true;
+  //     _isGStreamerLoading = false;
+  //     _gstreamerHasError = false; // Reset error state
+  //     _errorMessage = null; // Clear any previous error message
+  //   });
+  //   _playCurrentCameraStream();
+  // }
+
+  // ADD THIS ENTIRE NEW METHOD
+  Future<void> _handleGStreamerMessages(MethodCall call) async {
+    if (!mounted) return;
+
+    _streamTimeoutTimer?.cancel(); // Cancel timeout on any message from native
+
+    switch (call.method) {
+      case 'onStreamReady':
+        print("GSTREAMER_CALLBACK: Stream is ready and playing.");
+        setState(() {
+          _isGStreamerLoading = false;
+          _gstreamerHasError = false;
+          _novalidurl = false;
+          _errorMessage = null;
+        });
+        break;
+
+      case 'onStreamError':
+        final String? error = call.arguments['error'];
+        print("GSTREAMER_CALLBACK: Received stream error: $error");
+        setState(() {
+          _isGStreamerLoading = false;
+          _gstreamerHasError = true;
+          _novalidurl = true;
+          _errorMessage = "Stream error";
+        });
+        break;
+    }
+  }
+
   void _onGStreamerPlatformViewCreated(int id) {
     _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
+    _gstreamerChannel!.setMethodCallHandler(_handleGStreamerMessages); // Set the handler
+
     setState(() {
       _isGStreamerReady = true;
       _isGStreamerLoading = false;
+      _gstreamerHasError = false;
+      _errorMessage = null;
     });
     _playCurrentCameraStream();
   }
 
   // Method to start the GStreamer stream
+  // Future<void> _playCurrentCameraStream() async {
+  //   // Check initial conditions first
+  //   if (_cameraUrls.isEmpty || _currentCameraIndex < 0 || _currentCameraIndex >= _cameraUrls.length) {
+  //     print("ERROR: Initial conditions for stream are invalid. Camera URLs: ${_cameraUrls.length}, Current Index: $_currentCameraIndex");
+  //     if (mounted) {
+  //       setState(() {
+  //         _isGStreamerLoading = false;
+  //         _gstreamerHasError = true;
+  //         _errorMessage = "No valid camera URL or index. Please check settings.";
+  //       });
+  //     }
+  //     return; // Stop execution if initial conditions are bad
+  //   }
+  //
+  //   // Ensure GStreamer channel is ready
+  //   if (_gstreamerChannel == null || !_isGStreamerReady) {
+  //     print("ERROR: GStreamer channel is not ready or null.");
+  //     if (mounted) {
+  //       setState(() {
+  //         _isGStreamerLoading = false;
+  //         _gstreamerHasError = true;
+  //         _errorMessage = "GStreamer channel not ready. Cannot start stream.";
+  //       });
+  //     }
+  //     return; // Stop execution if channel is not ready
+  //   }
+  //
+  //   print("INFO: Attempting to start GStreamer stream...");
+  //   setState(() {
+  //     _isGStreamerLoading = true;
+  //     _gstreamerHasError = false;
+  //     _errorMessage = null;
+  //   });
+  //
+  //   // Start a timer that will trigger an error if the stream doesn't start successfully
+  //   // within a certain timeframe. This is a safeguard.
+  //   const timeoutDuration = Duration(seconds: 7); // Adjust timeout as needed
+  //   Timer? timeoutTimer;
+  //   timeoutTimer = Timer(timeoutDuration, () {
+  //     if (mounted && _isGStreamerLoading && !_gstreamerHasError) {
+  //       print("ERROR: GStreamer stream timed out after $timeoutDuration.");
+  //       setState(() {
+  //         _gstreamerHasError = true;
+  //         _errorMessage = "Stream failed.";
+  //         _isGStreamerLoading = false;
+  //       });
+  //     }
+  //     timeoutTimer?.cancel(); // Cancel the timer after it fires or is no longer needed
+  //   });
+  //
+  //   try {
+  //     final String url = _cameraUrls[_currentCameraIndex];
+  //     final String gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink";
+  //     print("INFO: Invoking GStreamer startStream with URL: $url");
+  //
+  //     await _gstreamerChannel!.invokeMethod('startStream', {'url': url, 'pipeline': gstDesc});
+  //
+  //   } on PlatformException catch (e) {
+  //     print("GStreamer stream failed (PlatformException): ${e.message}");
+  //     if (mounted) {
+  //       setState(() {
+  //         _gstreamerHasError = true;
+  //         _errorMessage = "Platform error: ${e.message}";
+  //         _isGStreamerLoading = false;
+  //       });
+  //     }
+  //     timeoutTimer?.cancel(); // Cancel timer on explicit error
+  //   } on SocketException catch (e) {
+  //     print("GStreamer stream failed (SocketException): ${e.message}");
+  //     if (mounted) {
+  //       setState(() {
+  //         _gstreamerHasError = true;
+  //         _errorMessage = "Network error: ${e.message}";
+  //         _isGStreamerLoading = false;
+  //       });
+  //     }
+  //     timeoutTimer?.cancel(); // Cancel timer on explicit error
+  //   } catch (e, stacktrace) {
+  //     print("GStreamer stream failed (Unknown Error): $e");
+  //     print("Stacktrace: $stacktrace");
+  //     if (mounted) {
+  //       setState(() {
+  //         _gstreamerHasError = true;
+  //         _errorMessage = "An unknown error occurred. Check logs.";
+  //         _isGStreamerLoading = false;
+  //       });
+  //     }
+  //     timeoutTimer?.cancel(); // Cancel timer on explicit error
+  //   } finally {
+  //     // Ensure the timer is cancelled if the function exits for any reason
+  //     // and the error state is not yet fully handled.
+  //     // This is a good practice to prevent dangling timers.
+  //     if (mounted && timeoutTimer != null && timeoutTimer.isActive) {
+  //       // It's safer to only cancel if it's still active and hasn't fired
+  //       // But if the code path guarantees it's cancelled on success/error, this is fine too.
+  //     }
+  //   }
+  // }
+
   Future<void> _playCurrentCameraStream() async {
-    // Check initial conditions first
+    _streamTimeoutTimer?.cancel();
+
     if (_cameraUrls.isEmpty || _currentCameraIndex < 0 || _currentCameraIndex >= _cameraUrls.length) {
-      print("ERROR: Initial conditions for stream are invalid. Camera URLs: ${_cameraUrls.length}, Current Index: $_currentCameraIndex");
+      print("ERROR: No valid camera URL configured.");
       if (mounted) {
         setState(() {
           _isGStreamerLoading = false;
           _gstreamerHasError = true;
-          _errorMessage = "No valid camera URL or index. Please check settings.";
+          _novalidurl = true;
+          _errorMessage = "No valid camera URL. Please check settings.";
         });
       }
-      return; // Stop execution if initial conditions are bad
+      return;
     }
 
-    // Ensure GStreamer channel is ready
     if (_gstreamerChannel == null || !_isGStreamerReady) {
-      print("ERROR: GStreamer channel is not ready or null.");
+      print("ERROR: GStreamer channel is not ready.");
       if (mounted) {
         setState(() {
           _isGStreamerLoading = false;
           _gstreamerHasError = true;
-          _errorMessage = "GStreamer channel not ready. Cannot start stream.";
+          _novalidurl = true;
+          _errorMessage = "GStreamer channel not ready.";
         });
       }
-      return; // Stop execution if channel is not ready
+      return;
     }
 
     print("INFO: Attempting to start GStreamer stream...");
     setState(() {
       _isGStreamerLoading = true;
       _gstreamerHasError = false;
+      _novalidurl = false;
       _errorMessage = null;
     });
 
-    // Start a timer that will trigger an error if the stream doesn't start successfully
-    // within a certain timeframe. This is a safeguard.
-    const timeoutDuration = Duration(seconds: 7); // Adjust timeout as needed
-    Timer? timeoutTimer;
-    timeoutTimer = Timer(timeoutDuration, () {
-      if (mounted && _isGStreamerLoading && !_gstreamerHasError) {
+    const timeoutDuration = Duration(seconds: 8); // Increased timeout slightly
+    _streamTimeoutTimer = Timer(timeoutDuration, () {
+      if (mounted && _isGStreamerLoading) {
         print("ERROR: GStreamer stream timed out after $timeoutDuration.");
         setState(() {
           _gstreamerHasError = true;
-          _errorMessage = "Stream failed.";
+          _novalidurl = true;
+          _errorMessage = "Connection timed out. Check network.";
           _isGStreamerLoading = false;
         });
       }
-      timeoutTimer?.cancel(); // Cancel the timer after it fires or is no longer needed
     });
 
     try {
       final String url = _cameraUrls[_currentCameraIndex];
-      final String gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink";
-      print("INFO: Invoking GStreamer startStream with URL: $url");
-
-      await _gstreamerChannel!.invokeMethod('startStream', {'url': url, 'pipeline': gstDesc});
-
+      // The pipeline is now created in the native code, we just send the URL
+      await _gstreamerChannel!.invokeMethod('startStream', {'url': url});
     } on PlatformException catch (e) {
-      print("GStreamer stream failed (PlatformException): ${e.message}");
+      print("GStreamer start failed (PlatformException): ${e.message}");
+      _streamTimeoutTimer?.cancel();
       if (mounted) {
         setState(() {
           _gstreamerHasError = true;
+          _novalidurl = true;
           _errorMessage = "Platform error: ${e.message}";
           _isGStreamerLoading = false;
         });
       }
-      timeoutTimer?.cancel(); // Cancel timer on explicit error
-    } on SocketException catch (e) {
-      print("GStreamer stream failed (SocketException): ${e.message}");
+    } catch (e) {
+      print("GStreamer start failed (Unknown Error): $e");
+      _streamTimeoutTimer?.cancel();
       if (mounted) {
         setState(() {
           _gstreamerHasError = true;
-          _errorMessage = "Network error: ${e.message}";
+          _novalidurl = true;
+          _errorMessage = "An unknown error occurred.";
           _isGStreamerLoading = false;
         });
-      }
-      timeoutTimer?.cancel(); // Cancel timer on explicit error
-    } catch (e, stacktrace) {
-      print("GStreamer stream failed (Unknown Error): $e");
-      print("Stacktrace: $stacktrace");
-      if (mounted) {
-        setState(() {
-          _gstreamerHasError = true;
-          _errorMessage = "An unknown error occurred. Check logs.";
-          _isGStreamerLoading = false;
-        });
-      }
-      timeoutTimer?.cancel(); // Cancel timer on explicit error
-    } finally {
-      // Ensure the timer is cancelled if the function exits for any reason
-      // and the error state is not yet fully handled.
-      // This is a good practice to prevent dangling timers.
-      if (mounted && timeoutTimer != null && timeoutTimer.isActive) {
-        // It's safer to only cancel if it's still active and hasn't fired
-        // But if the code path guarantees it's cancelled on success/error, this is fine too.
       }
     }
   }
@@ -351,23 +488,60 @@ class _HomePageState extends State<HomePage> {
     _switchCamera(index);
   }
 
+  // Future<void> _switchCamera(int index) async {
+  //   if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) {
+  //     print("Warning: Camera index out of bounds or no camera URLs configured.");
+  //     setState(() {
+  //       _currentCameraIndex = -1;
+  //       _isGStreamerLoading = true;
+  //       _gstreamerHasError = true;
+  //       _errorMessage = "No cameras configured.";
+  //       _isGStreamerReady = false;
+  //     });
+  //     return;
+  //   }
+  //
+  //   if (index == _currentCameraIndex) {
+  //     return;
+  //   }
+  //
+  //   if (_gstreamerChannel != null && _isGStreamerReady) {
+  //     try {
+  //       await _gstreamerChannel!.invokeMethod('stopStream');
+  //     } catch (e) {
+  //       print("Error stopping previous stream: $e");
+  //     }
+  //   }
+  //
+  //   setState(() {
+  //     _currentCameraIndex = index;
+  //     _gstreamerViewKey = UniqueKey();
+  //     _isGStreamerReady = false;
+  //     _isGStreamerLoading = true;
+  //     _gstreamerHasError = false;
+  //     _errorMessage = null;
+  //   });
+  // }
+
   Future<void> _switchCamera(int index) async {
     if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) {
       print("Warning: Camera index out of bounds or no camera URLs configured.");
       setState(() {
         _currentCameraIndex = -1;
-        _isGStreamerLoading = true;
+        _isGStreamerLoading = false; // Not loading if no URL
         _gstreamerHasError = true;
+        _novalidurl = true;
         _errorMessage = "No cameras configured.";
         _isGStreamerReady = false;
       });
       return;
     }
 
-    if (index == _currentCameraIndex) {
-      return;
+    if (index == _currentCameraIndex && !_gstreamerHasError) {
+      return; // Don't reload if it's the same and not in an error state
     }
 
+    // Call stopStream on the existing channel before creating a new view
     if (_gstreamerChannel != null && _isGStreamerReady) {
       try {
         await _gstreamerChannel!.invokeMethod('stopStream');
@@ -378,10 +552,11 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       _currentCameraIndex = index;
-      _gstreamerViewKey = UniqueKey();
+      _gstreamerViewKey = UniqueKey(); // This forces the AndroidView to be recreated
       _isGStreamerReady = false;
       _isGStreamerLoading = true;
       _gstreamerHasError = false;
+      _novalidurl = false;
       _errorMessage = null;
     });
   }
@@ -507,8 +682,6 @@ class _HomePageState extends State<HomePage> {
   //   }
   // }
 
-  // Inside _HomePageState class
-
   Future<void> _handleManualAutoAttackToggle() async {
     if (_isAutoAttackMode) { // Currently in Auto Attack, switching OFF
       final proceed = await _showCustomConfirmationDialog(
@@ -587,12 +760,77 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildStreamOverlay() {
+    print("VALUESGCA, $_novalidurl, $_gstreamerHasError");
+    if (_isGStreamerLoading) {
+      return Container(
+        color: Colors.black.withOpacity(0.5),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 20),
+              Text(
+                'Connecting to stream...',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_novalidurl && _gstreamerHasError) {
+      return Container(
+        color: Colors.black.withOpacity(0.7),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.redAccent, size: 70),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                child: Text(
+                  _errorMessage ?? 'Stream failed to load.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 20),
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                onPressed: () {
+                  if (_currentCameraIndex != -1) {
+                    _switchCamera(_currentCameraIndex);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.blueGrey,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
     final heightScale = screenHeight / 1080.0;
+    print("GSTREAMER VALUES: $_isGStreamerLoading, $_gstreamerHasError");
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -611,93 +849,103 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          // if (_isGStreamerLoading || _gstreamerHasError)
-          //   Positioned.fill(
-          //     child: Container(
-          //       color: Colors.black.withOpacity(0.7),
-          //       child: Center(
-          //         child: _gstreamerHasError
-          //             ? Column(
-          //           mainAxisAlignment: MainAxisAlignment.center,
-          //           children: [
-          //             Padding(
-          //               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          //               child: Text(
-          //                 _errorMessage ?? 'Failed to load video stream.',
-          //                 textAlign: TextAlign.center,
-          //                 style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
-          //               ),
-          //             ),
-          //             const SizedBox(height: 20),
-          //             ElevatedButton(
-          //               onPressed: _playCurrentCameraStream,
-          //               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[700]),
-          //               child: const Text('Retry', style: TextStyle(color: Colors.white)),
-          //             ),
-          //           ],
-          //         )
-          //             : const CircularProgressIndicator(color: Colors.white),
-          //       ),
-          //     ),
-          //   ),
-          // _buildLeftButton(30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE, _activeLeftButtonIndex == -1, () => _onLeftButtonPressed(0, 1)),
-          // _buildLeftButton(30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE, _activeLeftButtonIndex == 1, () => _onLeftButtonPressed(1, 2)),
-          // _buildLeftButton(30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE, _activeLeftButtonIndex == 2, () => _onLeftButtonPressed(2, 2)),
-          // _buildLeftButton(30, 485, _isAutoAttackMode ? "Auto Attack" : "Manual Attack", _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_INACTIVE : ICON_PATH_MANUAL_ATTACK_INACTIVE, _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_ACTIVE : ICON_PATH_MANUAL_ATTACK_ACTIVE, _activeLeftButtonIndex == 3, () { setState(() => _activeLeftButtonIndex = 3); _handleManualAutoAttackToggle(); }),
-          // _buildLeftButton(30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE, _activeLeftButtonIndex == 4, () => _onLeftButtonPressed(4, 3)),
-          // _buildLeftButton(30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE, _activeLeftButtonIndex == 5, () => _onLeftButtonPressed(5, 0)),
+
+          Positioned(child: _buildStreamOverlay()),
+
+
+          // _buildLeftButton(
+          //     30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE,
+          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 0, // <-- Corrected
+          //         () => _onLeftButtonPressed(0, 1)
+          // ),
+          // _buildLeftButton(
+          //     30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE,
+          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 1, // <-- Corrected
+          //         () => _onLeftButtonPressed(1, 2)
+          // ),
+          // _buildLeftButton(
+          //     30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE,
+          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 2, // <-- Corrected
+          //         () => _onLeftButtonPressed(2, 2)
+          // ),
+          // _buildLeftButton(
+          //     30, 485, _isAutoAttackMode ? "Auto Attack" : "Manual Attack",
+          //     _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_INACTIVE : ICON_PATH_MANUAL_ATTACK_INACTIVE,
+          //     _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_ACTIVE : ICON_PATH_MANUAL_ATTACK_ACTIVE,
+          //     _activeLeftButtonIndex == 3, // <-- This one remains `_activeLeftButtonIndex == 3`
+          //     // because if it's 3, it's implicitly not -1.
+          //     // And the `_handleManualAutoAttackToggle` correctly sets it to 3.
+          //         () {
+          //       // When this button is pressed, ensure _activeLeftButtonIndex is set to 3
+          //       setState(() => _activeLeftButtonIndex = 3);
+          //       _handleManualAutoAttackToggle();
+          //     }
+          // ),
+          // _buildLeftButton(
+          //     30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE,
+          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 4, // <-- Corrected
+          //         () => _onLeftButtonPressed(4, 3)
+          // ),
+          // _buildLeftButton(
+          //     30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE,
+          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 5, // <-- Corrected
+          //         () => _onLeftButtonPressed(5, 0)
+          // ),
+          //
+          // // --- RIGHT BUTTONS --- (No changes needed here for your specific request)
           // _buildRightButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
           // _buildRightButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
           // _buildRightButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
-          // _buildRightButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
-          // _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
-          // _buildDirectionalButton(890, 820, _isBackPressed, ICON_PATH_BACKWARD_INACTIVE, ICON_PATH_BACKWARD_ACTIVE, () => setState(() => _isBackPressed = true), () => setState(() => _isBackPressed = false)),
-          // _buildDirectionalButton(260, 405, _isLeftPressed, ICON_PATH_LEFT_INACTIVE, ICON_PATH_LEFT_ACTIVE, () => setState(() => _isLeftPressed = true), () => setState(() => _isLeftPressed = false)),
-          // _buildDirectionalButton(1540, 405, _isRightPressed, ICON_PATH_RIGHT_INACTIVE, ICON_PATH_RIGHT_ACTIVE, () => setState(() => _isRightPressed = true), () => setState(() => _isRightPressed = false)),
+          // _buildRightButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()), // Setting button has no active state logic here
+
+
           _buildLeftButton(
+              0, // <-- ADD INDEX
               30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE,
-              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 0, // <-- Corrected
+              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 0,
                   () => _onLeftButtonPressed(0, 1)
           ),
           _buildLeftButton(
+              1, // <-- ADD INDEX
               30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE,
-              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 1, // <-- Corrected
+              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 1,
                   () => _onLeftButtonPressed(1, 2)
           ),
           _buildLeftButton(
+              2, // <-- ADD INDEX
               30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE,
-              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 2, // <-- Corrected
+              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 2,
                   () => _onLeftButtonPressed(2, 2)
           ),
           _buildLeftButton(
+              3, // <-- ADD INDEX
               30, 485, _isAutoAttackMode ? "Auto Attack" : "Manual Attack",
               _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_INACTIVE : ICON_PATH_MANUAL_ATTACK_INACTIVE,
               _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_ACTIVE : ICON_PATH_MANUAL_ATTACK_ACTIVE,
-              _activeLeftButtonIndex == 3, // <-- This one remains `_activeLeftButtonIndex == 3`
-              // because if it's 3, it's implicitly not -1.
-              // And the `_handleManualAutoAttackToggle` correctly sets it to 3.
+              _activeLeftButtonIndex == 3,
                   () {
-                // When this button is pressed, ensure _activeLeftButtonIndex is set to 3
                 setState(() => _activeLeftButtonIndex = 3);
                 _handleManualAutoAttackToggle();
               }
           ),
           _buildLeftButton(
+              4, // <-- ADD INDEX
               30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE,
-              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 4, // <-- Corrected
+              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 4,
                   () => _onLeftButtonPressed(4, 3)
           ),
           _buildLeftButton(
+              5, // <-- ADD INDEX
               30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE,
-              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 5, // <-- Corrected
+              _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 5,
                   () => _onLeftButtonPressed(5, 0)
           ),
 
-          // --- RIGHT BUTTONS --- (No changes needed here for your specific request)
-          _buildRightButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
-          _buildRightButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
-          _buildRightButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
-          _buildRightButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()), // Setting button has no active state logic here
+          // --- RIGHT BUTTONS ---
+          _buildRightButton(0, 1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
+          _buildRightButton(1, 1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
+          _buildRightButton(2, 1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
+          _buildRightButton(3, 1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
 
           // --- DIRECTIONAL BUTTONS --- (No changes needed here)
           _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
@@ -718,50 +966,155 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-  Widget _buildLeftButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+  // Widget _buildLeftButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final widthScale = screenWidth / 1920.0;
+  //   final heightScale = screenHeight / 1080.0;
+  //
+  //   return Positioned(
+  //     left: left * widthScale,
+  //     top: top * heightScale,
+  //     child: GestureDetector(
+  //       onTap: onPressed,
+  //       child: Container(
+  //         width: 200 * widthScale,
+  //         height: 120 * heightScale,
+  //         padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
+  //         decoration: BoxDecoration(
+  //           color: Colors.black.withOpacity(0.6),
+  //           borderRadius: BorderRadius.circular(10),
+  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
+  //         ),
+  //         child: Column(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           crossAxisAlignment: CrossAxisAlignment.center,
+  //           children: [
+  //             Expanded(flex: 2, child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain)),
+  //             SizedBox(height: 5 * heightScale),
+  //             Text(label, textAlign: TextAlign.center,
+  //               // style: GoogleFonts.notoSans(fontSize: 24 * heightScale, fontWeight: FontWeight.bold, color: const Color(0xFFFFFFFF))
+  //               style: TextStyle(
+  //                 fontFamily: 'NotoSans',
+  //                 fontWeight: FontWeight.bold, // For Medium
+  //                 // or FontWeight.w700 for Bold
+  //                 fontSize: 24 * heightScale,
+  //                 color: Colors.white,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildLeftButton(int index, double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
     final heightScale = screenHeight / 1080.0;
 
+    // Determine if this specific button is being pressed
+    final bool isPressed = _pressedLeftButtonIndex == index;
+
     return Positioned(
       left: left * widthScale,
       top: top * heightScale,
       child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: 200 * widthScale,
-          height: 120 * heightScale,
-          padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(flex: 2, child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain)),
-              SizedBox(height: 5 * heightScale),
-              Text(label, textAlign: TextAlign.center,
-                // style: GoogleFonts.notoSans(fontSize: 24 * heightScale, fontWeight: FontWeight.bold, color: const Color(0xFFFFFFFF))
-                style: TextStyle(
-                  fontFamily: 'NotoSans',
-                  fontWeight: FontWeight.bold, // For Medium
-                  // or FontWeight.w700 for Bold
-                  fontSize: 24 * heightScale,
-                  color: Colors.white,
+        // UPDATE GESTUREDETECTOR HANDLERS
+        onTapDown: (_) => setState(() => _pressedLeftButtonIndex = index),
+        onTapUp: (_) {
+          setState(() => _pressedLeftButtonIndex = null);
+          onPressed(); // Execute the original button action
+        },
+        onTapCancel: () => setState(() => _pressedLeftButtonIndex = null),
+        // Original onTap is now handled by onTapUp
+
+        child: ColorFiltered(
+          // APPLY THE RED OVERLAY CONDITIONALLY
+          colorFilter: isPressed
+              ? ColorFilter.mode(Colors.red.withOpacity(0.5), BlendMode.srcATop)
+              : const ColorFilter.mode(Colors.transparent, BlendMode.color),
+          child: Container(
+            width: 200 * widthScale,
+            height: 120 * heightScale,
+            padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(flex: 2, child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain)),
+                SizedBox(height: 5 * heightScale),
+                Text(label, textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'NotoSans',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24 * heightScale,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+  //
+  // Widget _buildRightButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final widthScale = screenWidth / 1920.0;
+  //   final heightScale = screenHeight / 1080.0;
+  //
+  //   const double buttonWidth = 220;
+  //   const double buttonHeight = 175;
+  //
+  //   return Positioned(
+  //     left: left * widthScale,
+  //     top: top * heightScale,
+  //     child: GestureDetector(
+  //       onTap: onPressed,
+  //       child: Container(
+  //         width: buttonWidth * widthScale,
+  //         height: buttonHeight * heightScale,
+  //         padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
+  //         decoration: BoxDecoration(
+  //           color: Colors.black.withOpacity(0.6),
+  //           borderRadius: BorderRadius.circular(15),
+  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
+  //         ),
+  //         child: Column(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           crossAxisAlignment: CrossAxisAlignment.center,
+  //           children: [
+  //             Expanded(
+  //               flex: 3,
+  //               child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
+  //             ),
+  //             SizedBox(height: 8 * heightScale),
+  //             Text(label, textAlign: TextAlign.center,
+  //               style: TextStyle(
+  //                 fontFamily: 'NotoSans',
+  //                 fontWeight: FontWeight.w700,
+  //                 fontSize: 26 * heightScale,
+  //                 color: Colors.white,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildRightButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+  Widget _buildRightButton(int index, double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
@@ -770,38 +1123,54 @@ class _HomePageState extends State<HomePage> {
     const double buttonWidth = 220;
     const double buttonHeight = 175;
 
+    // Determine if this specific button is being pressed
+    final bool isPressed = _pressedRightButtonIndex == index;
+
     return Positioned(
       left: left * widthScale,
       top: top * heightScale,
       child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: buttonWidth * widthScale,
-          height: buttonHeight * heightScale,
-          padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 3,
-                child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
-              ),
-              SizedBox(height: 8 * heightScale),
-              Text(label, textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'NotoSans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 26 * heightScale,
-                  color: Colors.white,
+        // UPDATE GESTUREDETECTOR HANDLERS
+        onTapDown: (_) => setState(() => _pressedRightButtonIndex = index),
+        onTapUp: (_) {
+          setState(() => _pressedRightButtonIndex = null);
+          onPressed(); // Execute the original button action
+        },
+        onTapCancel: () => setState(() => _pressedRightButtonIndex = null),
+
+        child: ColorFiltered(
+          // APPLY THE RED OVERLAY CONDITIONALLY
+          colorFilter: isPressed
+              ? ColorFilter.mode(Colors.red.withOpacity(0.5), BlendMode.srcATop)
+              : const ColorFilter.mode(Colors.transparent, BlendMode.color),
+          child: Container(
+            width: buttonWidth * widthScale,
+            height: buttonHeight * heightScale,
+            padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
                 ),
-              ),
-            ],
+                SizedBox(height: 8 * heightScale),
+                Text(label, textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'NotoSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 26 * heightScale,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
