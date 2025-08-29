@@ -5,9 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:rtest1/settings_service.dart';
-
 import 'TouchCoord.dart';
 import 'UserCommand.dart';
 import 'icon_constants.dart';
@@ -39,7 +37,6 @@ class MyApp extends StatelessWidget {
       title: '',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        // textTheme: GoogleFonts.rajdhaniTextTheme(),
       ),
       home: const SplashScreen(),
     );
@@ -88,8 +85,7 @@ class _HomePageState extends State<HomePage> {
   bool _isGStreamerInitialized = false;
   bool _novalidurl = false;
   Timer? _streamTimeoutTimer;
-  int? _pressedLeftButtonIndex;
-  int? _pressedRightButtonIndex;
+  bool _isManualTouchModeEnabled = false;
 
 
   @override
@@ -144,27 +140,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // void _onGStreamerPlatformViewCreated(int id) {
-  //   _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
-  //   setState(() {
-  //     _isGStreamerReady = true;
-  //     _isGStreamerLoading = false;
-  //   });
-  //   _playCurrentCameraStream();
-  // }
-
-  // void _onGStreamerPlatformViewCreated(int id) {
-  //   _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
-  //   setState(() {
-  //     _isGStreamerReady = true;
-  //     _isGStreamerLoading = false;
-  //     _gstreamerHasError = false; // Reset error state
-  //     _errorMessage = null; // Clear any previous error message
-  //   });
-  //   _playCurrentCameraStream();
-  // }
-
-  // ADD THIS ENTIRE NEW METHOD
   Future<void> _handleGStreamerMessages(MethodCall call) async {
     if (!mounted) return;
 
@@ -207,105 +182,6 @@ class _HomePageState extends State<HomePage> {
     _playCurrentCameraStream();
   }
 
-  // Method to start the GStreamer stream
-  // Future<void> _playCurrentCameraStream() async {
-  //   // Check initial conditions first
-  //   if (_cameraUrls.isEmpty || _currentCameraIndex < 0 || _currentCameraIndex >= _cameraUrls.length) {
-  //     print("ERROR: Initial conditions for stream are invalid. Camera URLs: ${_cameraUrls.length}, Current Index: $_currentCameraIndex");
-  //     if (mounted) {
-  //       setState(() {
-  //         _isGStreamerLoading = false;
-  //         _gstreamerHasError = true;
-  //         _errorMessage = "No valid camera URL or index. Please check settings.";
-  //       });
-  //     }
-  //     return; // Stop execution if initial conditions are bad
-  //   }
-  //
-  //   // Ensure GStreamer channel is ready
-  //   if (_gstreamerChannel == null || !_isGStreamerReady) {
-  //     print("ERROR: GStreamer channel is not ready or null.");
-  //     if (mounted) {
-  //       setState(() {
-  //         _isGStreamerLoading = false;
-  //         _gstreamerHasError = true;
-  //         _errorMessage = "GStreamer channel not ready. Cannot start stream.";
-  //       });
-  //     }
-  //     return; // Stop execution if channel is not ready
-  //   }
-  //
-  //   print("INFO: Attempting to start GStreamer stream...");
-  //   setState(() {
-  //     _isGStreamerLoading = true;
-  //     _gstreamerHasError = false;
-  //     _errorMessage = null;
-  //   });
-  //
-  //   // Start a timer that will trigger an error if the stream doesn't start successfully
-  //   // within a certain timeframe. This is a safeguard.
-  //   const timeoutDuration = Duration(seconds: 7); // Adjust timeout as needed
-  //   Timer? timeoutTimer;
-  //   timeoutTimer = Timer(timeoutDuration, () {
-  //     if (mounted && _isGStreamerLoading && !_gstreamerHasError) {
-  //       print("ERROR: GStreamer stream timed out after $timeoutDuration.");
-  //       setState(() {
-  //         _gstreamerHasError = true;
-  //         _errorMessage = "Stream failed.";
-  //         _isGStreamerLoading = false;
-  //       });
-  //     }
-  //     timeoutTimer?.cancel(); // Cancel the timer after it fires or is no longer needed
-  //   });
-  //
-  //   try {
-  //     final String url = _cameraUrls[_currentCameraIndex];
-  //     final String gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink";
-  //     print("INFO: Invoking GStreamer startStream with URL: $url");
-  //
-  //     await _gstreamerChannel!.invokeMethod('startStream', {'url': url, 'pipeline': gstDesc});
-  //
-  //   } on PlatformException catch (e) {
-  //     print("GStreamer stream failed (PlatformException): ${e.message}");
-  //     if (mounted) {
-  //       setState(() {
-  //         _gstreamerHasError = true;
-  //         _errorMessage = "Platform error: ${e.message}";
-  //         _isGStreamerLoading = false;
-  //       });
-  //     }
-  //     timeoutTimer?.cancel(); // Cancel timer on explicit error
-  //   } on SocketException catch (e) {
-  //     print("GStreamer stream failed (SocketException): ${e.message}");
-  //     if (mounted) {
-  //       setState(() {
-  //         _gstreamerHasError = true;
-  //         _errorMessage = "Network error: ${e.message}";
-  //         _isGStreamerLoading = false;
-  //       });
-  //     }
-  //     timeoutTimer?.cancel(); // Cancel timer on explicit error
-  //   } catch (e, stacktrace) {
-  //     print("GStreamer stream failed (Unknown Error): $e");
-  //     print("Stacktrace: $stacktrace");
-  //     if (mounted) {
-  //       setState(() {
-  //         _gstreamerHasError = true;
-  //         _errorMessage = "An unknown error occurred. Check logs.";
-  //         _isGStreamerLoading = false;
-  //       });
-  //     }
-  //     timeoutTimer?.cancel(); // Cancel timer on explicit error
-  //   } finally {
-  //     // Ensure the timer is cancelled if the function exits for any reason
-  //     // and the error state is not yet fully handled.
-  //     // This is a good practice to prevent dangling timers.
-  //     if (mounted && timeoutTimer != null && timeoutTimer.isActive) {
-  //       // It's safer to only cancel if it's still active and hasn't fired
-  //       // But if the code path guarantees it's cancelled on success/error, this is fine too.
-  //     }
-  //   }
-  // }
 
   Future<void> _playCurrentCameraStream() async {
     _streamTimeoutTimer?.cancel();
@@ -464,15 +340,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+
   Future<void> _sendTouchPacket(TouchCoord coord) async {
     try {
-      final socket = await Socket.connect(_robotIpAddress, 65433, timeout: const Duration(seconds: 1));
-      socket.add(coord.toBytes());
-      await socket.flush();
+      // The port for touch commands
+      const int TOUCH_PORT = 65433;
+
+      // Create a UDP socket, send the data, and immediately close the socket.
+      // This is extremely fast and avoids connection state issues.
+      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      socket.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
       socket.close();
-      print('Sent Touch Packet: X=${coord.x}, Y=${coord.y}');
+
+      print('Sent Touch Packet (UDP): X=${coord.x}, Y=${coord.y}');
     } catch (e) {
-      print('Error sending touch packet: $e');
+      print('Error sending touch UDP packet: $e');
     }
   }
 
@@ -480,6 +362,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _activeLeftButtonIndex = index;
       _currentCommand.commandId = commandId;
+      _isManualTouchModeEnabled = false;
     });
   }
 
@@ -488,40 +371,6 @@ class _HomePageState extends State<HomePage> {
     _switchCamera(index);
   }
 
-  // Future<void> _switchCamera(int index) async {
-  //   if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) {
-  //     print("Warning: Camera index out of bounds or no camera URLs configured.");
-  //     setState(() {
-  //       _currentCameraIndex = -1;
-  //       _isGStreamerLoading = true;
-  //       _gstreamerHasError = true;
-  //       _errorMessage = "No cameras configured.";
-  //       _isGStreamerReady = false;
-  //     });
-  //     return;
-  //   }
-  //
-  //   if (index == _currentCameraIndex) {
-  //     return;
-  //   }
-  //
-  //   if (_gstreamerChannel != null && _isGStreamerReady) {
-  //     try {
-  //       await _gstreamerChannel!.invokeMethod('stopStream');
-  //     } catch (e) {
-  //       print("Error stopping previous stream: $e");
-  //     }
-  //   }
-  //
-  //   setState(() {
-  //     _currentCameraIndex = index;
-  //     _gstreamerViewKey = UniqueKey();
-  //     _isGStreamerReady = false;
-  //     _isGStreamerLoading = true;
-  //     _gstreamerHasError = false;
-  //     _errorMessage = null;
-  //   });
-  // }
 
   Future<void> _switchCamera(int index) async {
     if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) {
@@ -659,29 +508,6 @@ class _HomePageState extends State<HomePage> {
     ) ?? false;
   }
 
-  // Future<void> _handleManualAutoAttackToggle() async {
-  //   if (_isAutoAttackMode) {
-  //     final proceed = await _showCustomConfirmationDialog(
-  //         context: context, iconPath: ICON_PATH_AUTO_ATTACK_ACTIVE, title: "DANGERS", titleColor: Colors.red, content: 'Are you sure you want to stop\n"Auto Attack" mode?');
-  //     if (proceed) {
-  //       setState(() {
-  //         _isAutoAttackMode = false;
-  //         _currentCommand.commandId = 0;
-  //         _activeLeftButtonIndex = 0;
-  //       });
-  //     }
-  //   } else {
-  //     final proceed = await _showCustomConfirmationDialog(
-  //         context: context, iconPath: ICON_PATH_MANUAL_ATTACK_ACTIVE, title: "DANGERS", titleColor: Colors.red, content: 'Are you sure you want to start\n"Auto Attack" mode?');
-  //     if (proceed) {
-  //       setState(() {
-  //         _isAutoAttackMode = true;
-  //         _currentCommand.commandId = 4;
-  //       });
-  //     }
-  //   }
-  // }
-
   Future<void> _handleManualAutoAttackToggle() async {
     if (_isAutoAttackMode) { // Currently in Auto Attack, switching OFF
       final proceed = await _showCustomConfirmationDialog(
@@ -694,9 +520,9 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           _isAutoAttackMode = false;
           _currentCommand.commandId = 0; // Assuming 0 is a neutral/stop command
-          // *** UPDATE THIS LINE ***
           // When Auto Attack is turned off, return the selector to the default state (e.g., Driving)
           _activeLeftButtonIndex = -1; // Set to the index for "Driving"
+          _isManualTouchModeEnabled = false;
         });
       }
     } else { // Currently NOT in Auto Attack, switching ON to Manual Attack
@@ -719,41 +545,42 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildPlayerWidgetGestureDetector() {
-    // print("DEBUG_TOUCH: buildPlayerWidgetGestureDetector called.");
     return GestureDetector(
       key: _playerKey,
       behavior: HitTestBehavior.opaque, // Ensure GestureDetector captures all touch events
-      onTapDown: (_) {
-        print("DEBUG_TOUCH: Touch DOWN detected on video stream area."); // New debug print for touch down
-      },
+      // onTapDown: (_) {
+      //   print("DEBUG_TOUCH: Touch DOWN detected on video stream area."); // New debug print for touch down
+      // },
       onTapUp: (details) {
-        // print("DEBUG_TOUCH: Touch detected on video stream area.");
-        if (_activeLeftButtonIndex == 3) {
-          // print("DEBUG_TOUCH: Manual Attack mode detected (_activeLeftButtonIndex == 3).");
-          final RenderBox? renderBox = _playerKey.currentContext?.findRenderObject() as RenderBox?;
-          if (renderBox == null) {
-            print("DEBUG_TOUCH: ERROR: Could not get RenderBox for _playerKey.");
-            return;
-          }
-          // print("DEBUG_TOUCH: RenderBox obtained successfully.");
-          final Offset localPosition = renderBox.globalToLocal(details.globalPosition);
-          // print("DEBUG_TOUCH: LocalPosition: $localPosition");
-          final double x = localPosition.dx / renderBox.size.width;
-          final double y = localPosition.dy / renderBox.size.height;
-          // print("DEBUG_TOUCH: Normalized Coords (x, y): ($x, $y)");
-          if (x >= 0.0 && x <= 1.0 && y >= 0.0 && y <= 1.0) {
-            // print("DEBUG_TOUCH: Coords within bounds. Processing touch.");
-            setState(() {
-              _currentCommand.touchX = x;
-              _currentCommand.touchY = y;
-            });
-            _sendTouchPacket(TouchCoord()..x = x..y = y);
-            // print("DEBUG_TOUCH: Touch packet sent.");
+        if (_isManualTouchModeEnabled) {
+          if (_activeLeftButtonIndex == 3) {
+            // print("DEBUG_TOUCH: Manual Attack mode detected (_activeLeftButtonIndex == 3).");
+            final RenderBox? renderBox = _playerKey.currentContext
+                ?.findRenderObject() as RenderBox?;
+            if (renderBox == null) {
+              print(
+                  "DEBUG_TOUCH: ERROR: Could not get RenderBox for _playerKey.");
+              return;
+            }
+            final Offset localPosition = renderBox.globalToLocal(
+                details.globalPosition);
+            final double x = localPosition.dx / renderBox.size.width;
+            final double y = localPosition.dy / renderBox.size.height;
+            if (x >= 0.0 && x <= 1.0 && y >= 0.0 && y <= 1.0) {
+              setState(() {
+                _currentCommand.touchX = x;
+                _currentCommand.touchY = y;
+              });
+              _sendTouchPacket(TouchCoord()
+                ..x = x
+                ..y = y);
+            } else {
+              print("DEBUG_TOUCH: Coords out of bounds. Not processing touch.");
+            }
           } else {
-            print("DEBUG_TOUCH: Coords out of bounds. Not processing touch.");
+            print(
+                "DEBUG_TOUCH: Not in Manual Attack mode (_activeLeftButtonIndex != 3). Touch ignored.");
           }
-        } else {
-          print("DEBUG_TOUCH: Not in Manual Attack mode (_activeLeftButtonIndex != 3). Touch ignored.");
         }
       },
       child: Container(color: Colors.transparent),
@@ -761,7 +588,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildStreamOverlay() {
-    print("VALUESGCA, $_novalidurl, $_gstreamerHasError");
     if (_isGStreamerLoading) {
       return Container(
         color: Colors.black.withOpacity(0.5),
@@ -830,7 +656,6 @@ class _HomePageState extends State<HomePage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
     final heightScale = screenHeight / 1080.0;
-    print("GSTREAMER VALUES: $_isGStreamerLoading, $_gstreamerHasError");
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -852,100 +677,53 @@ class _HomePageState extends State<HomePage> {
 
           Positioned(child: _buildStreamOverlay()),
 
-
-          // _buildLeftButton(
-          //     30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE,
-          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 0, // <-- Corrected
-          //         () => _onLeftButtonPressed(0, 1)
-          // ),
-          // _buildLeftButton(
-          //     30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE,
-          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 1, // <-- Corrected
-          //         () => _onLeftButtonPressed(1, 2)
-          // ),
-          // _buildLeftButton(
-          //     30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE,
-          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 2, // <-- Corrected
-          //         () => _onLeftButtonPressed(2, 2)
-          // ),
-          // _buildLeftButton(
-          //     30, 485, _isAutoAttackMode ? "Auto Attack" : "Manual Attack",
-          //     _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_INACTIVE : ICON_PATH_MANUAL_ATTACK_INACTIVE,
-          //     _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_ACTIVE : ICON_PATH_MANUAL_ATTACK_ACTIVE,
-          //     _activeLeftButtonIndex == 3, // <-- This one remains `_activeLeftButtonIndex == 3`
-          //     // because if it's 3, it's implicitly not -1.
-          //     // And the `_handleManualAutoAttackToggle` correctly sets it to 3.
-          //         () {
-          //       // When this button is pressed, ensure _activeLeftButtonIndex is set to 3
-          //       setState(() => _activeLeftButtonIndex = 3);
-          //       _handleManualAutoAttackToggle();
-          //     }
-          // ),
-          // _buildLeftButton(
-          //     30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE,
-          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 4, // <-- Corrected
-          //         () => _onLeftButtonPressed(4, 3)
-          // ),
-          // _buildLeftButton(
-          //     30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE,
-          //     _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 5, // <-- Corrected
-          //         () => _onLeftButtonPressed(5, 0)
-          // ),
-          //
-          // // --- RIGHT BUTTONS --- (No changes needed here for your specific request)
-          // _buildRightButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
-          // _buildRightButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
-          // _buildRightButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
-          // _buildRightButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()), // Setting button has no active state logic here
-
-
           _buildLeftButton(
-              0, // <-- ADD INDEX
               30, 35, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE,
               _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 0,
                   () => _onLeftButtonPressed(0, 1)
           ),
           _buildLeftButton(
-              1, // <-- ADD INDEX
               30, 185, "Petrol", ICON_PATH_PETROL_INACTIVE, ICON_PATH_PETROL_ACTIVE,
               _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 1,
                   () => _onLeftButtonPressed(1, 2)
           ),
           _buildLeftButton(
-              2, // <-- ADD INDEX
               30, 335, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE,
               _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 2,
                   () => _onLeftButtonPressed(2, 2)
           ),
+
           _buildLeftButton(
-              3, // <-- ADD INDEX
               30, 485, _isAutoAttackMode ? "Auto Attack" : "Manual Attack",
               _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_INACTIVE : ICON_PATH_MANUAL_ATTACK_INACTIVE,
               _isAutoAttackMode ? ICON_PATH_AUTO_ATTACK_ACTIVE : ICON_PATH_MANUAL_ATTACK_ACTIVE,
               _activeLeftButtonIndex == 3,
                   () {
-                setState(() => _activeLeftButtonIndex = 3);
+                // When this button is pressed, ensure _activeLeftButtonIndex is set to 3
+                setState(() {
+                  _activeLeftButtonIndex = 3;
+                  _isManualTouchModeEnabled = true; // <-- ADD THIS LINE to enable touch mode
+                });
                 _handleManualAutoAttackToggle();
               }
           ),
+
           _buildLeftButton(
-              4, // <-- ADD INDEX
               30, 635, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE,
               _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 4,
                   () => _onLeftButtonPressed(4, 3)
           ),
           _buildLeftButton(
-              5, // <-- ADD INDEX
               30, 785, "Return", ICON_PATH_RETURN_INACTIVE, ICON_PATH_RETURN_ACTIVE,
               _activeLeftButtonIndex != -1 && _activeLeftButtonIndex == 5,
                   () => _onLeftButtonPressed(5, 0)
           ),
 
           // --- RIGHT BUTTONS ---
-          _buildRightButton(0, 1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
-          _buildRightButton(1, 1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
-          _buildRightButton(2, 1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
-          _buildRightButton(3, 1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
+          _buildRightButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_INACTIVE, ICON_PATH_ATTACK_VIEW_ACTIVE, _activeRightButtonIndex == 0, () => _onRightButtonPressed(0)),
+          _buildRightButton(1690, 250, "Top View", ICON_PATH_TOP_VIEW_INACTIVE, ICON_PATH_TOP_VIEW_ACTIVE, _activeRightButtonIndex == 1, () => _onRightButtonPressed(1)),
+          _buildRightButton(1690, 470, "3D View", ICON_PATH_3D_VIEW_INACTIVE, ICON_PATH_3D_VIEW_ACTIVE, _activeRightButtonIndex == 2, () => _onRightButtonPressed(2)),
+          _buildRightButton(1690, 720, "Setting", ICON_PATH_SETTINGS, ICON_PATH_SETTINGS, false, () => _navigateToSettings()),
 
           // --- DIRECTIONAL BUTTONS --- (No changes needed here)
           _buildDirectionalButton(890, 30, _isForwardPressed, ICON_PATH_FORWARD_INACTIVE, ICON_PATH_FORWARD_ACTIVE, () => setState(() => _isForwardPressed = true), () => setState(() => _isForwardPressed = false)),
@@ -965,156 +743,52 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-  // Widget _buildLeftButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final heightScale = screenHeight / 1080.0;
-  //
-  //   return Positioned(
-  //     left: left * widthScale,
-  //     top: top * heightScale,
-  //     child: GestureDetector(
-  //       onTap: onPressed,
-  //       child: Container(
-  //         width: 200 * widthScale,
-  //         height: 120 * heightScale,
-  //         padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
-  //         decoration: BoxDecoration(
-  //           color: Colors.black.withOpacity(0.6),
-  //           borderRadius: BorderRadius.circular(10),
-  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
-  //         ),
-  //         child: Column(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           crossAxisAlignment: CrossAxisAlignment.center,
-  //           children: [
-  //             Expanded(flex: 2, child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain)),
-  //             SizedBox(height: 5 * heightScale),
-  //             Text(label, textAlign: TextAlign.center,
-  //               // style: GoogleFonts.notoSans(fontSize: 24 * heightScale, fontWeight: FontWeight.bold, color: const Color(0xFFFFFFFF))
-  //               style: TextStyle(
-  //                 fontFamily: 'NotoSans',
-  //                 fontWeight: FontWeight.bold, // For Medium
-  //                 // or FontWeight.w700 for Bold
-  //                 fontSize: 24 * heightScale,
-  //                 color: Colors.white,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  Widget _buildLeftButton(int index, double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+  Widget _buildLeftButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
     final heightScale = screenHeight / 1080.0;
 
-    // Determine if this specific button is being pressed
-    final bool isPressed = _pressedLeftButtonIndex == index;
+    // *** THIS IS THE ONLY CHANGE NEEDED ***
+    // The background color is now determined by the 'isActive' state, not a temporary press.
+    final containerColor = isActive ? Color(0xFFc32121) : Colors.black.withOpacity(0.6);
 
     return Positioned(
       left: left * widthScale,
       top: top * heightScale,
       child: GestureDetector(
-        // UPDATE GESTUREDETECTOR HANDLERS
-        onTapDown: (_) => setState(() => _pressedLeftButtonIndex = index),
-        onTapUp: (_) {
-          setState(() => _pressedLeftButtonIndex = null);
-          onPressed(); // Execute the original button action
-        },
-        onTapCancel: () => setState(() => _pressedLeftButtonIndex = null),
-        // Original onTap is now handled by onTapUp
-
-        child: ColorFiltered(
-          // APPLY THE RED OVERLAY CONDITIONALLY
-          colorFilter: isPressed
-              ? ColorFilter.mode(Colors.red.withOpacity(0.5), BlendMode.srcATop)
-              : const ColorFilter.mode(Colors.transparent, BlendMode.color),
-          child: Container(
-            width: 200 * widthScale,
-            height: 120 * heightScale,
-            padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(flex: 2, child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain)),
-                SizedBox(height: 5 * heightScale),
-                Text(label, textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'NotoSans',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24 * heightScale,
-                    color: Colors.white,
-                  ),
+        onTap: onPressed, // Use the simple onTap
+        child: Container(
+          width: 200 * widthScale,
+          height: 120 * heightScale,
+          padding: EdgeInsets.symmetric(vertical: 8.0 * heightScale),
+          decoration: BoxDecoration(
+            color: containerColor, // <-- APPLY THE COLOR HERE
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.0),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(flex: 2, child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain)),
+              SizedBox(height: 5 * heightScale),
+              Text(label, textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'NotoSans',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24 * heightScale,
+                  color: Colors.white,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-  //
-  // Widget _buildRightButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final heightScale = screenHeight / 1080.0;
-  //
-  //   const double buttonWidth = 220;
-  //   const double buttonHeight = 175;
-  //
-  //   return Positioned(
-  //     left: left * widthScale,
-  //     top: top * heightScale,
-  //     child: GestureDetector(
-  //       onTap: onPressed,
-  //       child: Container(
-  //         width: buttonWidth * widthScale,
-  //         height: buttonHeight * heightScale,
-  //         padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
-  //         decoration: BoxDecoration(
-  //           color: Colors.black.withOpacity(0.6),
-  //           borderRadius: BorderRadius.circular(15),
-  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
-  //         ),
-  //         child: Column(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           crossAxisAlignment: CrossAxisAlignment.center,
-  //           children: [
-  //             Expanded(
-  //               flex: 3,
-  //               child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
-  //             ),
-  //             SizedBox(height: 8 * heightScale),
-  //             Text(label, textAlign: TextAlign.center,
-  //               style: TextStyle(
-  //                 fontFamily: 'NotoSans',
-  //                 fontWeight: FontWeight.w700,
-  //                 fontSize: 26 * heightScale,
-  //                 color: Colors.white,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
-  Widget _buildRightButton(int index, double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
+  Widget _buildRightButton(double left, double top, String label, String inactiveIcon, String activeIcon, bool isActive, VoidCallback onPressed) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final widthScale = screenWidth / 1920.0;
@@ -1123,54 +797,47 @@ class _HomePageState extends State<HomePage> {
     const double buttonWidth = 220;
     const double buttonHeight = 175;
 
-    // Determine if this specific button is being pressed
-    final bool isPressed = _pressedRightButtonIndex == index;
+    // The background color is determined by the 'isActive' state.
+    final containerColor = isActive ? Color(0xFFc32121) : Colors.black.withOpacity(0.6);
 
     return Positioned(
       left: left * widthScale,
       top: top * heightScale,
       child: GestureDetector(
-        // UPDATE GESTUREDETECTOR HANDLERS
-        onTapDown: (_) => setState(() => _pressedRightButtonIndex = index),
-        onTapUp: (_) {
-          setState(() => _pressedRightButtonIndex = null);
-          onPressed(); // Execute the original button action
-        },
-        onTapCancel: () => setState(() => _pressedRightButtonIndex = null),
-
-        child: ColorFiltered(
-          // APPLY THE RED OVERLAY CONDITIONALLY
-          colorFilter: isPressed
-              ? ColorFilter.mode(Colors.red.withOpacity(0.5), BlendMode.srcATop)
-              : const ColorFilter.mode(Colors.transparent, BlendMode.color),
-          child: Container(
-            width: buttonWidth * widthScale,
-            height: buttonHeight * heightScale,
-            padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
+        onTap: onPressed, // Use the simple onTap
+        child: Container(
+          width: buttonWidth * widthScale,
+          height: buttonHeight * heightScale,
+          padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
+          decoration: BoxDecoration(
+            color: containerColor,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: isActive ? Colors.white : Colors.transparent,
+              width: 2.5,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Image.asset(isActive ? activeIcon : inactiveIcon, fit: BoxFit.contain),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Image.asset(isActive ? activeIcon : inactiveIcon,
+                    fit: BoxFit.contain),
+              ),
+              SizedBox(height: 8 * heightScale),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'NotoSans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 26 * heightScale,
+                  color: Colors.white,
                 ),
-                SizedBox(height: 8 * heightScale),
-                Text(label, textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'NotoSans',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 26 * heightScale,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
