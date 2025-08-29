@@ -27,7 +27,7 @@ class SettingsService {
     return prefs.getStringList(_cameraUrlsKey) ?? [
       'rtsp://192.168.49.1:8554/cam0',
       'rtsp://192.168.49.1:8554/cam0',
-      'rtsp://192.168.49.1:8554/cam0',
+      'rtsp://192.0.0.1:8554/cam0',
     ];
   }
 }
