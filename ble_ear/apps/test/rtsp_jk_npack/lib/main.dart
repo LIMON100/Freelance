@@ -9,6 +9,7 @@ import 'UserCommand.dart';
 import 'icon_constants.dart';
 import 'splash_screen.dart';
 import 'settings_menu_page.dart';
+import 'package:flutter_joystick/flutter_joystick.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -213,7 +214,6 @@ class _HomePageState extends State<HomePage> {
         _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
         _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
 
-        // gun_trigger is removed as per client request
 
         _currentCommand.zoom_command = 0; // Default to no zoom
         if (_isZoomInPressed) {
@@ -244,6 +244,177 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Widget _buildMovementJoystick() {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final widthScale = screenWidth / 1920.0;
+  //
+  //   final double joystickSize = 150 * widthScale;
+  //   final double stickSize = 80 * widthScale;
+  //
+  //   return Positioned(
+  //     left: 260 * widthScale,
+  //     bottom: 220 * widthScale, // Positioned above the bottom bar
+  //     child: Joystick(
+  //       mode: JoystickMode.all,
+  //       stick: const CircleAvatar(
+  //         radius: 30,
+  //       ),
+  //       base: Container(
+  //         width: 150,
+  //         height: 150,
+  //         decoration: const BoxDecoration(
+  //           color: Colors.grey,
+  //           shape: BoxShape.circle,
+  //         ),
+  //       ),
+  //       listener: (details) {
+  //         setState(() {
+  //           // This logic remains the same
+  //           _isForwardPressed = details.y < -0.5;
+  //           _isBackPressed = details.y > 0.5;
+  //           _isLeftPressed = details.x < -0.5;
+  //           _isRightPressed = details.x > 0.5;
+  //
+  //           if (details.x.abs() <= 0.5 && details.y.abs() <= 0.5) {
+  //             _isForwardPressed = false;
+  //             _isBackPressed = false;
+  //             _isLeftPressed = false;
+  //             _isRightPressed = false;
+  //           }
+  //         });
+  //       },
+  //     ),
+  //   );
+  // }
+  //
+  // // Joystick for Camera Pan/Tilt (Right Side)
+  // Widget _buildPanTiltJoystick() {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final widthScale = screenWidth / 1920.0;
+  //
+  //   // Define the size for the joystick base and stick
+  //   final double joystickSize = 150 * widthScale;
+  //   final double stickSize = 80 * widthScale;
+  //
+  //   return Positioned(
+  //     right: 260 * widthScale,
+  //     bottom: 220 * widthScale, // Positioned above the bottom bar
+  //     child: Joystick(
+  //       mode: JoystickMode.all,
+  //       stick: const CircleAvatar(
+  //         radius: 30,
+  //       ),
+  //       base: Container(
+  //         width: 150,
+  //         height: 150,
+  //         decoration: const BoxDecoration(
+  //           color: Colors.grey,
+  //           shape: BoxShape.circle,
+  //         ),
+  //       ),
+  //       listener: (details) {
+  //         setState(() {
+  //           // This logic remains the same
+  //           if (details.x.abs() > 0.2) {
+  //             _currentCommand.pan_speed = (details.x * 100).round();
+  //           } else {
+  //             _currentCommand.pan_speed = 0;
+  //           }
+  //
+  //           if (details.y.abs() > 0.2) {
+  //             _currentCommand.tilt_speed = (details.y * -100).round();
+  //           } else {
+  //             _currentCommand.tilt_speed = 0;
+  //           }
+  //         });
+  //       },
+  //     ),
+  //   );
+  // }
+
+  Widget _buildMovementJoystick() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final widthScale = screenWidth / 1920.0;
+
+    return Positioned(
+      left: 260 * widthScale,
+      bottom: 220 * widthScale,
+      child: Joystick(
+        mode: JoystickMode.vertical,
+        stick: const CircleAvatar(
+          radius: 30,
+          backgroundColor: Colors.blue, // Added color for visibility
+        ),
+        base: Container(
+          width: 150,
+          height: 150,
+          decoration: BoxDecoration(
+            color: Colors.grey, // Matched your UI style
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white38, width: 2),
+          ),
+        ),
+        listener: (details) {
+          setState(() {
+            // The logic for vertical movement remains the same
+            _isForwardPressed = details.y < -0.5;
+            _isBackPressed = details.y > 0.5;
+
+            // We no longer need to check for horizontal movement
+            // but we should clear the flags if the stick is centered.
+            if (details.y.abs() <= 0.5) {
+              _isForwardPressed = false;
+              _isBackPressed = false;
+            }
+
+            // Always ensure horizontal flags are false for this joystick
+            _isLeftPressed = false;
+            _isRightPressed = false;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildPanTiltJoystick() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final widthScale = screenWidth / 1920.0;
+
+    return Positioned(
+      right: 260 * widthScale,
+      bottom: 220 * widthScale,
+      child: Joystick(
+
+        mode: JoystickMode.horizontal,
+        stick: const CircleAvatar(
+          radius: 30,
+          backgroundColor: Colors.blue, // Added color for visibility
+        ),
+        base: Container(
+          width: 150,
+          height: 150,
+          decoration: BoxDecoration(
+            color: Colors.grey, // Matched your UI style
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white38, width: 2),
+          ),
+        ),
+        listener: (details) {
+          setState(() {
+            // The logic for horizontal movement (pan) remains the same
+            if (details.x.abs() > 0.2) {
+              _currentCommand.pan_speed = (details.x * 100).round();
+            } else {
+              _currentCommand.pan_speed = 0;
+            }
+
+            // Always ensure tilt speed is zero for this joystick
+            _currentCommand.tilt_speed = 0;
+          });
+        },
+      ),
+    );
+  }
   // --- UI WIDGETS ---
 
   @override
@@ -268,7 +439,6 @@ class _HomePageState extends State<HomePage> {
             Positioned.fill(child: _buildTouchDetector()),
 
           Positioned.fill(child: _buildStreamOverlay()),
-          // Positioned.fill(child: _buildTouchDetector()),
 
           _buildModeButton(0, 30, 30, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE),
           _buildModeButton(1, 30, 214, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE),
@@ -279,7 +449,10 @@ class _HomePageState extends State<HomePage> {
           _buildViewButton(1690, 30, "Attack View", ICON_PATH_ATTACK_VIEW_ACTIVE, true),
           _buildViewButton(1690, 720, "Setting", ICON_PATH_SETTINGS, false, onPressed: _navigateToSettings),
 
-          _buildDirectionalControls(),
+          // _buildDirectionalControls(),
+          _buildMovementJoystick(),
+          _buildPanTiltJoystick(),
+
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -577,7 +750,6 @@ class _HomePageState extends State<HomePage> {
       print("Retry failed: No camera index selected.");
       return;
     }
-
     print("Retrying stream for camera index: $_currentCameraIndex");
 
     setState(() {
@@ -587,7 +759,6 @@ class _HomePageState extends State<HomePage> {
       _gstreamerHasError = false; // Clear the error state
       _errorMessage = null;
     });
-
   }
 
   Future<void> _loadSettingsAndInitialize() async {
