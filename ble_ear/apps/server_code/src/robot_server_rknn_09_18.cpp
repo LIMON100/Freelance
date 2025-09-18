@@ -11,18 +11,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <chrono>
-#include <atomic> // For thread-safe status flags
+#include <atomic>
+#include <csignal>
+#include <fcntl.h>
 
 // --- Configuration ---
-#define COMMAND_PORT 65432  // For incoming TCP state commands
-#define TOUCH_PORT 65433    // For incoming UDP touch commands
-#define DRIVING_PORT 65434  // For incoming UDP driving commands
-#define STATUS_PORT 65435   // For outgoing TCP status updates
+#define COMMAND_PORT 65432
+#define TOUCH_PORT 65433
+#define DRIVING_PORT 65434
+#define STATUS_PORT 65435
 
 #pragma pack(push, 1)
-// --- Data Structures for Communication ---
-
-// FROM App TO Server (TCP)
+// ... (All data structs are UNCHANGED)
 struct StateCommand {
     uint8_t command_id;
     uint8_t attack_permission;
@@ -32,28 +32,21 @@ struct StateCommand {
     float   touch_x;
     float   touch_y;
 };
-
-// FROM App TO Server (UDP)
 struct DrivingCommand {
     int8_t move_speed;
     int8_t turn_angle;
 };
-
-// FROM App TO Server (UDP)
 struct TouchCoordinate {
     float x;
     float y;
 };
-
-// FROM Server TO App (TCP)
 struct StatusPacket {
-    uint8_t rtsp_server_status;   // 1 byte
-    uint8_t active_mode_id;       // 1 byte
-    float   lateral_wind_speed;   // 4 bytes
-    uint8_t wind_direction_index; // 1 byte
-}; // Total size: 7 bytes
+    uint8_t rtsp_server_status;
+    uint8_t active_mode_id;
+    float   lateral_wind_speed;
+    uint8_t wind_direction_index;
+};
 #pragma pack(pop)
-
 
 // --- Global State Management ---
 enum CommandType { STATE_CHANGE, TOUCH_INPUT, DRIVING_INPUT };
@@ -64,132 +57,46 @@ struct GenericCommand {
 std::queue<GenericCommand> command_queue;
 std::mutex command_queue_mutex;
 
-// Thread-safe global variables holding the server's current state
-std::atomic<uint8_t> g_rtsp_server_status(0); // 0=Down, 1=Running
-std::atomic<uint8_t> g_active_mode_id(0);     // 0=IDLE
-std::atomic<float>   g_lateral_wind_speed(-2.3f); // Example value
-std::atomic<uint8_t> g_wind_direction_index(0);   // 0=North
+std::atomic<uint8_t> g_rtsp_server_status(0);
+std::atomic<uint8_t> g_active_mode_id(0);
+std::atomic<float>   g_lateral_wind_speed(-2.3f);
+std::atomic<uint8_t> g_wind_direction_index(0);
 
+GMainLoop *g_main_loop = nullptr;
+std::atomic<bool> g_shutdown_request(false);
+
+void signalHandler(int signum) {
+    std::cout << "\nInterrupt signal (" << signum << ") received. Shutting down." << std::endl;
+    g_shutdown_request.store(true);
+    if (g_main_loop != nullptr && g_main_loop_is_running(g_main_loop)) {
+        g_main_loop_quit(g_main_loop);
+    }
+}
 
 // =========================================================================
-//  THREAD 1: STATUS SERVER (TCP, Server -> App)
+//  HELPER FUNCTION FOR ROBUST TCP READ
 // =========================================================================
-void statusServerThread() {
-    int server_fd, client_socket = -1;
-    struct sockaddr_in address;
-    int opt = 1;
-    socklen_t addrlen = sizeof(address);
-
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("[Status TCP Thread] socket failed"); return;
-    }
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-        perror("[Status TCP Thread] setsockopt"); return;
-    }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(STATUS_PORT);
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("[Status TCP Thread] bind failed"); return;
-    }
-    if (listen(server_fd, 1) < 0) {
-        perror("[Status TCP Thread] listen"); return;
-    }
-    std::cout << "[Status TCP Thread] Listening for app connection on port " << STATUS_PORT << std::endl;
-
-    while (true) {
-        if (client_socket < 0) {
-            if ((client_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
-                perror("[Status TCP Thread] accept");
-                continue;
-            }
-            std::cout << "[Status TCP Thread] App connected." << std::endl;
+bool read_full(int socket, void* buffer, size_t size) {
+    char* ptr = static_cast<char*>(buffer);
+    size_t bytes_left = size;
+    while (bytes_left > 0) {
+        ssize_t bytes_read = read(socket, ptr, bytes_left);
+        if (bytes_read <= 0) {
+            // Error or connection closed
+            return false;
         }
-
-        StatusPacket packet;
-        packet.rtsp_server_status = g_rtsp_server_status.load();
-        packet.active_mode_id = g_active_mode_id.load();
-        packet.lateral_wind_speed = g_lateral_wind_speed.load();
-        packet.wind_direction_index = g_wind_direction_index.load();
-
-        if (send(client_socket, &packet, sizeof(StatusPacket), MSG_NOSIGNAL) < 0) {
-            std::cout << "[Status TCP Thread] App disconnected. Waiting for new connection." << std::endl;
-            close(client_socket);
-            client_socket = -1;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        ptr += bytes_read;
+        bytes_left -= bytes_read;
     }
-    close(server_fd);
+    return true;
 }
 
 
 // =========================================================================
-//  THREAD 2: DRIVING SERVER (UDP, App -> Server)
-// =========================================================================
-void drivingServerThread() {
-    int server_fd;
-    struct sockaddr_in address;
-    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == 0) {
-        perror("[Driving UDP Thread] socket failed"); return;
-    }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(DRIVING_PORT);
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("[Driving UDP Thread] bind failed"); return;
-    }
-    std::cout << "[Driving UDP Thread] Listening for driving commands on port " << DRIVING_PORT << std::endl;
-
-    while (true) {
-        DrivingCommand received_drive;
-        if (recvfrom(server_fd, &received_drive, sizeof(DrivingCommand), 0, NULL, NULL) == sizeof(DrivingCommand)) {
-            GenericCommand cmd;
-            cmd.type = DRIVING_INPUT;
-            cmd.data.drive = received_drive;
-            std::lock_guard<std::mutex> lock(command_queue_mutex);
-            command_queue.push(cmd);
-        }
-    }
-    close(server_fd);
-}
-
-
-// =========================================================================
-//  THREAD 3: TOUCH SERVER (UDP, App -> Server)
-// =========================================================================
-void touchServerThread() {
-    int server_fd;
-    struct sockaddr_in address;
-    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == 0) {
-        perror("[Touch UDP Thread] socket failed"); return;
-    }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(TOUCH_PORT);
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("[Touch UDP Thread] bind failed"); return;
-    }
-    std::cout << "[Touch UDP Thread] Listening for touch coordinates on port " << TOUCH_PORT << std::endl;
-    while (true) {
-        TouchCoordinate received_touch;
-        if (recvfrom(server_fd, &received_touch, sizeof(TouchCoordinate), 0, NULL, NULL) == sizeof(TouchCoordinate)) {
-            GenericCommand cmd;
-            cmd.type = TOUCH_INPUT;
-            cmd.data.touch = received_touch;
-            std::lock_guard<std::mutex> lock(command_queue_mutex);
-            command_queue.push(cmd);
-        }
-    }
-    close(server_fd);
-}
-
-
-// =========================================================================
-//  THREAD 4: STATE COMMAND SERVER (TCP, App -> Server)
+//  THREAD 4: STATE COMMAND SERVER (TCP, App -> Server) 
 // =========================================================================
 void commandServerThread() {
-    int server_fd, new_socket;
+    int server_fd;
     struct sockaddr_in address;
     int opt = 1;
     socklen_t addrlen = sizeof(address);
@@ -203,27 +110,144 @@ void commandServerThread() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(COMMAND_PORT);
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("[Command TCP Thread] bind failed"); return;
+        perror("[Command TCP Thread] bind failed"); close(server_fd); return;
     }
     if (listen(server_fd, 5) < 0) {
-        perror("[Command TCP Thread] listen"); return;
+        perror("[Command TCP Thread] listen"); close(server_fd); return;
     }
+    fcntl(server_fd, F_SETFL, O_NONBLOCK); // Make the listening socket non-blocking
+
     std::cout << "[Command TCP Thread] Listening for state commands on port " << COMMAND_PORT << std::endl;
-    while (true) {
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
-            perror("[Command TCP Thread] accept"); continue;
+    while (!g_shutdown_request.load()) {
+        int new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen);
+        if (new_socket < 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
         }
+        
+        // --- THIS IS THE FIX ---
+        // Use a robust read function to ensure the full packet is received
         StateCommand received_state;
-        int valread = read(new_socket, &received_state, sizeof(StateCommand));
-        if (valread == sizeof(StateCommand)) {
-            GenericCommand cmd;
-            cmd.type = STATE_CHANGE;
+        if (read_full(new_socket, &received_state, sizeof(StateCommand))) {
+            GenericCommand cmd = {STATE_CHANGE};
             cmd.data.state = received_state;
             std::lock_guard<std::mutex> lock(command_queue_mutex);
             command_queue.push(cmd);
+        } else {
+            // This can happen if the client disconnects while sending
+            std::cerr << "[Command TCP Thread] Failed to read full packet." << std::endl;
         }
         close(new_socket);
     }
+    close(server_fd);
+    std::cout << "[Command TCP Thread] Shut down." << std::endl;
+}
+
+
+// =========================================================================
+//  THREAD 1: STATUS SERVER (TCP, Server -> App)
+// =========================================================================
+void statusServerThread() {
+    int server_fd, client_socket = -1;
+    struct sockaddr_in address;
+    int opt = 1;
+    socklen_t addrlen = sizeof(address);
+
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(STATUS_PORT);
+    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+    listen(server_fd, 1);
+    fcntl(server_fd, F_SETFL, O_NONBLOCK);
+
+    std::cout << "[Status TCP Thread] Listening on port " << STATUS_PORT << std::endl;
+
+    while (!g_shutdown_request.load()) {
+        if (client_socket < 0) {
+            client_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen);
+            if (client_socket < 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
+            std::cout << "[Status TCP Thread] App connected." << std::endl;
+        }
+
+        StatusPacket packet = { g_rtsp_server_status.load(), g_active_mode_id.load(), g_lateral_wind_speed.load(), g_wind_direction_index.load() };
+        if (send(client_socket, &packet, sizeof(StatusPacket), MSG_NOSIGNAL) < 0) {
+            std::cout << "[Status TCP Thread] App disconnected." << std::endl;
+            close(client_socket);
+            client_socket = -1;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    
+    if (client_socket >= 0) close(client_socket);
+    close(server_fd);
+    std::cout << "[Status TCP Thread] Shut down." << std::endl;
+}
+
+// =========================================================================
+//  THREAD 2: DRIVING SERVER (UDP, App -> Server)
+// =========================================================================
+void drivingServerThread() {
+    int server_fd;
+    struct sockaddr_in address;
+    server_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(DRIVING_PORT);
+    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+    std::cout << "[Driving UDP Thread] Listening on port " << DRIVING_PORT << std::endl;
+
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 1;
+    read_timeout.tv_usec = 0;
+    setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
+
+    while (!g_shutdown_request.load()) {
+        DrivingCommand received_drive;
+        if (recvfrom(server_fd, &received_drive, sizeof(DrivingCommand), 0, NULL, NULL) > 0) {
+            GenericCommand cmd = {DRIVING_INPUT};
+            cmd.data.drive = received_drive;
+            std::lock_guard<std::mutex> lock(command_queue_mutex);
+            command_queue.push(cmd);
+        }
+    }
+    close(server_fd);
+    std::cout << "[Driving UDP Thread] Shut down." << std::endl;
+}
+
+// =========================================================================
+//  THREAD 3: TOUCH SERVER (UDP, App -> Server)
+// =========================================================================
+void touchServerThread() {
+    int server_fd;
+    struct sockaddr_in address;
+    server_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(TOUCH_PORT);
+    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+    std::cout << "[Touch UDP Thread] Listening on port " << TOUCH_PORT << std::endl;
+    
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 1;
+    read_timeout.tv_usec = 0;
+    setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
+
+    while (!g_shutdown_request.load()) {
+        TouchCoordinate received_touch;
+        if (recvfrom(server_fd, &received_touch, sizeof(TouchCoordinate), 0, NULL, NULL) > 0) {
+            GenericCommand cmd = {TOUCH_INPUT};
+            cmd.data.touch = received_touch;
+            std::lock_guard<std::mutex> lock(command_queue_mutex);
+            command_queue.push(cmd);
+        }
+    }
+    close(server_fd);
+    std::cout << "[Touch UDP Thread] Shut down." << std::endl;
 }
 
 // =========================================================================
@@ -231,7 +255,7 @@ void commandServerThread() {
 // =========================================================================
 void commandProcessingThread() {
     std::cout << "[Processing Thread] Worker thread started." << std::endl;
-    while (true) {
+    while (!g_shutdown_request.load()) {
         GenericCommand command;
         bool command_found = false;
         {
@@ -248,7 +272,7 @@ void commandProcessingThread() {
                 case STATE_CHANGE:
                     g_active_mode_id.store(command.data.state.command_id);
                     std::cout << "--- Processing State Command Packet (TCP) ---" << std::endl;
-                    std::cout << "  Command ID:       " << (int)command.data.state.command_id << " -> SETTING GLOBAL STATE" << std::endl;
+                    std::cout << "  Command ID:       " << (int)command.data.state.command_id << std::endl;
                     std::cout << "  Attack Permission:" << (int)command.data.state.attack_permission << std::endl;
                     std::cout << "  Pan Speed:        " << (int)command.data.state.pan_speed << std::endl;
                     std::cout << "  Tilt Speed:       " << (int)command.data.state.tilt_speed << std::endl;
@@ -272,21 +296,14 @@ void commandProcessingThread() {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
+    std::cout << "[Processing Thread] Shut down." << std::endl;
 }
 
 // =========================================================================
-//  MAIN APPLICATION
+//  THREAD 6: RTSP SERVER
 // =========================================================================
-int main(int argc, char *argv[]) {
-    gst_init(&argc, &argv);
-
-    std::thread cmd_thread(commandServerThread);
-    std::thread touch_thread(touchServerThread);
-    std::thread drive_thread(drivingServerThread);
-    std::thread status_thread(statusServerThread);
-    std::thread worker_thread(commandProcessingThread); 
-
-    GMainLoop *loop = g_main_loop_new(NULL, FALSE);
+void rtspServerThread() {
+    g_main_loop = g_main_loop_new(NULL, FALSE);
     GstRTSPServer *server = gst_rtsp_server_new();
     GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(server);
 
@@ -294,33 +311,50 @@ int main(int argc, char *argv[]) {
     gst_rtsp_media_factory_set_launch(factory_cam0, "( v4l2src device=/dev/video1 ! video/x-raw,width=640,height=480 ! videoconvert ! queue ! mpph264enc bps=2000000 ! h264parse config-interval=-1 ! rtph264pay name=pay0 pt=96 )");
     gst_rtsp_media_factory_set_shared(factory_cam0, TRUE);
     gst_rtsp_mount_points_add_factory(mounts, "/cam0", factory_cam0);
-    std::cout << "[Main Thread] Stream ready at rtsp://<your_ip>:8554/cam0" << std::endl;
 
     GstRTSPMediaFactory *factory_cam1 = gst_rtsp_media_factory_new();
     gst_rtsp_media_factory_set_launch(factory_cam1, "( v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480 ! videoconvert ! queue ! mpph264enc bps=2000000 ! h264parse config-interval=-1 ! rtph264pay name=pay0 pt=96 )");
     gst_rtsp_media_factory_set_shared(factory_cam1, TRUE);
     gst_rtsp_mount_points_add_factory(mounts, "/cam1", factory_cam1);
-    std::cout << "[Main Thread] Stream ready at rtsp://<your_ip>:8554/cam1" << std::endl;
 
     g_object_unref(mounts);
     gst_rtsp_server_attach(server, NULL);
-
     g_rtsp_server_status.store(1);
-    std::cout << "[Main Thread] RTSP server is running." << std::endl;
+    std::cout << "[RTSP Thread] RTSP server is running." << std::endl;
     
-    g_main_loop_run(loop);
+    g_main_loop_run(g_main_loop);
     
+    std::cout << "[RTSP Thread] Shutting down." << std::endl;
     g_rtsp_server_status.store(0);
-
-    // Cleanup
-    cmd_thread.join();
-    touch_thread.join();
-    drive_thread.join();
-    status_thread.join();
-    worker_thread.join();
-    
-    g_main_loop_unref(loop);
     g_object_unref(server);
+    g_main_loop_unref(g_main_loop);
+}
+
+// =========================================================================
+//  MAIN APPLICATION
+// =========================================================================
+int main(int argc, char *argv[]) {
+    signal(SIGINT, signalHandler);
+    gst_init(&argc, &argv);
+    srand(time(0));
+
+    std::cout << "[Main Thread] Starting all service threads..." << std::endl;
+    std::vector<std::thread> threads;
+    threads.emplace_back(commandServerThread);
+    threads.emplace_back(touchServerThread);
+    threads.emplace_back(drivingServerThread);
+    threads.emplace_back(statusServerThread);
+    threads.emplace_back(commandProcessingThread);
+    threads.emplace_back(rtspServerThread);
+
+    std::cout << "[Main Thread] All threads started. Application is running. Press Ctrl+C to exit." << std::endl;
+
+    for (auto& t : threads) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
     
+    std::cout << "[Main Thread] All threads have been joined. Exiting." << std::endl;
     return 0;
 }
