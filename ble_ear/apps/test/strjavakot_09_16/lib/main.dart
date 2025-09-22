@@ -451,20 +451,68 @@ class _HomePageState extends State<HomePage> {
   //   });
   // }
 
+  // void _startCommandTimer() {
+  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+  //     // Create a new, separate command object for driving
+  //     DrivingCommand drivingCommand = DrivingCommand();
+  //
+  //     if (_gamepadConnected) {
+  //       // Populate the driving command from the gamepad
+  //       drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
+  //       drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
+  //
+  //       // Populate the main state command from the gamepad
+  //       _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
+  //       _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
+  //
+  //       _currentCommand.zoom_command = 0;
+  //       if (_isZoomInPressed) {
+  //         _currentCommand.zoom_command = 1;
+  //       } else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5) {
+  //         _currentCommand.zoom_command = -1;
+  //       }
+  //
+  //     } else {
+  //       drivingCommand.move_speed = _currentCommand.move_speed;
+  //       drivingCommand.turn_angle = _currentCommand.turn_angle;
+  //     }
+  //
+  //     _sendCommandPacket(_currentCommand);
+  //     _sendDrivingPacket(drivingCommand);
+  //
+  //     // Reset touch coordinates after sending
+  //     if (_currentCommand.touch_x != -1.0) {
+  //       _currentCommand.touch_x = -1.0;
+  //       _currentCommand.touch_y = -1.0;
+  //     }
+  //   });
+  // }
+
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       // Create a new, separate command object for driving
       DrivingCommand drivingCommand = DrivingCommand();
 
-      if (_gamepadConnected) {
-        // Populate the driving command from the gamepad
+      // --- THIS IS THE NEW, UNIFIED LOGIC ---
+
+      // Check if the physical gamepad is actively being used.
+      // We consider it "active" if any of its main axes are moved beyond a small deadzone.
+      bool isGamepadActive = _gamepadConnected &&
+          ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
+              (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
+              (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
+              (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
+
+      if (isGamepadActive) {
+        // Populate the driving command from the gamepad's left stick
         drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
         drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
 
-        // Populate the main state command from the gamepad
+        // Populate the main state command from the gamepad's right stick
         _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
         _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
 
+        // Handle zoom from gamepad
         _currentCommand.zoom_command = 0;
         if (_isZoomInPressed) {
           _currentCommand.zoom_command = 1;
@@ -473,11 +521,18 @@ class _HomePageState extends State<HomePage> {
         }
 
       } else {
+        // Populate the driving command from the left virtual joystick (via _currentCommand)
         drivingCommand.move_speed = _currentCommand.move_speed;
         drivingCommand.turn_angle = _currentCommand.turn_angle;
+
+        // The main state command's pan/tilt are already being set by the right virtual joystick's listener.
+        // We don't need to do anything extra here for pan/tilt.
+
+        // Reset zoom state if no gamepad is active
+        _currentCommand.zoom_command = 0;
       }
 
-      // --- SEND BOTH PACKETS ---
+      // --- SEND BOTH PACKETS (This part is unchanged) ---
       _sendCommandPacket(_currentCommand); // Sends the state command (TCP)
       _sendDrivingPacket(drivingCommand); // Sends the driving command (UDP)
 
