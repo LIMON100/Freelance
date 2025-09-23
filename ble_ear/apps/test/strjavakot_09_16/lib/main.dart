@@ -99,6 +99,7 @@ class _HomePageState extends State<HomePage> {
 
   bool _isUiZoomInPressed = false;
   bool _isUiZoomOutPressed = false;
+  int _confirmedServerModeId = CommandIds.IDLE;
 
 
   final Map<int, int> _buttonIndexToCommandId = {
@@ -128,29 +129,6 @@ class _HomePageState extends State<HomePage> {
     platform.setMethodCallHandler(_handleGamepadEvent);
   }
 
-  // NEED THIS for wind icon changes
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _loadSettingsAndInitialize();
-  //   platform.setMethodCallHandler(_handleGamepadEvent);
-  //
-  //   // --- TEMPORARY: Simulate receiving wind data (speed AND direction) ---
-  //   Timer.periodic(const Duration(seconds: 2), (timer) {
-  //     if (mounted) {
-  //       setState(() {
-  //         // Generate a random wind speed between -5.0 and 5.0
-  //         _lateralWindSpeed = (DateTime.now().second % 100) / 10.0 - 5.0;
-  //
-  //         // Cycle through the 8 wind directions every 16 seconds (2 seconds per direction)
-  //         _windDirectionIndex = (DateTime.now().second ~/ 2) % 8;
-  //       });
-  //     } else {
-  //       timer.cancel();
-  //     }
-  //   });
-  // }
-
   @override
   void dispose() {
     _commandTimer?.cancel();
@@ -179,7 +157,6 @@ class _HomePageState extends State<HomePage> {
 
       _statusSocketSubscription = _statusSocket!.listen(
             (Uint8List data) {
-          // This is where we receive the StatusPacket
           try {
             final status = StatusPacket.fromBytes(data);
             // Update the UI with the new data from the server
@@ -187,9 +164,8 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 _lateralWindSpeed = status.lateralWindSpeed;
                 _windDirectionIndex = status.windDirectionIndex;
-                // You can also update other UI elements based on:
-                // status.currentModeId
-                // status.isRtspRunning
+
+                _confirmedServerModeId = status.currentModeId;
               });
             }
           } catch (e) {
@@ -256,16 +232,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // void _stopCurrentMode() {
-  //   _isModeActive = false;
-  //   _selectedModeIndex = -1;
-  //   _currentCommand.command_id = CommandIds.IDLE;
-  //   _isForwardPressed = false;
-  //   _isBackPressed = false;
-  //   _isLeftPressed = false;
-  //   _isRightPressed = false;
-  // }
-
   void _stopCurrentMode() {
     _isModeActive = false;
     _selectedModeIndex = -1;
@@ -287,49 +253,6 @@ class _HomePageState extends State<HomePage> {
       _currentCommand.attack_permission = _isPermissionToAttackOn;
     });
   }
-
-  // Future<void> _handleGamepadEvent(MethodCall call) async {
-  //   if (!mounted) return;
-  //   if (!_gamepadConnected) setState(() => _gamepadConnected = true);
-  //
-  //   if (call.method == "onMotionEvent") {
-  //     setState(() => _gamepadAxisValues = Map<String, double>.from(call.arguments));
-  //   } else if (call.method == "onButtonDown") {
-  //     final String button = call.arguments['button'];
-  //     setState(() {
-  //       switch (button) {
-  //         case 'KEYCODE_BUTTON_B': // Start
-  //           _onStartStopPressed();
-  //           break;
-  //         case 'KEYCODE_BUTTON_A': // Stop
-  //           if (_isModeActive) _onStartStopPressed();
-  //           break;
-  //         case 'KEYCODE_BUTTON_X': // Permission
-  //           _onPermissionPressed();
-  //           break;
-  //         case 'KEYCODE_BUTTON_L1':
-  //           _isZoomInPressed = true;
-  //           break;
-  //         case 'KEYCODE_BUTTON_L2':
-  //           _isZoomOutPressed = true;
-  //           break;
-  //       }
-  //     });
-  //   } else if (call.method == "onButtonUp") {
-  //     final String button = call.arguments['button'];
-  //     setState(() {
-  //       switch (button) {
-  //         case 'KEYCODE_BUTTON_L1':
-  //           _isZoomInPressed = false;
-  //           break;
-  //         case 'KEYCODE_BUTTON_L2':
-  //           _isZoomOutPressed = false;
-  //           break;
-  //       }
-  //     });
-  //   }
-  // }
-
 
   Future<void> _handleGamepadEvent(MethodCall call) async {
     if (!mounted) return;
@@ -408,44 +331,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
-  // void _startCommandTimer() {
-  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-  //     // Create a new, separate command object for driving
-  //     DrivingCommand drivingCommand = DrivingCommand();
-  //
-  //     if (_gamepadConnected) {
-  //       // Populate the driving command from the gamepad
-  //       drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
-  //       drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
-  //
-  //       // Populate the main state command from the gamepad
-  //       _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
-  //       _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
-  //
-  //       _currentCommand.zoom_command = 0;
-  //       if (_isZoomInPressed) {
-  //         _currentCommand.zoom_command = 1;
-  //       } else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5) {
-  //         _currentCommand.zoom_command = -1;
-  //       }
-  //
-  //     } else {
-  //       drivingCommand.move_speed = _currentCommand.move_speed;
-  //       drivingCommand.turn_angle = _currentCommand.turn_angle;
-  //     }
-  //
-  //     _sendCommandPacket(_currentCommand);
-  //     _sendDrivingPacket(drivingCommand);
-  //
-  //     // Reset touch coordinates after sending
-  //     if (_currentCommand.touch_x != -1.0) {
-  //       _currentCommand.touch_x = -1.0;
-  //       _currentCommand.touch_y = -1.0;
-  //     }
-  //   });
-  // }
-
   // void _startCommandTimer() {
   //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
   //     // Create a new, separate command object for driving
@@ -502,12 +387,10 @@ class _HomePageState extends State<HomePage> {
   //   });
   // }
 
-
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       DrivingCommand drivingCommand = DrivingCommand();
 
-      // Check if the physical gamepad is actively being used for movement.
       bool isGamepadActive = _gamepadConnected &&
           ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
               (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
@@ -515,45 +398,42 @@ class _HomePageState extends State<HomePage> {
               (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
 
       if (isGamepadActive) {
-        // If gamepad is active, it is the master controller for all movement.
+        // GAMEPAD IS ACTIVE: It controls everything.
         drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
         drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
         _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
         _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
       } else {
-        // If gamepad is not active, the virtual joysticks are the master controller.
-        // Their listeners have already updated the values in _currentCommand.
+        // GAMEPAD IS INACTIVE: Virtual joysticks control everything.
+        // The listeners for the virtual joysticks have already updated the values in _currentCommand.
+        // We just need to copy them to the correct command packets.
         drivingCommand.move_speed = _currentCommand.move_speed;
         drivingCommand.turn_angle = _currentCommand.turn_angle;
-
-        // Pan and tilt speeds are already correctly set in _currentCommand by the right joystick's listener.
-        // --- THIS IS THE FIX ---
-        // However, if the gamepad was JUST used, its last value might be "stuck".
-        // We must reset the pan/tilt values here to ensure they go to zero when
-        // NO joystick (physical or virtual) is being used for pan/tilt.
-        // The virtual joystick's listener will correctly overwrite these zeros on the next frame if it's moved.
-        _currentCommand.pan_speed = 0;
-        _currentCommand.tilt_speed = 0;
+        // Pan and tilt are already in _currentCommand from the right joystick listener.
+        // When the virtual joystick is released, its listener correctly sets these to 0.
+        // This also implicitly handles the "stuck" physical joystick, because as soon as it's
+        // released, this `else` block is entered, and the resting (0,0) state of the
+        // virtual joystick's values in `_currentCommand` are used.
       }
 
-      // --- UNIFIED ZOOM LOGIC (This logic is already correct) ---
-      _currentCommand.zoom_command = 0; // Default to no zoom
-
-      // Check for any "zoom in" command from either the gamepad OR the UI.
+      // --- UNIFIED ZOOM LOGIC ---
+      _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
       }
-      // Check for any "zoom out" command from the gamepad trigger, button, OR the UI.
-      else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 || _isUiZoomOutPressed) {
+      else if (_isZoomOutPressed ||
+          (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+          (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+          _isUiZoomOutPressed) {
         _currentCommand.zoom_command = -1;
       }
+      if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+        _currentCommand.zoom_command = 1;
+      }
 
-      // --- SEND PACKETS ---
-      // This part is unchanged. It sends the correctly populated commands.
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
 
-      // Reset touch coordinates after sending
       if (_currentCommand.touch_x != -1.0) {
         _currentCommand.touch_x = -1.0;
         _currentCommand.touch_y = -1.0;
@@ -569,7 +449,52 @@ class _HomePageState extends State<HomePage> {
       socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
       socket.close();
     } catch (e) {
+      print(e);
     }
+  }
+
+  Widget _buildModeStatusBanner() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final widthScale = screenWidth / 1920.0;
+
+    final Map<int, String> modeIdToText = {
+      CommandIds.DRIVING: "DRIVING MODE",
+      CommandIds.RECON: "RECON MODE",
+      CommandIds.MANUAL_ATTACK: "MANUAL ATTACK MODE",
+      CommandIds.AUTO_ATTACK: "AUTO ATTACK MODE",
+      CommandIds.DRONE: "DRONE MODE",
+    };
+
+    final String statusText = modeIdToText[_confirmedServerModeId] ?? "";
+
+    if (statusText.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Use an Align widget for easy centering
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        // Use padding to push it down from the top edge
+        padding: EdgeInsets.only(top: 40 * widthScale),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 24 * widthScale, vertical: 12 * widthScale),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            statusText,
+            style: TextStyle(
+              fontFamily: 'NotoSans',
+              fontSize: 40 * widthScale,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // Widget to display the current zoom level
@@ -600,55 +525,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget to display the lateral wind indicator (UPDATED)
-  // Widget _buildWindIndicator() {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final widthScale = screenWidth / 1920.0;
-  //
-  //   final List<String> windIcons = [
-  //     ICON_PATH_WIND_N,
-  //     ICON_PATH_WIND_NE,
-  //     ICON_PATH_WIND_E,
-  //     ICON_PATH_WIND_SE,
-  //     ICON_PATH_WIND_S,
-  //     ICON_PATH_WIND_SW,
-  //     ICON_PATH_WIND_W,
-  //     ICON_PATH_WIND_NW,
-  //   ];
-  //
-  //   // Select the current icon based on the state variable
-  //   // with a check to prevent out-of-bounds errors.
-  //   final String currentWindIcon = (_windDirectionIndex >= 0 && _windDirectionIndex < windIcons.length)
-  //       ? windIcons[_windDirectionIndex]
-  //       : windIcons[0]; // Default to North if index is invalid
-  //
-  //   return Positioned(
-  //     top: 40 * widthScale,
-  //     left: 280 * widthScale,
-  //     child: Row(
-  //       children: [
-  //         // Use an Image.asset widget to display the dynamic icon
-  //         Image.asset(
-  //           currentWindIcon,
-  //           width: 40 * widthScale,
-  //           height: 40 * widthScale,
-  //         ),
-  //         SizedBox(width: 10 * widthScale),
-  //         Text(
-  //           _lateralWindSpeed.toStringAsFixed(1),
-  //           style: TextStyle(
-  //             fontFamily: 'NotoSans',
-  //             fontSize: 60 * widthScale,
-  //             fontWeight: FontWeight.w600,
-  //             color: Colors.white,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Widget to display the lateral wind indicator (UPDATED)
   Widget _buildWindIndicator() {
     final screenWidth = MediaQuery.of(context).size.width;
     final widthScale = screenWidth / 1920.0;
@@ -680,92 +556,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // Widget _buildMovementJoystick() {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final widthScale = screenWidth / 1920.0;
-  //
-  //   return Positioned(
-  //     left: 260 * widthScale,
-  //     bottom: 220 * widthScale,
-  //     child: Opacity(
-  //       opacity: _isServerConnected ? 1.0 : 0.5,
-  //       child: Joystick(
-  //         mode: JoystickMode.vertical,
-  //         stick: const CircleAvatar(
-  //           radius: 30,
-  //           backgroundColor: Colors.blue,
-  //         ),
-  //         base: Container(
-  //           width: 150,
-  //           height: 150,
-  //           decoration: BoxDecoration(
-  //             color: Colors.grey,
-  //             shape: BoxShape.circle,
-  //             border: Border.all(color: Colors.white38, width: 2),
-  //           ),
-  //         ),
-  //         // --- THIS IS THE FIX ---
-  //         // The listener is always active, but the logic inside is conditional.
-  //         listener: (details) {
-  //           if (!_isServerConnected) return; // Do nothing if disconnected
-  //           setState(() {
-  //             _isForwardPressed = details.y < -0.5;
-  //             _isBackPressed = details.y > 0.5;
-  //             if (details.y.abs() <= 0.5) {
-  //               _isForwardPressed = false;
-  //               _isBackPressed = false;
-  //             }
-  //             _isLeftPressed = false;
-  //             _isRightPressed = false;
-  //           });
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
-  //
-  // Widget _buildPanTiltJoystick() {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final widthScale = screenWidth / 1920.0;
-  //
-  //   return Positioned(
-  //     right: 260 * widthScale,
-  //     bottom: 220 * widthScale,
-  //     child: Opacity(
-  //       opacity: _isServerConnected ? 1.0 : 0.5,
-  //       child: Joystick(
-  //         mode: JoystickMode.horizontal,
-  //         stick: const CircleAvatar(
-  //           radius: 30,
-  //           backgroundColor: Colors.blue,
-  //         ),
-  //         base: Container(
-  //           width: 150,
-  //           height: 150,
-  //           decoration: BoxDecoration(
-  //             color: Colors.grey,
-  //             shape: BoxShape.circle,
-  //             border: Border.all(color: Colors.white38, width: 2),
-  //           ),
-  //         ),
-  //         listener: (details) {
-  //           if (!_isServerConnected) return; // Do nothing if disconnected
-  //           setState(() {
-  //             _isLeftPressed = details.x < -0.5;
-  //             _isRightPressed = details.x > 0.5;
-  //
-  //             // If the joystick is centered, clear the flags.
-  //             if (details.x.abs() <= 0.5) {
-  //               _isLeftPressed = false;
-  //               _isRightPressed = false;
-  //             }
-  //           });
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildMovementJoystick() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -843,6 +633,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
   Widget _buildConnectionStatusBanner() {
     if (_isServerConnected) {
       return const SizedBox.shrink();
@@ -851,40 +642,19 @@ class _HomePageState extends State<HomePage> {
       top: 0,
       left: 0,
       right: 0,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _isServerConnected
-            ? Container( // Connected State
-          key: const ValueKey('connected'),
-          padding: const EdgeInsets.all(8.0),
-          color: Colors.green.withOpacity(0.8),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 16),
-              SizedBox(width: 8),
-              Text(
-                'Connected',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        )
-            : Container( // Disconnected State
-          key: const ValueKey('disconnected'),
-          padding: const EdgeInsets.all(8.0),
-          color: Colors.red.withOpacity(0.8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'Connection Lost - Attempting to reconnect, please check server',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        color: Colors.red.withOpacity(0.8),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text(
+              'Connection Lost - Attempting to reconnect...',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
     );
@@ -921,6 +691,8 @@ class _HomePageState extends State<HomePage> {
 
           _buildWindIndicator(),
           _buildZoomDisplay(),
+
+          _buildModeStatusBanner(),
 
           _buildConnectionStatusBanner(),
 
@@ -967,6 +739,7 @@ class _HomePageState extends State<HomePage> {
               child: _buildBottomBar(),
             ),
           ),
+
         ],
       ),
     );
