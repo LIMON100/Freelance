@@ -97,6 +97,9 @@ class _HomePageState extends State<HomePage> {
 
   ServerStatus _serverStatus = ServerStatus.disconnected();
 
+  bool _isUiZoomInPressed = false;
+  bool _isUiZoomOutPressed = false;
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -405,51 +408,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // void _startCommandTimer() {
-  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-  //     // Create a new, separate command object for driving
-  //     DrivingCommand drivingCommand = DrivingCommand();
-  //
-  //     if (_gamepadConnected) {
-  //       // Populate the driving command from the gamepad
-  //       drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
-  //       drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
-  //
-  //       // Populate the main state command from the gamepad
-  //       _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
-  //       _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
-  //
-  //       _currentCommand.zoom_command = 0;
-  //       if (_isZoomInPressed) {
-  //         _currentCommand.zoom_command = 1;
-  //       } else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5) {
-  //         _currentCommand.zoom_command = -1;
-  //       }
-  //
-  //     } else {
-  //       // Populate the driving command from the on-screen joystick/buttons
-  //       drivingCommand.move_speed = 0;
-  //       if (_isForwardPressed) drivingCommand.move_speed = 100;
-  //       if (_isBackPressed) drivingCommand.move_speed = -100;
-  //
-  //       drivingCommand.turn_angle = 0;
-  //       if (_isLeftPressed) drivingCommand.turn_angle = -100;
-  //       if (_isRightPressed) drivingCommand.turn_angle = 100;
-  //
-  //       // The main state command's pan/tilt are already being set by the joystick listener
-  //     }
-  //
-  //     // --- SEND BOTH PACKETS ---
-  //     _sendCommandPacket(_currentCommand); // Sends the state command (TCP)
-  //     _sendDrivingPacket(drivingCommand); // Sends the driving command (UDP)
-  //
-  //     // Reset touch coordinates after sending
-  //     if (_currentCommand.touch_x != -1.0) {
-  //       _currentCommand.touch_x = -1.0;
-  //       _currentCommand.touch_y = -1.0;
-  //     }
-  //   });
-  // }
 
   // void _startCommandTimer() {
   //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
@@ -488,15 +446,68 @@ class _HomePageState extends State<HomePage> {
   //   });
   // }
 
+  // void _startCommandTimer() {
+  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+  //     // Create a new, separate command object for driving
+  //     DrivingCommand drivingCommand = DrivingCommand();
+  //
+  //     // --- THIS IS THE NEW, UNIFIED LOGIC ---
+  //
+  //     // Check if the physical gamepad is actively being used.
+  //     // We consider it "active" if any of its main axes are moved beyond a small deadzone.
+  //     bool isGamepadActive = _gamepadConnected &&
+  //         ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
+  //             (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
+  //             (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
+  //             (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
+  //
+  //     if (isGamepadActive) {
+  //       // Populate the driving command from the gamepad's left stick
+  //       drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
+  //       drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
+  //
+  //       // Populate the main state command from the gamepad's right stick
+  //       _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
+  //       _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
+  //
+  //       // Handle zoom from gamepad
+  //       _currentCommand.zoom_command = 0;
+  //       if (_isZoomInPressed) {
+  //         _currentCommand.zoom_command = 1;
+  //       } else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5) {
+  //         _currentCommand.zoom_command = -1;
+  //       }
+  //
+  //     } else {
+  //       // Populate the driving command from the left virtual joystick (via _currentCommand)
+  //       drivingCommand.move_speed = _currentCommand.move_speed;
+  //       drivingCommand.turn_angle = _currentCommand.turn_angle;
+  //
+  //       // The main state command's pan/tilt are already being set by the right virtual joystick's listener.
+  //       // We don't need to do anything extra here for pan/tilt.
+  //
+  //       // Reset zoom state if no gamepad is active
+  //       _currentCommand.zoom_command = 0;
+  //     }
+  //
+  //     // --- SEND BOTH PACKETS (This part is unchanged) ---
+  //     _sendCommandPacket(_currentCommand); // Sends the state command (TCP)
+  //     _sendDrivingPacket(drivingCommand); // Sends the driving command (UDP)
+  //
+  //     // Reset touch coordinates after sending
+  //     if (_currentCommand.touch_x != -1.0) {
+  //       _currentCommand.touch_x = -1.0;
+  //       _currentCommand.touch_y = -1.0;
+  //     }
+  //   });
+  // }
+
+
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      // Create a new, separate command object for driving
       DrivingCommand drivingCommand = DrivingCommand();
 
-      // --- THIS IS THE NEW, UNIFIED LOGIC ---
-
-      // Check if the physical gamepad is actively being used.
-      // We consider it "active" if any of its main axes are moved beyond a small deadzone.
+      // Check if the physical gamepad is actively being used for movement.
       bool isGamepadActive = _gamepadConnected &&
           ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
               (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
@@ -504,37 +515,43 @@ class _HomePageState extends State<HomePage> {
               (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
 
       if (isGamepadActive) {
-        // Populate the driving command from the gamepad's left stick
+        // If gamepad is active, it is the master controller for all movement.
         drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
         drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
-
-        // Populate the main state command from the gamepad's right stick
         _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
         _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
-
-        // Handle zoom from gamepad
-        _currentCommand.zoom_command = 0;
-        if (_isZoomInPressed) {
-          _currentCommand.zoom_command = 1;
-        } else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5) {
-          _currentCommand.zoom_command = -1;
-        }
-
       } else {
-        // Populate the driving command from the left virtual joystick (via _currentCommand)
+        // If gamepad is not active, the virtual joysticks are the master controller.
+        // Their listeners have already updated the values in _currentCommand.
         drivingCommand.move_speed = _currentCommand.move_speed;
         drivingCommand.turn_angle = _currentCommand.turn_angle;
 
-        // The main state command's pan/tilt are already being set by the right virtual joystick's listener.
-        // We don't need to do anything extra here for pan/tilt.
-
-        // Reset zoom state if no gamepad is active
-        _currentCommand.zoom_command = 0;
+        // Pan and tilt speeds are already correctly set in _currentCommand by the right joystick's listener.
+        // --- THIS IS THE FIX ---
+        // However, if the gamepad was JUST used, its last value might be "stuck".
+        // We must reset the pan/tilt values here to ensure they go to zero when
+        // NO joystick (physical or virtual) is being used for pan/tilt.
+        // The virtual joystick's listener will correctly overwrite these zeros on the next frame if it's moved.
+        _currentCommand.pan_speed = 0;
+        _currentCommand.tilt_speed = 0;
       }
 
-      // --- SEND BOTH PACKETS (This part is unchanged) ---
-      _sendCommandPacket(_currentCommand); // Sends the state command (TCP)
-      _sendDrivingPacket(drivingCommand); // Sends the driving command (UDP)
+      // --- UNIFIED ZOOM LOGIC (This logic is already correct) ---
+      _currentCommand.zoom_command = 0; // Default to no zoom
+
+      // Check for any "zoom in" command from either the gamepad OR the UI.
+      if (_isZoomInPressed || _isUiZoomInPressed) {
+        _currentCommand.zoom_command = 1;
+      }
+      // Check for any "zoom out" command from the gamepad trigger, button, OR the UI.
+      else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 || _isUiZoomOutPressed) {
+        _currentCommand.zoom_command = -1;
+      }
+
+      // --- SEND PACKETS ---
+      // This part is unchanged. It sends the correctly populated commands.
+      _sendCommandPacket(_currentCommand);
+      _sendDrivingPacket(drivingCommand);
 
       // Reset touch coordinates after sending
       if (_currentCommand.touch_x != -1.0) {
@@ -1087,15 +1104,47 @@ class _HomePageState extends State<HomePage> {
             _isServerConnected ? _onStartStopPressed : null,
           ),
           SizedBox(width: 12 * widthScale),
+          // _buildBottomBarButton(
+          //   "",
+          //   ICON_PATH_PLUS,
+          //   [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
+          //   _isServerConnected ? () {
+          //     setState(() {
+          //       if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
+          //       else _currentZoomLevel = 5.0;
+          //       _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
+          //     });
+          //   } : null,
+          // ),
+          // SizedBox(width: 12 * widthScale),
+          // _buildBottomBarButton(
+          //   "",
+          //   ICON_PATH_MINUS,
+          //   [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
+          //   _isServerConnected ? () {
+          //     setState(() {
+          //       if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
+          //       else _currentZoomLevel = 1.0;
+          //       _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
+          //     });
+          //   } : null,
+          // ),
+
           _buildBottomBarButton(
             "",
             ICON_PATH_PLUS,
             [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
             _isServerConnected ? () {
+              // --- UPDATED ZOOM IN LOGIC ---
               setState(() {
                 if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
                 else _currentZoomLevel = 5.0;
                 _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
+
+                // Set the flag for the command timer
+                _isUiZoomInPressed = true;
+                // Clear the flag after a moment so we only send one command per press
+                Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomInPressed = false);
               });
             } : null,
           ),
@@ -1105,10 +1154,16 @@ class _HomePageState extends State<HomePage> {
             ICON_PATH_MINUS,
             [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
             _isServerConnected ? () {
+              // --- UPDATED ZOOM OUT LOGIC ---
               setState(() {
                 if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
                 else _currentZoomLevel = 1.0;
                 _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
+
+                // Set the flag for the command timer
+                _isUiZoomOutPressed = true;
+                // Clear the flag after a moment
+                Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomOutPressed = false);
               });
             } : null,
           ),
