@@ -104,6 +104,12 @@ class _HomePageState extends State<HomePage> {
   bool _permissionRequestIsActive = false; // From server
   bool _permissionHasBeenGranted = false;  // Local UI state
 
+  bool _isStoppingMode = false;
+
+  bool _showCrosshair = false;
+  double _crosshairX = -1.0;
+  double _crosshairY = -1.0;
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -121,7 +127,7 @@ class _HomePageState extends State<HomePage> {
     4: const Color(0xff25a625), // CHANGED: Green for Drone
   };
 
-  final List<Color> _permissionDisabledColors = [const Color(0xFF424242), const Color(0xFF212121)]; // Black/Grey
+  final List<Color> _permissionDisabledColors = [const Color(0xffcccccc), const Color(0xffcccccc)]; // Black/Grey
   final List<Color> _permissionOffColors = [const Color(0xffc32121), const Color(0xff831616)];      // Red
   final List<Color> _permissionOnColors = [const Color(0xff6b0000), const Color(0xff520000)];
 
@@ -178,6 +184,11 @@ class _HomePageState extends State<HomePage> {
       _statusSocketSubscription = _statusSocket!.listen(
               (Uint8List data) {
             try {
+
+              if (_isStoppingMode) {
+                return;
+              }
+
               final status = StatusPacket.fromBytes(data);
               if (mounted) {
                 setState(() {
@@ -187,6 +198,9 @@ class _HomePageState extends State<HomePage> {
 
                   // --- NEW: Update permission state from server ---
                   bool serverRequest = status.permissionRequestActive == 1;
+
+                  _crosshairX = status.crosshairX;
+                  _crosshairY = status.crosshairY;
 
                   // If the server stops requesting, reset everything
                   if (!serverRequest) {
@@ -280,6 +294,7 @@ class _HomePageState extends State<HomePage> {
   // }
 
   void _stopCurrentMode() {
+    _isStoppingMode = true;
     _isModeActive = false;
     _selectedModeIndex = -1;
     _currentCommand.command_id = CommandIds.IDLE;
@@ -293,6 +308,14 @@ class _HomePageState extends State<HomePage> {
     _currentCommand.attack_permission = false;
     _permissionRequestIsActive = false;
     _permissionHasBeenGranted = false;
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isStoppingMode = false;
+        });
+      }
+    });
   }
 
   // void _onPermissionPressed() {
@@ -512,6 +535,51 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Widget _buildCrosshair(double screenWidth, double screenHeight) {
+    // Condition 1: Is the app in an attack mode?
+    bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
+        _confirmedServerModeId == CommandIds.AUTO_ATTACK;
+
+    if (!isAttackMode) {
+      return const SizedBox.shrink(); // Don't show anything
+    }
+
+    // Condition 2: Did the robot provide a specific crosshair position?
+    bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
+
+    // Determine the final normalized coordinates for the crosshair's center.
+    final double targetX = useServerPosition ? _crosshairX : 0.5;
+    final double targetY = useServerPosition ? _crosshairY : 0.5;
+
+    // --- THIS IS THE NEW COLOR LOGIC ---
+    // If the server is providing the position, it means we have a lock, so make it red.
+    // Otherwise, use the default white color.
+    final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
+    // --- END OF NEW COLOR LOGIC ---
+
+    final double crosshairSize = 150.0;
+
+    final double left = (targetX * screenWidth) - (crosshairSize / 2);
+    final double top = (targetY * screenHeight) - (crosshairSize / 2);
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: Image.asset(
+        'assets/new_icons/crosshair.png',
+        width: crosshairSize,
+        height: crosshairSize,
+
+        // --- THESE TWO LINES ARE THE FIX ---
+        // 1. Apply the dynamic color we just determined.
+        color: crosshairColor,
+
+        // 2. Use this blend mode to "colorize" the non-transparent parts of the image.
+        colorBlendMode: BlendMode.srcIn,
+      ),
+    );
+  }
+
   Widget _buildModeStatusBanner() {
     final screenWidth = MediaQuery.of(context).size.width;
     final widthScale = screenWidth / 1920.0;
@@ -721,6 +789,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: _isLoading
@@ -789,6 +860,8 @@ class _HomePageState extends State<HomePage> {
           // _buildDirectionalControls(),
           _buildMovementJoystick(),
           _buildPanTiltJoystick(),
+
+          _buildCrosshair(screenWidth, screenHeight),
 
           Align(
             alignment: Alignment.bottomCenter,
@@ -920,6 +993,7 @@ class _HomePageState extends State<HomePage> {
           permissionButtonColors = _permissionDisabledColors;
         }
 
+        Color permissionTextColor = Colors.white;
         String permissionLabel;
         VoidCallback? permissionOnPressed = null; // Button is disabled by default
 
@@ -928,33 +1002,30 @@ class _HomePageState extends State<HomePage> {
             // State 3: Permitted
             permissionLabel = "Permitted";
             permissionButtonColors = _permissionDisabledColors; // Gray
-            permissionOnPressed = null; // Not tappable
+            permissionOnPressed = null;
+            permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
           } else {
             // State 2: Request Pending
             permissionLabel = "Request Pending";
             permissionButtonColors = _permissionOffColors; // Red
-            permissionOnPressed = _isServerConnected ? _onPermissionPressed : null; // Tappable
+            permissionOnPressed = _isServerConnected ? _onPermissionPressed : null;
+            // Text color remains white
           }
         } else {
           // State 1: Idle
           permissionLabel = "Permission to Attack";
           permissionButtonColors = _permissionDisabledColors; // Gray
-          permissionOnPressed = null; // Not tappable
+          permissionOnPressed = null;
+          permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
         }
 
         final List<Widget> leftCluster = [
-          // _buildBottomBarButton(
-          //   "PERMISSION TO ATTACK",
-          //   null,
-          //   // permissionButtonColors,
-          //   _isPermissionToAttackOn ? [const Color(0xffc32121), const Color(0xff831616)] : [const Color(0xFF424242), const Color(0xFF212121)],
-          //   _isServerConnected ? _onPermissionPressed : null,
-          // ),
           _buildBottomBarButton(
             permissionLabel,
             null,
             permissionButtonColors,
-            permissionOnPressed, // Use the dynamically set callback
+            permissionOnPressed,
+            textColor: permissionTextColor, // <-- PASS THE COLOR TO THE WIDGET
           ),
           SizedBox(width: 12 * widthScale),
           _buildWideBottomBarButton(
@@ -964,31 +1035,6 @@ class _HomePageState extends State<HomePage> {
             _isServerConnected ? _onStartStopPressed : null,
           ),
           SizedBox(width: 12 * widthScale),
-          // _buildBottomBarButton(
-          //   "",
-          //   ICON_PATH_PLUS,
-          //   [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
-          //   _isServerConnected ? () {
-          //     setState(() {
-          //       if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
-          //       else _currentZoomLevel = 5.0;
-          //       _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-          //     });
-          //   } : null,
-          // ),
-          // SizedBox(width: 12 * widthScale),
-          // _buildBottomBarButton(
-          //   "",
-          //   ICON_PATH_MINUS,
-          //   [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
-          //   _isServerConnected ? () {
-          //     setState(() {
-          //       if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
-          //       else _currentZoomLevel = 1.0;
-          //       _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-          //     });
-          //   } : null,
-          // ),
 
           _buildBottomBarButton(
             "",
@@ -1098,7 +1144,46 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Make the onPressed parameter nullable by adding '?'
-  Widget _buildBottomBarButton(String label, String? iconPath, List<Color> gradientColors, VoidCallback? onPressed) {
+  // Widget _buildBottomBarButton(String label, String? iconPath, List<Color> gradientColors, VoidCallback? onPressed) {
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final heightScale = screenHeight / 1080.0;
+  //   final bool isEnabled = onPressed != null;
+  //
+  //   return GestureDetector(
+  //     onTap: onPressed,
+  //     child: Opacity(
+  //       opacity: isEnabled ? 1.0 : 0.5,
+  //       child: Container(
+  //         height: 80 * heightScale,
+  //         padding: const EdgeInsets.symmetric(horizontal: 30),
+  //         decoration: BoxDecoration(
+  //           gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
+  //           borderRadius: BorderRadius.circular(25 * heightScale),
+  //         ),
+  //         child: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             if (iconPath != null && iconPath.isNotEmpty) ...[
+  //               Image.asset(iconPath, height: 36 * heightScale),
+  //               if (label.isNotEmpty) const SizedBox(width: 12),
+  //             ],
+  //             if (label.isNotEmpty)
+  //               Text(label, style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 30 * heightScale, color: Colors.white)),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // Make the onPressed parameter nullable and add the new textColor parameter
+  Widget _buildBottomBarButton(
+      String label,
+      String? iconPath,
+      List<Color> gradientColors,
+      VoidCallback? onPressed,
+      {Color textColor = Colors.white} // <-- ADD THIS PARAMETER
+      ) {
     final screenHeight = MediaQuery.of(context).size.height;
     final heightScale = screenHeight / 1080.0;
     final bool isEnabled = onPressed != null;
@@ -1122,7 +1207,15 @@ class _HomePageState extends State<HomePage> {
                 if (label.isNotEmpty) const SizedBox(width: 12),
               ],
               if (label.isNotEmpty)
-                Text(label, style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 30 * heightScale, color: Colors.white)),
+                Text(
+                    label,
+                    style: TextStyle(
+                        fontFamily: 'NotoSans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 30 * heightScale,
+                        color: textColor // <-- USE THE PARAMETER HERE
+                    )
+                ),
             ],
           ),
         ),
