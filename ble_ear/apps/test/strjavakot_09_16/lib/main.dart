@@ -101,6 +101,9 @@ class _HomePageState extends State<HomePage> {
   bool _isUiZoomOutPressed = false;
   int _confirmedServerModeId = CommandIds.IDLE;
 
+  bool _permissionRequestIsActive = false; // From server
+  bool _permissionHasBeenGranted = false;  // Local UI state
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -155,23 +158,52 @@ class _HomePageState extends State<HomePage> {
       });
       print("Connected to status server!");
 
+      // _statusSocketSubscription = _statusSocket!.listen(
+      //       (Uint8List data) {
+      //     try {
+      //       final status = StatusPacket.fromBytes(data);
+      //       // Update the UI with the new data from the server
+      //       if (mounted) {
+      //         setState(() {
+      //           _lateralWindSpeed = status.lateralWindSpeed;
+      //           _windDirectionIndex = status.windDirectionIndex;
+      //
+      //           _confirmedServerModeId = status.currentModeId;
+      //         });
+      //       }
+      //     } catch (e) {
+      //       print("Error parsing status packet: $e");
+      //     }
+      //   },
       _statusSocketSubscription = _statusSocket!.listen(
-            (Uint8List data) {
-          try {
-            final status = StatusPacket.fromBytes(data);
-            // Update the UI with the new data from the server
-            if (mounted) {
-              setState(() {
-                _lateralWindSpeed = status.lateralWindSpeed;
-                _windDirectionIndex = status.windDirectionIndex;
+              (Uint8List data) {
+            try {
+              final status = StatusPacket.fromBytes(data);
+              if (mounted) {
+                setState(() {
+                  _lateralWindSpeed = status.lateralWindSpeed;
+                  _windDirectionIndex = status.windDirectionIndex;
+                  _confirmedServerModeId = status.currentModeId;
 
-                _confirmedServerModeId = status.currentModeId;
-              });
+                  // --- NEW: Update permission state from server ---
+                  bool serverRequest = status.permissionRequestActive == 1;
+
+                  // If the server stops requesting, reset everything
+                  if (!serverRequest) {
+                    _permissionRequestIsActive = false;
+                    _permissionHasBeenGranted = false;
+                  } else {
+                    // If the server is requesting, update our state, but DON'T reset
+                    // the _permissionHasBeenGranted flag. This allows the "Permitted"
+                    // state to persist.
+                    _permissionRequestIsActive = true;
+                  }
+                });
+              }
+            } catch (e) {
+              print("Error parsing status packet: $e");
             }
-          } catch (e) {
-            print("Error parsing status packet: $e");
-          }
-        },
+          },
         onError: (error) {
           print("Status socket error: $error");
           setState(() => _isServerConnected = false);
@@ -232,6 +264,21 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // void _stopCurrentMode() {
+  //   _isModeActive = false;
+  //   _selectedModeIndex = -1;
+  //   _currentCommand.command_id = CommandIds.IDLE;
+  //   _isForwardPressed = false;
+  //   _isBackPressed = false;
+  //   _isLeftPressed = false;
+  //   _isRightPressed = false;
+  //
+  //   // --- THIS IS THE FIX ---
+  //   // Automatically reset the attack permission when stopping any mode.
+  //   _isPermissionToAttackOn = false;
+  //   _currentCommand.attack_permission = false;
+  // }
+
   void _stopCurrentMode() {
     _isModeActive = false;
     _selectedModeIndex = -1;
@@ -241,17 +288,29 @@ class _HomePageState extends State<HomePage> {
     _isLeftPressed = false;
     _isRightPressed = false;
 
-    // --- THIS IS THE FIX ---
-    // Automatically reset the attack permission when stopping any mode.
+    // --- NEW: Reset all permission states on STOP ---
     _isPermissionToAttackOn = false;
     _currentCommand.attack_permission = false;
+    _permissionRequestIsActive = false;
+    _permissionHasBeenGranted = false;
   }
 
+  // void _onPermissionPressed() {
+  //   setState(() {
+  //     _isPermissionToAttackOn = !_isPermissionToAttackOn;
+  //     _currentCommand.attack_permission = _isPermissionToAttackOn;
+  //   });
+  // }
+
   void _onPermissionPressed() {
-    setState(() {
-      _isPermissionToAttackOn = !_isPermissionToAttackOn;
-      _currentCommand.attack_permission = _isPermissionToAttackOn;
-    });
+    // This button should only be tappable when a request is active
+    if (_permissionRequestIsActive && !_permissionHasBeenGranted) {
+      setState(() {
+        _isPermissionToAttackOn = true; // Send the "ON" command
+        _currentCommand.attack_permission = true;
+        _permissionHasBeenGranted = true; // Lock the button in the "Permitted" state
+      });
+    }
   }
 
   Future<void> _handleGamepadEvent(MethodCall call) async {
@@ -543,8 +602,8 @@ class _HomePageState extends State<HomePage> {
           ),
           SizedBox(width: 10 * widthScale),
           Text(
-            // _lateralWindSpeed.toStringAsFixed(1),
-            (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
+            // (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
+            "0.0",
             style: TextStyle(
               fontFamily: 'NotoSans',
               fontSize: 60 * widthScale,
@@ -861,13 +920,41 @@ class _HomePageState extends State<HomePage> {
           permissionButtonColors = _permissionDisabledColors;
         }
 
+        String permissionLabel;
+        VoidCallback? permissionOnPressed = null; // Button is disabled by default
+
+        if (_permissionRequestIsActive) {
+          if (_permissionHasBeenGranted) {
+            // State 3: Permitted
+            permissionLabel = "Permitted";
+            permissionButtonColors = _permissionDisabledColors; // Gray
+            permissionOnPressed = null; // Not tappable
+          } else {
+            // State 2: Request Pending
+            permissionLabel = "Request Pending";
+            permissionButtonColors = _permissionOffColors; // Red
+            permissionOnPressed = _isServerConnected ? _onPermissionPressed : null; // Tappable
+          }
+        } else {
+          // State 1: Idle
+          permissionLabel = "Permission to Attack";
+          permissionButtonColors = _permissionDisabledColors; // Gray
+          permissionOnPressed = null; // Not tappable
+        }
+
         final List<Widget> leftCluster = [
+          // _buildBottomBarButton(
+          //   "PERMISSION TO ATTACK",
+          //   null,
+          //   // permissionButtonColors,
+          //   _isPermissionToAttackOn ? [const Color(0xffc32121), const Color(0xff831616)] : [const Color(0xFF424242), const Color(0xFF212121)],
+          //   _isServerConnected ? _onPermissionPressed : null,
+          // ),
           _buildBottomBarButton(
-            "PERMISSION TO ATTACK",
+            permissionLabel,
             null,
-            // permissionButtonColors,
-            _isPermissionToAttackOn ? [const Color(0xffc32121), const Color(0xff831616)] : [const Color(0xFF424242), const Color(0xFF212121)],
-            _isServerConnected ? _onPermissionPressed : null,
+            permissionButtonColors,
+            permissionOnPressed, // Use the dynamically set callback
           ),
           SizedBox(width: 12 * widthScale),
           _buildWideBottomBarButton(
