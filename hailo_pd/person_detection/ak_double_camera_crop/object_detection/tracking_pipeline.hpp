@@ -2,31 +2,13 @@
 #define TRACKING_PIPELINE_HPP
 
 #include "config.hpp"
-#include "utils.hpp"
-#include "async_inference.hpp"
+#include "utils.hpp" // This will now contain FrameData structs
+#include "async_inference.hpp" // This now contains BoundedTSQueue
 #include "ByteTrack/BYTETracker.h"
 #include <thread>
 #include <atomic>
-#include <chrono> 
-
-struct FrameData {
-    // Core Data
-    int frame_id;
-    cv::Mat org_frame;
-    cv::Mat resized_for_infer;
-    cv::Mat affine_matrix;
-    cv::Point crop_offset;
-
-    // Inference Output
-    std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> output_data_and_infos;
-    std::vector<std::shared_ptr<uint8_t>> output_guards;
-
-    // Profiling Timestamps
-    std::chrono::high_resolution_clock::time_point t_capture_start;
-    std::chrono::high_resolution_clock::time_point t_preprocess_end;
-    std::chrono::high_resolution_clock::time_point t_inference_end;
-    std::chrono::high_resolution_clock::time_point t_postprocess_end;
-};
+#include <memory>
+#include <chrono>
 
 class TrackingPipeline {
 public:
@@ -36,28 +18,38 @@ public:
     void stop();
 
 private:
-    void preprocess_worker();
-    void inference_worker();
+    void preprocess_worker_eo();
+    void preprocess_worker_ir();
+    void inference_worker_eo();
+    void inference_worker_ir();
+    void fusion_worker();
     void postprocess_worker();
-    void release_resources();
 
-    // Helper is now part of the class
+    void release_resources();
     std::vector<byte_track::Object> detections_to_bytetrack_objects(
         const std::vector<NamedBbox>& bboxes, int frame_width, int frame_height);
 
     PipelineConfig m_config;
     std::atomic<bool> m_stop_flag;
 
-    std::unique_ptr<AsyncModelInfer> m_model;
+    std::unique_ptr<AsyncModelInfer> m_model_eo;
+    std::unique_ptr<AsyncModelInfer> m_model_ir;
     
-    // Queues now use the new FrameData struct
-    std::shared_ptr<BoundedTSQueue<FrameData>> m_preprocessed_queue;
-    std::shared_ptr<BoundedTSQueue<FrameData>> m_results_queue;
+    std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_preprocessed_queue_eo;
+    std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_preprocessed_queue_ir;
+    std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_results_queue_eo;
+    std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_results_queue_ir;
+    std::shared_ptr<BoundedTSQueue<FusedFrameData>> m_fused_queue;
 
-    cv::VideoCapture m_capture;
+    cv::VideoCapture m_capture_eo;
+    cv::VideoCapture m_capture_ir;
     cv::VideoWriter m_video_writer;
+    
     std::unique_ptr<byte_track::BYTETracker> m_tracker;
-    std::chrono::duration<double> m_inference_time;
+    cv::Mat m_boresight_matrix;
+
+    std::chrono::duration<double> m_inference_time_eo;
+    std::chrono::duration<double> m_inference_time_ir;
     size_t m_total_frames;
 };
 
