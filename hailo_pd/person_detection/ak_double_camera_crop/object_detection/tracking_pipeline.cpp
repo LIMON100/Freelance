@@ -233,6 +233,56 @@ void TrackingPipeline::inference_worker_ir() {
     m_results_queue_ir->stop();
 }
 
+// void TrackingPipeline::fusion_worker() {
+//     while (!m_stop_flag.load()) {
+//         SingleStreamFrameData eo_item, ir_item;
+//         if (!m_results_queue_eo->pop(eo_item) || !m_results_queue_ir->pop(ir_item)) {
+//             break;
+//         }
+
+//         FusedFrameData fused_item;
+//         fused_item.frame_id = eo_item.frame_id;
+//         fused_item.display_frame = eo_item.org_frame;
+
+//         // Copy all timestamps
+//         fused_item.t_eo_capture_start = eo_item.t_capture_start;
+//         fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
+//         fused_item.t_eo_inference_end = eo_item.t_inference_end;
+//         fused_item.t_ir_capture_start = ir_item.t_capture_start;
+//         fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
+//         fused_item.t_ir_inference_end = ir_item.t_inference_end;
+
+//         // Fusion logic
+//         int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
+//         int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
+//         auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
+//         fused_item.fused_detections = detections_to_bytetrack_objects(eo_bboxes, eo_proc_width, eo_proc_height);
+//         for (auto& obj : fused_item.fused_detections) {
+//             obj.rect.x() += eo_item.crop_offset.x;
+//             obj.rect.y() += eo_item.crop_offset.y;
+//         }
+
+//         auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
+//         std::vector<byte_track::Object> ir_objects = detections_to_bytetrack_objects(ir_bboxes, ir_item.org_frame.cols, ir_item.org_frame.rows);
+        
+//         for (const auto& ir_obj : ir_objects) {
+//             std::vector<cv::Point2f> ir_corners = {cv::Point2f(ir_obj.rect.tl_x(), ir_obj.rect.tl_y()), 
+//                                                    cv::Point2f(ir_obj.rect.br_x(), ir_obj.rect.br_y())};
+//             std::vector<cv::Point2f> eo_corners;
+//             cv::perspectiveTransform(ir_corners, eo_corners, m_boresight_matrix);
+//             fused_item.fused_detections.emplace_back(
+//                 byte_track::Rect<float>(eo_corners[0].x, eo_corners[0].y, eo_corners[1].x - eo_corners[0].x, eo_corners[1].y - eo_corners[0].y),
+//                 ir_obj.label,
+//                 ir_obj.prob
+//             );
+//         }
+        
+//         fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
+//         m_fused_queue->push(std::move(fused_item));
+//     }
+//     m_fused_queue->stop();
+// }
+
 void TrackingPipeline::fusion_worker() {
     while (!m_stop_flag.load()) {
         SingleStreamFrameData eo_item, ir_item;
@@ -244,7 +294,7 @@ void TrackingPipeline::fusion_worker() {
         fused_item.frame_id = eo_item.frame_id;
         fused_item.display_frame = eo_item.org_frame;
 
-        // Copy all timestamps
+        // Copy timestamps
         fused_item.t_eo_capture_start = eo_item.t_capture_start;
         fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
         fused_item.t_eo_inference_end = eo_item.t_inference_end;
@@ -252,30 +302,72 @@ void TrackingPipeline::fusion_worker() {
         fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
         fused_item.t_ir_inference_end = ir_item.t_inference_end;
 
-        // Fusion logic
+        // --- CORRECTED FUSION LOGIC ---
+
+        // 1. Get EO detections in the full frame coordinate space
         int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
         int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
         auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
-        fused_item.fused_detections = detections_to_bytetrack_objects(eo_bboxes, eo_proc_width, eo_proc_height);
-        for (auto& obj : fused_item.fused_detections) {
+        std::vector<byte_track::Object> eo_objects = detections_to_bytetrack_objects(eo_bboxes, eo_proc_width, eo_proc_height);
+        for (auto& obj : eo_objects) {
             obj.rect.x() += eo_item.crop_offset.x;
             obj.rect.y() += eo_item.crop_offset.y;
         }
 
+        // 2. Get IR detections and project them into the EO coordinate space
         auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
-        std::vector<byte_track::Object> ir_objects = detections_to_bytetrack_objects(ir_bboxes, ir_item.org_frame.cols, ir_item.org_frame.rows);
-        
-        for (const auto& ir_obj : ir_objects) {
+        std::vector<byte_track::Object> ir_objects_projected;
+        for (const auto& ir_bbox : ir_bboxes) {
+            // Create a temporary Object to hold the raw IR detection
+            byte_track::Object ir_obj = detections_to_bytetrack_objects({ir_bbox}, ir_item.org_frame.cols, ir_item.org_frame.rows)[0];
+            
             std::vector<cv::Point2f> ir_corners = {cv::Point2f(ir_obj.rect.tl_x(), ir_obj.rect.tl_y()), 
                                                    cv::Point2f(ir_obj.rect.br_x(), ir_obj.rect.br_y())};
             std::vector<cv::Point2f> eo_corners;
             cv::perspectiveTransform(ir_corners, eo_corners, m_boresight_matrix);
-            fused_item.fused_detections.emplace_back(
+            
+            ir_objects_projected.emplace_back(
                 byte_track::Rect<float>(eo_corners[0].x, eo_corners[0].y, eo_corners[1].x - eo_corners[0].x, eo_corners[1].y - eo_corners[0].y),
                 ir_obj.label,
                 ir_obj.prob
             );
         }
+
+        // 3. Associate EO detections with projected IR detections
+        const float fusion_iou_thresh = 0.4f; // More forgiving threshold for fusion
+        std::vector<bool> eo_matched(eo_objects.size(), false);
+        std::vector<bool> ir_matched(ir_objects_projected.size(), false);
+
+        for (size_t i = 0; i < eo_objects.size(); ++i) {
+            for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
+                if (eo_objects[i].rect.calcIoU(ir_objects_projected[j].rect) > fusion_iou_thresh) {
+                    // This is a match! Create a single fused object.
+                    // We will use the EO box (more precise) and the highest confidence score.
+                    float fused_score = std::max(eo_objects[i].prob, ir_objects_projected[j].prob);
+                    fused_item.fused_detections.emplace_back(eo_objects[i].rect, eo_objects[i].label, fused_score);
+                    
+                    eo_matched[i] = true;
+                    ir_matched[j] = true;
+                    break; // Move to the next EO object
+                }
+            }
+        }
+
+        // 4. Add any unmatched EO detections to the final list
+        for (size_t i = 0; i < eo_objects.size(); ++i) {
+            if (!eo_matched[i]) {
+                fused_item.fused_detections.push_back(eo_objects[i]);
+            }
+        }
+
+        // 5. Add any unmatched IR detections to the final list
+        for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
+            if (!ir_matched[j]) {
+                fused_item.fused_detections.push_back(ir_objects_projected[j]);
+            }
+        }
+        
+        // --- END OF FUSION LOGIC ---
         
         fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
         m_fused_queue->push(std::move(fused_item));
@@ -348,9 +440,7 @@ void TrackingPipeline::postprocess_worker() {
         cv::namedWindow("Object Detection", cv::WINDOW_AUTOSIZE);
     }
     
-    // --- THIS IS THE FIX: Re-initialize the timer for FPS calculation ---
     auto prev_time = std::chrono::high_resolution_clock::now();
-    
     size_t frame_index = 0;
     
     // --- MAIN PROCESSING LOOP ---
@@ -364,20 +454,25 @@ void TrackingPipeline::postprocess_worker() {
             break; // Exit if the queue is stopped and empty
         }
 
+        // Get a reference to the frame we will draw on. This is the full-resolution EO frame.
         auto& frame_to_draw = item.display_frame;
         
+        // Initialize VideoWriter on the first valid frame
         if (m_config.save_output_video && !video_writer_initialized && !frame_to_draw.empty()) {
             double fps = m_capture_eo.get(cv::CAP_PROP_FPS);
             init_video_writer(m_config.output_video_path, m_video_writer, fps, frame_to_draw.cols, frame_to_draw.rows);
             video_writer_initialized = true;
         }
 
+        // Run the tracker on the fused detections
         std::vector<std::shared_ptr<byte_track::STrack>> tracked_objects = m_tracker->update(item.fused_detections, cv::Mat());
 
+        // --- TIMESTAMP 4: Postprocess End (after tracking, before drawing) ---
         auto t_postprocess_end = std::chrono::high_resolution_clock::now();
 
         // --- PROFILING LOG ---
         if (m_config.enable_profiling_log) {
+            // ... (profiling calculation logic is the same)
             auto dur_eo_pre = std::chrono::duration<double, std::milli>(item.t_eo_preprocess_end - item.t_eo_capture_start).count();
             auto dur_eo_inf = std::chrono::duration<double, std::milli>(item.t_eo_inference_end - item.t_eo_preprocess_end).count();
             auto dur_ir_pre = std::chrono::duration<double, std::milli>(item.t_ir_preprocess_end - item.t_ir_capture_start).count();
@@ -397,47 +492,55 @@ void TrackingPipeline::postprocess_worker() {
                       << std::endl;
         }
         
-        // --- VISUALIZATION & PTZ LOGIC ---
+        // --- THIS IS THE FIX: Perform all drawing operations unconditionally ---
+        // --- before checking if visualization is enabled. ---
+
+        // PTZ Guidance and Target Crosshair Drawing
+        if (!tracked_objects.empty()) {
+            auto target_track_it = std::min_element(tracked_objects.begin(), tracked_objects.end(), 
+                [](const auto& a, const auto& b) { return a->getTrackId() < b->getTrackId(); });
+            
+            if ((*target_track_it)->isActivated()) {
+                const byte_track::Rect<float>& rect = (*target_track_it)->getRect();
+                cv::Point2f stabilized_center(rect.x() + rect.width() / 2.0f, rect.y() + rect.height() / 2.0f);
+                cv::drawMarker(frame_to_draw, stabilized_center, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 25, 2);
+            }
+        }
+
+        // Drawing all tracked bounding boxes and IDs
+        for (const auto& track : tracked_objects) {
+            const byte_track::Rect<float>& rect = track->getRect();
+            cv::Rect2f tracked_bbox(rect.x(), rect.y(), rect.width(), rect.height());
+            cv::rectangle(frame_to_draw, tracked_bbox, cv::Scalar(0, 255, 0), 2);
+            std::string label = std::to_string(track->getTrackId());
+            cv::putText(frame_to_draw, label, cv::Point(tracked_bbox.x, tracked_bbox.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
+        }
+
+        // FPS Display Drawing
+        auto current_time = std::chrono::high_resolution_clock::now();
+        auto frame_time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - prev_time).count();
+        prev_time = current_time;
+        double fps_current = frame_time > 0 ? 1e6 / frame_time : 0;
+        std::string fps_text = "FPS: " + std::to_string(static_cast<int>(fps_current + 0.5));
+        cv::putText(frame_to_draw, fps_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
+        
+        // --- END OF UNCONDITIONAL DRAWING ---
+
+        // Now, the 'frame_to_draw' has all the overlays.
+
+        // Display the modified frame if visualization is enabled
         if (m_config.enable_visualization) {
-            // PTZ Guidance and Target Crosshair Drawing
-            if (!tracked_objects.empty()) {
-                auto target_track_it = std::min_element(tracked_objects.begin(), tracked_objects.end(), 
-                    [](const auto& a, const auto& b) { return a->getTrackId() < b->getTrackId(); });
-                
-                if ((*target_track_it)->isActivated()) {
-                    const byte_track::Rect<float>& rect = (*target_track_it)->getRect();
-                    cv::Point2f stabilized_center(rect.x() + rect.width() / 2.0f, rect.y() + rect.height() / 2.0f);
-                    cv::drawMarker(frame_to_draw, stabilized_center, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 25, 2);
-                }
-            }
-
-            // Drawing all tracked bounding boxes and IDs
-            for (const auto& track : tracked_objects) {
-                const byte_track::Rect<float>& rect = track->getRect();
-                cv::Rect2f tracked_bbox(rect.x(), rect.y(), rect.width(), rect.height());
-                cv::rectangle(frame_to_draw, tracked_bbox, cv::Scalar(0, 255, 0), 2);
-                std::string label = std::to_string(track->getTrackId());
-                cv::putText(frame_to_draw, label, cv::Point(tracked_bbox.x, tracked_bbox.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
-            }
-
-            // FPS Display
-            auto current_time = std::chrono::high_resolution_clock::now();
-            auto frame_time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - prev_time).count();
-            prev_time = current_time;
-            double fps_current = frame_time > 0 ? 1e6 / frame_time : 0;
-            std::string fps_text = "FPS: " + std::to_string(static_cast<int>(fps_current + 0.5));
-            cv::putText(frame_to_draw, fps_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
-
-            // Show the frame
             cv::imshow("Object Detection", frame_to_draw);
             if (cv::waitKey(1) == 'q') {
                 stop();
             }
         }
 
+        // Save the modified frame to video if saving is enabled
         if (m_config.save_output_video && video_writer_initialized) {
             m_video_writer.write(frame_to_draw);
         }
+
         frame_index++;
     }
 }
