@@ -105,6 +105,7 @@ class _HomePageState extends State<HomePage> {
   bool _permissionHasBeenGranted = false;  // Local UI state
 
   bool _isStoppingMode = false;
+  bool _isSwitchingCamera = false;
 
   bool _showCrosshair = false;
   double _crosshairX = -1.0;
@@ -192,8 +193,8 @@ class _HomePageState extends State<HomePage> {
               final status = StatusPacket.fromBytes(data);
               if (mounted) {
                 setState(() {
-                  _lateralWindSpeed = status.lateralWindSpeed;
-                  _windDirectionIndex = status.windDirectionIndex;
+                  // _lateralWindSpeed = status.lateralWindSpeed;
+                  // _windDirectionIndex = status.windDirectionIndex;
                   _confirmedServerModeId = status.currentModeId;
 
                   // --- NEW: Update permission state from server ---
@@ -486,18 +487,11 @@ class _HomePageState extends State<HomePage> {
         _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
         _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
       } else {
-        // GAMEPAD IS INACTIVE: Virtual joysticks control everything.
-        // The listeners for the virtual joysticks have already updated the values in _currentCommand.
-        // We just need to copy them to the correct command packets.
         drivingCommand.move_speed = _currentCommand.move_speed;
         drivingCommand.turn_angle = _currentCommand.turn_angle;
-        // Pan and tilt are already in _currentCommand from the right joystick listener.
-        // When the virtual joystick is released, its listener correctly sets these to 0.
-        // This also implicitly handles the "stuck" physical joystick, because as soon as it's
-        // released, this `else` block is entered, and the resting (0,0) state of the
-        // virtual joystick's values in `_currentCommand` are used.
       }
 
+      _currentCommand.lateral_wind_speed = _lateralWindSpeed;
       // --- UNIFIED ZOOM LOGIC ---
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
@@ -516,10 +510,10 @@ class _HomePageState extends State<HomePage> {
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
 
-      if (_currentCommand.touch_x != -1.0) {
-        _currentCommand.touch_x = -1.0;
-        _currentCommand.touch_y = -1.0;
-      }
+      // if (_currentCommand.touch_x != -1.0) {
+      //   _currentCommand.touch_x = -1.0;
+      //   _currentCommand.touch_y = -1.0;
+      // }
     });
   }
 
@@ -671,7 +665,7 @@ class _HomePageState extends State<HomePage> {
           SizedBox(width: 10 * widthScale),
           Text(
             // (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
-            "0.0",
+            (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
             style: TextStyle(
               fontFamily: 'NotoSans',
               fontSize: 60 * widthScale,
@@ -1020,12 +1014,25 @@ class _HomePageState extends State<HomePage> {
         }
 
         final List<Widget> leftCluster = [
-          _buildBottomBarButton(
-            permissionLabel,
-            null,
-            permissionButtonColors,
-            permissionOnPressed,
-            textColor: permissionTextColor, // <-- PASS THE COLOR TO THE WIDGET
+          // _buildBottomBarButton(
+          //   permissionLabel,
+          //   null,
+          //   permissionButtonColors,
+          //   permissionOnPressed,
+          //   textColor: permissionTextColor, // <-- PASS THE COLOR TO THE WIDGET
+          // ),
+
+          SizedBox(
+            // This width is an estimate. Adjust it to be wide enough for the longest text.
+            // 450 seems like a good starting point based on your UI.
+            width: 450 * widthScale,
+            child: _buildBottomBarButton(
+              permissionLabel,
+              null,
+              permissionButtonColors,
+              permissionOnPressed,
+              textColor: permissionTextColor,
+            ),
           ),
           SizedBox(width: 12 * widthScale),
           _buildWideBottomBarButton(
@@ -1182,7 +1189,7 @@ class _HomePageState extends State<HomePage> {
       String? iconPath,
       List<Color> gradientColors,
       VoidCallback? onPressed,
-      {Color textColor = Colors.white} // <-- ADD THIS PARAMETER
+      {Color textColor = Colors.white}
       ) {
     final screenHeight = MediaQuery.of(context).size.height;
     final heightScale = screenHeight / 1080.0;
@@ -1289,6 +1296,15 @@ class _HomePageState extends State<HomePage> {
   Future<void> _handleGStreamerMessages(MethodCall call) async {
     if (!mounted) return;
     _streamTimeoutTimer?.cancel();
+
+    // --- THIS IS THE FIX ---
+    // No matter what happens (success or error), the switching process is now over.
+    // So, we unlock the button.
+    setState(() {
+      _isSwitchingCamera = false; // 2. Unlock the button
+    });
+    // --- END OF FIX ---
+
     switch (call.method) {
       case 'onStreamReady':
         setState(() { _isGStreamerLoading = false; _gstreamerHasError = false; });
@@ -1359,8 +1375,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _switchCamera(int index) async {
+    // If a switch is already in progress, do nothing.
+    if (_isSwitchingCamera) {
+      print("Camera switch already in progress. Ignoring request.");
+      return;
+    }
+    // --- END OF FIX ---
+
     if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
     if (index == _currentCameraIndex && !_gstreamerHasError) return;
+
+    setState(() {
+      _isSwitchingCamera = true; // 1. Lock the button
+      _isGStreamerLoading = true; // Show loading indicator immediately
+    });
+
+
     if (_gstreamerChannel != null && _isGStreamerReady) {
       try { await _gstreamerChannel!.invokeMethod('stopStream'); } catch (e) {}
     }
