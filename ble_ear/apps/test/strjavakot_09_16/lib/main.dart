@@ -827,7 +827,7 @@ class _HomePageState extends State<HomePage> {
           _buildModeButton(4, 30, 766, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE),
 
           _buildViewButton(
-            1690, 30, "Day View",
+            1690, 30, "",
             ICON_PATH_DAY_VIEW_ACTIVE,   // Pass the ACTIVE icon
             ICON_PATH_DAY_VIEW_INACTIVE, // Pass the INACTIVE icon
             _currentCameraIndex == 0,    // This button is active if camera index is 0
@@ -836,7 +836,7 @@ class _HomePageState extends State<HomePage> {
 
           // Night View Button (IR Camera)
           _buildViewButton(
-            1690, 214, "Night View",
+            1690, 214, "",
             ICON_PATH_NIGHT_VIEW_ACTIVE,   // Pass the ACTIVE icon
             ICON_PATH_NIGHT_VIEW_INACTIVE, // Pass the INACTIVE icon
             _currentCameraIndex == 1,      // This button is active if camera index is 1
@@ -912,6 +912,66 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget _buildViewButton(
+  //     double left,
+  //     double top,
+  //     String label,
+  //     String activeIconPath,
+  //     String inactiveIconPath,
+  //     bool isActive,
+  //     {VoidCallback? onPressed}
+  //     ) {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final widthScale = screenWidth / 1920.0;
+  //   final heightScale = screenHeight / 1080.0;
+  //
+  //   // --- THIS IS THE FIX ---
+  //   // The background color is determined by the active state.
+  //   final Color color = isActive ? Colors.grey : Colors.black.withOpacity(0.6);
+  //   // The icon path is ALSO determined by the active state.
+  //   final String iconToDisplay = isActive ? activeIconPath : inactiveIconPath;
+  //
+  //   return Positioned(
+  //     left: left * widthScale,
+  //     top: top * heightScale,
+  //     child: GestureDetector(
+  //       onTap: onPressed,
+  //       child: Container(
+  //         width: 220 * widthScale,
+  //         height: 175 * heightScale,
+  //         padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
+  //         decoration: BoxDecoration(
+  //           color: color,
+  //           borderRadius: BorderRadius.circular(15),
+  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
+  //         ),
+  //         child: Column(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Expanded(
+  //                 flex: 3,
+  //                 // Use the dynamically selected icon path
+  //                 child: Image.asset(iconToDisplay, fit: BoxFit.contain)
+  //             ),
+  //             SizedBox(height: 8 * heightScale),
+  //             Text(
+  //                 label,
+  //                 textAlign: TextAlign.center,
+  //                 style: TextStyle(
+  //                     fontFamily: 'NotoSans',
+  //                     fontWeight: FontWeight.w700,
+  //                     fontSize: 26 * heightScale,
+  //                     color: Colors.white
+  //                 )
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildViewButton(
       double left,
       double top,
@@ -926,10 +986,7 @@ class _HomePageState extends State<HomePage> {
     final widthScale = screenWidth / 1920.0;
     final heightScale = screenHeight / 1080.0;
 
-    // --- THIS IS THE FIX ---
-    // The background color is determined by the active state.
     final Color color = isActive ? Colors.grey : Colors.black.withOpacity(0.6);
-    // The icon path is ALSO determined by the active state.
     final String iconToDisplay = isActive ? activeIconPath : inactiveIconPath;
 
     return Positioned(
@@ -940,18 +997,27 @@ class _HomePageState extends State<HomePage> {
         child: Container(
           width: 220 * widthScale,
           height: 175 * heightScale,
-          padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
+          // --- THIS IS THE FIX ---
+          // Remove padding and use a BoxDecoration for the image
+          // This allows the image to fill the entire container.
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
+            image: label.isEmpty // Conditionally add the image to the decoration
+                ? DecorationImage(
+              image: AssetImage(iconToDisplay),
+              fit: BoxFit.cover, // This makes the image fill the space
+            )
+                : null,
           ),
-          child: Column(
+          // Use a child only if the label is NOT empty (for the 'Setting' button)
+          child: label.isNotEmpty
+              ? Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
                   flex: 3,
-                  // Use the dynamically selected icon path
                   child: Image.asset(iconToDisplay, fit: BoxFit.contain)
               ),
               SizedBox(height: 8 * heightScale),
@@ -966,11 +1032,92 @@ class _HomePageState extends State<HomePage> {
                   )
               ),
             ],
+          )
+              : null, // If the label is empty, the container has no child.
+        ),
+      ),
+    );
+  }
+
+  // --- NEW: A dedicated builder for the custom zoom buttons ---
+  Widget _buildZoomButton({
+    required String iconPath,
+    required VoidCallback? onPressed,
+  }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final heightScale = screenHeight / 1080.0;
+    final bool isEnabled = onPressed != null;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.5,
+        child: Container(
+          width: 100 * heightScale,  // Make the button wider
+          height: 80 * heightScale,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15 * heightScale), // Less rounded corners
+            image: DecorationImage(
+              // This assumes you have a metallic texture image
+              image: AssetImage('assets/new_icons/metal_texture.png'),
+              fit: BoxFit.cover,
+            ),
+            boxShadow: [ // Add a subtle shadow to give it depth
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 3,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          // Use a Padding to control the icon size inside the button
+          child: Padding(
+            padding: EdgeInsets.all(15.0 * heightScale), // Adjust padding to make icon larger/smaller
+            child: Image.asset(
+              iconPath,
+              // Make the icon white to stand out on the metallic background
+              color: Colors.white,
+              colorBlendMode: BlendMode.srcIn,
+            ),
           ),
         ),
       ),
     );
   }
+
+
+  // --- CORRECTED WIDGET METHOD for +/- buttons ---
+  Widget _buildIconBottomBarButton(String iconPath, VoidCallback? onPressed) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final heightScale = screenHeight / 1080.0;
+    final widthScale = screenWidth / 1920.0; // Use widthScale for width
+    final bool isEnabled = onPressed != null;
+
+    // --- THIS IS THE FIX ---
+    // Define height and width separately to create a rectangle.
+    final double buttonHeight = 80 * heightScale; // Keep the height consistent with other buttons
+    final double buttonWidth = 120 * widthScale;  // Make the width larger. ADJUST THIS VALUE to your liking.
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.5,
+        child: Container(
+          width: buttonWidth,   // Use the new width
+          height: buttonHeight, // Use the height
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(iconPath),
+              fit: BoxFit.cover,
+            ),
+            borderRadius: BorderRadius.circular(15 * heightScale),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildBottomBar() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1023,8 +1170,6 @@ class _HomePageState extends State<HomePage> {
           // ),
 
           SizedBox(
-            // This width is an estimate. Adjust it to be wide enough for the longest text.
-            // 450 seems like a good starting point based on your UI.
             width: 450 * widthScale,
             child: _buildBottomBarButton(
               permissionLabel,
@@ -1041,12 +1186,10 @@ class _HomePageState extends State<HomePage> {
             [const Color(0xff25a625), const Color(0xff127812)],
             _isServerConnected ? _onStartStopPressed : null,
           ),
-          SizedBox(width: 12 * widthScale),
+          SizedBox(width: 22 * widthScale),
 
-          _buildBottomBarButton(
-            "",
+          _buildIconBottomBarButton(
             ICON_PATH_PLUS,
-            [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
             _isServerConnected ? () {
               // --- UPDATED ZOOM IN LOGIC ---
               setState(() {
@@ -1062,10 +1205,8 @@ class _HomePageState extends State<HomePage> {
             } : null,
           ),
           SizedBox(width: 12 * widthScale),
-          _buildBottomBarButton(
-            "",
+          _buildIconBottomBarButton(
             ICON_PATH_MINUS,
-            [const Color(0xffc0c0c0), const Color(0xffa0a0a0)],
             _isServerConnected ? () {
               // --- UPDATED ZOOM OUT LOGIC ---
               setState(() {
@@ -1150,39 +1291,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Make the onPressed parameter nullable by adding '?'
-  // Widget _buildBottomBarButton(String label, String? iconPath, List<Color> gradientColors, VoidCallback? onPressed) {
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final heightScale = screenHeight / 1080.0;
-  //   final bool isEnabled = onPressed != null;
-  //
-  //   return GestureDetector(
-  //     onTap: onPressed,
-  //     child: Opacity(
-  //       opacity: isEnabled ? 1.0 : 0.5,
-  //       child: Container(
-  //         height: 80 * heightScale,
-  //         padding: const EdgeInsets.symmetric(horizontal: 30),
-  //         decoration: BoxDecoration(
-  //           gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
-  //           borderRadius: BorderRadius.circular(25 * heightScale),
-  //         ),
-  //         child: Row(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           children: [
-  //             if (iconPath != null && iconPath.isNotEmpty) ...[
-  //               Image.asset(iconPath, height: 36 * heightScale),
-  //               if (label.isNotEmpty) const SizedBox(width: 12),
-  //             ],
-  //             if (label.isNotEmpty)
-  //               Text(label, style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 30 * heightScale, color: Colors.white)),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   // Make the onPressed parameter nullable and add the new textColor parameter
   Widget _buildBottomBarButton(
       String label,
@@ -1220,7 +1328,7 @@ class _HomePageState extends State<HomePage> {
                         fontFamily: 'NotoSans',
                         fontWeight: FontWeight.w700,
                         fontSize: 30 * heightScale,
-                        color: textColor // <-- USE THE PARAMETER HERE
+                        color: textColor
                     )
                 ),
             ],
