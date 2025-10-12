@@ -829,6 +829,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+ // --- NEW: A dedicated builder for the custom Permission to Attack button ---
+  Widget _buildPermissionButton({
+    required String label,
+    required String backgroundImagePath,
+    required VoidCallback? onPressed,
+  }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final heightScale = screenHeight / 1080.0;
+    final widthScale = screenWidth / 1920.0;
+    final bool isEnabled = onPressed != null;
+
+    // Use a fixed width to prevent the UI from shifting
+    final double buttonWidth = 450 * widthScale;
+    final double buttonHeight = 80 * heightScale;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.7, // Make it slightly less faded when disabled
+        child: Container(
+          width: buttonWidth,
+          height: buttonHeight,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(backgroundImagePath),
+              fit: BoxFit.fill,
+            ),
+          ),
+          child: Center( // Center the text within the button
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'NotoSans',
+                fontWeight: FontWeight.w700,
+                fontSize: 30 * heightScale,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildConnectionStatusBanner() {
     if (_isServerConnected) {
@@ -1246,67 +1290,257 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget _buildBottomBar() {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final widthScale = screenWidth / 1920.0;
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final heightScale = screenHeight / 1080.0; // Added for consistent icon sizing
+  //
+  //   return LayoutBuilder(
+  //     builder: (context, constraints) {
+  //       List<Color> permissionButtonColors;
+  //       bool isCombatModeActive = _isModeActive && (_selectedModeIndex == 2 || _selectedModeIndex == 3);
+  //
+  //       if (isCombatModeActive) {
+  //         permissionButtonColors = _isPermissionToAttackOn ? _permissionOnColors : _permissionOffColors;
+  //       } else {
+  //         permissionButtonColors = _permissionDisabledColors;
+  //       }
+  //
+  //       Color permissionTextColor = Colors.white;
+  //       // String permissionLabel;
+  //       // VoidCallback? permissionOnPressed = null; // Button is disabled by default
+  //
+  //       String permissionLabel;
+  //       String permissionBackground;
+  //       VoidCallback? permissionOnPressed;
+  //
+  //       // if (_permissionRequestIsActive) {
+  //       //   if (_permissionHasBeenGranted) {
+  //       //     // State 3: Permitted
+  //       //     permissionLabel = "Permitted";
+  //       //     permissionButtonColors = _permissionDisabledColors; // Gray
+  //       //     permissionOnPressed = null;
+  //       //     permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
+  //       //   } else {
+  //       //     // State 2: Request Pending
+  //       //     permissionLabel = "Request Pending";
+  //       //     permissionButtonColors = _permissionOffColors; // Red
+  //       //     permissionOnPressed = _isServerConnected ? _onPermissionPressed : null;
+  //       //     // Text color remains white
+  //       //   }
+  //       // } else {
+  //       //   // State 1: Idle
+  //       //   permissionLabel = "Permission to Attack";
+  //       //   permissionButtonColors = _permissionDisabledColors; // Gray
+  //       //   permissionOnPressed = null;
+  //       //   permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
+  //       // }
+  //
+  //       if (_permissionRequestIsActive) {
+  //         if (_permissionHasBeenGranted) {
+  //           // State 3: Permission has been granted by the user
+  //           permissionLabel = "Attack Permitted";
+  //           permissionBackground = ICON_PATH_PERMISSION_GREEN;
+  //           permissionOnPressed = null; // Button is disabled
+  //         } else {
+  //           // State 2: Server is requesting permission
+  //           permissionLabel = "Permission to Attack";
+  //           permissionBackground = ICON_PATH_PERMISSION_RED;
+  //           permissionOnPressed = _isServerConnected ? _onPermissionPressed : null; // Button is enabled
+  //         }
+  //       } else {
+  //         // State 1: Idle / No request from server
+  //         permissionLabel = "Request Pending";
+  //         permissionBackground = ICON_PATH_PERMISSION_BLUE;
+  //         permissionOnPressed = null; // Button is disabled
+  //       }
+  //
+  //       final List<Widget> leftCluster = [
+  //         // _buildBottomBarButton(
+  //         //   permissionLabel,
+  //         //   null,
+  //         //   permissionButtonColors,
+  //         //   permissionOnPressed,
+  //         //   textColor: permissionTextColor, // <-- PASS THE COLOR TO THE WIDGET
+  //         // ),
+  //
+  //         SizedBox(
+  //           width: 450 * widthScale,
+  //           child: _buildBottomBarButton(
+  //             permissionLabel,
+  //             null,
+  //             permissionButtonColors,
+  //             permissionOnPressed,
+  //             textColor: permissionTextColor,
+  //           ),
+  //         ),
+  //         SizedBox(width: 12 * widthScale),
+  //         _buildWideBottomBarButton(
+  //           _isModeActive ? "STOP" : "START",
+  //           _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
+  //           [const Color(0xff25a625), const Color(0xff127812)],
+  //           _isServerConnected ? _onStartStopPressed : null,
+  //         ),
+  //         SizedBox(width: 22 * widthScale),
+  //
+  //         _buildIconBottomBarButton(
+  //           ICON_PATH_PLUS,
+  //           _isServerConnected ? () {
+  //             // --- UPDATED ZOOM IN LOGIC ---
+  //             setState(() {
+  //               if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
+  //               else _currentZoomLevel = 5.0;
+  //               _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
+  //
+  //               // Set the flag for the command timer
+  //               _isUiZoomInPressed = true;
+  //               // Clear the flag after a moment so we only send one command per press
+  //               Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomInPressed = false);
+  //             });
+  //           } : null,
+  //         ),
+  //         SizedBox(width: 12 * widthScale),
+  //         _buildIconBottomBarButton(
+  //           ICON_PATH_MINUS,
+  //           _isServerConnected ? () {
+  //             // --- UPDATED ZOOM OUT LOGIC ---
+  //             setState(() {
+  //               if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
+  //               else _currentZoomLevel = 1.0;
+  //               _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
+  //
+  //               // Set the flag for the command timer
+  //               _isUiZoomOutPressed = true;
+  //               // Clear the flag after a moment
+  //               Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomOutPressed = false);
+  //             });
+  //           } : null,
+  //         ),
+  //       ];
+  //
+  //       // final List<Widget> middleCluster = [
+  //       //   Row(
+  //       //     mainAxisSize: MainAxisSize.min,
+  //       //     crossAxisAlignment: CrossAxisAlignment.baseline,
+  //       //     textBaseline: TextBaseline.alphabetic,
+  //       //     children: [
+  //       //       const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 75, color: Colors.white)),
+  //       //       SizedBox(width: 8 * widthScale),
+  //       //       const Text("m", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
+  //       //     ],
+  //       //   ),
+  //       //   SizedBox(width: 20 * widthScale),
+  //       //   Image.asset(ICON_PATH_WIFI, height: 40),
+  //       // ];
+  //
+  //       final List<Widget> middleCluster = [
+  //         Row(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             Image.asset(
+  //               ICON_PATH_WIND_W, // Your existing wind icon
+  //               height: 40 * heightScale,
+  //             ),
+  //             SizedBox(width: 8 * widthScale),
+  //             Text(
+  //               (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
+  //               style: TextStyle(
+  //                 fontFamily: 'NotoSans',
+  //                 fontWeight: FontWeight.w600,
+  //                 fontSize: 60 * heightScale, // Adjusted font size for a cleaner look
+  //                 color: Colors.white,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         // Add spacing between the indicators
+  //         SizedBox(width: 40 * widthScale),
+  //         Row(
+  //           mainAxisSize: MainAxisSize.min,
+  //           crossAxisAlignment: CrossAxisAlignment.baseline,
+  //           textBaseline: TextBaseline.alphabetic,
+  //           children: [
+  //             const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 60, color: Colors.white)),
+  //             SizedBox(width: 8 * widthScale),
+  //             const Text("M", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
+  //           ],
+  //         ),
+  //         SizedBox(width: 20 * widthScale),
+  //         // Use the helper function to get the dynamic icon path
+  //         Image.asset(_getWifiIconPath(), height: 40),
+  //       ];
+  //
+  //       // final List<Widget> rightCluster = [
+  //       //   _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () async {
+  //       //     final proceed = await _showExitDialog();
+  //       //     if (proceed) SystemNavigator.pop();
+  //       //   }),
+  //       // ];
+  //       final List<Widget> rightCluster = [
+  //         _buildImageBottomBarButton(
+  //           label: "EXIT",
+  //           iconPath: ICON_PATH_EXIT, // The original power symbol icon
+  //           backgroundImagePath: ICON_PATH_EXIT_BACKGROUND, // The new glossy background image
+  //           onPressed: () async {
+  //             final proceed = await _showExitDialog();
+  //             if (proceed) SystemNavigator.pop();
+  //           },
+  //         ),
+  //       ];
+  //
+  //       return Row(
+  //         children: [
+  //           ...leftCluster,
+  //           const Spacer(),
+  //           ...middleCluster,
+  //           const Spacer(),
+  //           ...rightCluster,
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
   Widget _buildBottomBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     final widthScale = screenWidth / 1920.0;
     final screenHeight = MediaQuery.of(context).size.height;
-    final heightScale = screenHeight / 1080.0; // Added for consistent icon sizing
+    final heightScale = screenHeight / 1080.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        List<Color> permissionButtonColors;
-        bool isCombatModeActive = _isModeActive && (_selectedModeIndex == 2 || _selectedModeIndex == 3);
-
-        if (isCombatModeActive) {
-          permissionButtonColors = _isPermissionToAttackOn ? _permissionOnColors : _permissionOffColors;
-        } else {
-          permissionButtonColors = _permissionDisabledColors;
-        }
-
-        Color permissionTextColor = Colors.white;
+        // --- THIS IS THE CORRECTED LOGIC ---
+        // We only need these three variables for the permission button.
         String permissionLabel;
-        VoidCallback? permissionOnPressed = null; // Button is disabled by default
+        String permissionBackground;
+        VoidCallback? permissionOnPressed;
 
         if (_permissionRequestIsActive) {
           if (_permissionHasBeenGranted) {
-            // State 3: Permitted
-            permissionLabel = "Permitted";
-            permissionButtonColors = _permissionDisabledColors; // Gray
-            permissionOnPressed = null;
-            permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
+            // State 3: Permission has been granted by the user
+            permissionLabel = "Attack Permitted";
+            permissionBackground = ICON_PATH_PERMISSION_GREEN;
+            permissionOnPressed = null; // Button is disabled
           } else {
-            // State 2: Request Pending
-            permissionLabel = "Request Pending";
-            permissionButtonColors = _permissionOffColors; // Red
-            permissionOnPressed = _isServerConnected ? _onPermissionPressed : null;
-            // Text color remains white
+            // State 2: Server is requesting permission
+            permissionLabel = "Permission to Attack";
+            permissionBackground = ICON_PATH_PERMISSION_RED;
+            permissionOnPressed = _isServerConnected ? _onPermissionPressed : null; // Button is enabled
           }
         } else {
-          // State 1: Idle
-          permissionLabel = "Permission to Attack";
-          permissionButtonColors = _permissionDisabledColors; // Gray
-          permissionOnPressed = null;
-          permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
+          // State 1: Idle / No request from server
+          permissionLabel = "Request Pending";
+          permissionBackground = ICON_PATH_PERMISSION_BLUE;
+          permissionOnPressed = null; // Button is disabled
         }
+        // --- END OF CORRECTED LOGIC ---
 
         final List<Widget> leftCluster = [
-          // _buildBottomBarButton(
-          //   permissionLabel,
-          //   null,
-          //   permissionButtonColors,
-          //   permissionOnPressed,
-          //   textColor: permissionTextColor, // <-- PASS THE COLOR TO THE WIDGET
-          // ),
-
-          SizedBox(
-            width: 450 * widthScale,
-            child: _buildBottomBarButton(
-              permissionLabel,
-              null,
-              permissionButtonColors,
-              permissionOnPressed,
-              textColor: permissionTextColor,
-            ),
+          _buildPermissionButton(
+            label: permissionLabel,
+            backgroundImagePath: permissionBackground,
+            onPressed: permissionOnPressed,
           ),
           SizedBox(width: 12 * widthScale),
           _buildWideBottomBarButton(
@@ -1316,19 +1550,14 @@ class _HomePageState extends State<HomePage> {
             _isServerConnected ? _onStartStopPressed : null,
           ),
           SizedBox(width: 22 * widthScale),
-
           _buildIconBottomBarButton(
             ICON_PATH_PLUS,
             _isServerConnected ? () {
-              // --- UPDATED ZOOM IN LOGIC ---
               setState(() {
                 if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
                 else _currentZoomLevel = 5.0;
                 _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-
-                // Set the flag for the command timer
                 _isUiZoomInPressed = true;
-                // Clear the flag after a moment so we only send one command per press
                 Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomInPressed = false);
               });
             } : null,
@@ -1337,57 +1566,29 @@ class _HomePageState extends State<HomePage> {
           _buildIconBottomBarButton(
             ICON_PATH_MINUS,
             _isServerConnected ? () {
-              // --- UPDATED ZOOM OUT LOGIC ---
               setState(() {
                 if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
                 else _currentZoomLevel = 1.0;
                 _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-
-                // Set the flag for the command timer
                 _isUiZoomOutPressed = true;
-                // Clear the flag after a moment
                 Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomOutPressed = false);
               });
             } : null,
           ),
         ];
 
-        // final List<Widget> middleCluster = [
-        //   Row(
-        //     mainAxisSize: MainAxisSize.min,
-        //     crossAxisAlignment: CrossAxisAlignment.baseline,
-        //     textBaseline: TextBaseline.alphabetic,
-        //     children: [
-        //       const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 75, color: Colors.white)),
-        //       SizedBox(width: 8 * widthScale),
-        //       const Text("m", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
-        //     ],
-        //   ),
-        //   SizedBox(width: 20 * widthScale),
-        //   Image.asset(ICON_PATH_WIFI, height: 40),
-        // ];
-
         final List<Widget> middleCluster = [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                ICON_PATH_WIND_W, // Your existing wind icon
-                height: 40 * heightScale,
-              ),
+              Image.asset(ICON_PATH_WIND_W, height: 40 * heightScale),
               SizedBox(width: 8 * widthScale),
               Text(
                 (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
-                style: TextStyle(
-                  fontFamily: 'NotoSans',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 60 * heightScale, // Adjusted font size for a cleaner look
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w600, fontSize: 60 * heightScale, color: Colors.white),
               ),
             ],
           ),
-          // Add spacing between the indicators
           SizedBox(width: 40 * widthScale),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -1400,21 +1601,14 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           SizedBox(width: 20 * widthScale),
-          // Use the helper function to get the dynamic icon path
           Image.asset(_getWifiIconPath(), height: 40),
         ];
 
-        // final List<Widget> rightCluster = [
-        //   _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () async {
-        //     final proceed = await _showExitDialog();
-        //     if (proceed) SystemNavigator.pop();
-        //   }),
-        // ];
         final List<Widget> rightCluster = [
           _buildImageBottomBarButton(
             label: "EXIT",
-            iconPath: ICON_PATH_EXIT, // The original power symbol icon
-            backgroundImagePath: ICON_PATH_EXIT_BACKGROUND, // The new glossy background image
+            iconPath: ICON_PATH_EXIT,
+            backgroundImagePath: ICON_PATH_EXIT_BACKGROUND,
             onPressed: () async {
               final proceed = await _showExitDialog();
               if (proceed) SystemNavigator.pop();
