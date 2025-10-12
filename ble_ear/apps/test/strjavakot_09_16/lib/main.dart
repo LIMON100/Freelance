@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rtest1/settings_service.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 import 'CommandIds.dart';
 import 'ServerStatus.dart';
 import 'StatusPacket.dart';
@@ -111,6 +112,9 @@ class _HomePageState extends State<HomePage> {
   double _crosshairX = -1.0;
   double _crosshairY = -1.0;
 
+  Timer? _wifiSignalTimer;
+  int _wifiSignalLevel = 0;
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -137,11 +141,14 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadSettingsAndInitialize();
     platform.setMethodCallHandler(_handleGamepadEvent);
+
+    _startWifiSignalChecker(); // <-- ADD THIS CALL
   }
 
   @override
   void dispose() {
     _commandTimer?.cancel();
+    _wifiSignalTimer?.cancel(); // <-- ADD THIS CALL
     _stopGStreamer();
     _transformationController.dispose();
     _statusSocketSubscription?.cancel();
@@ -149,6 +156,73 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+
+  String _getWifiIconPath() {
+    switch (_wifiSignalLevel) {
+      case 0:
+        return ICON_PATH_WIFI_0; // Disconnected
+      case 1:
+        return ICON_PATH_WIFI_1; // Poor
+      case 2:
+        return ICON_PATH_WIFI_2; // Fair
+      case 3:
+        return ICON_PATH_WIFI_3; // Good
+      case 4:
+        return ICON_PATH_WIFI_4; // Excellent
+      default:
+        return ICON_PATH_WIFI_0;
+    }
+  }
+
+  // --- CORRECTED: Function to periodically check Wi-Fi signal ---
+  void _startWifiSignalChecker() {
+    _wifiSignalTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      try {
+        // --- THIS IS THE FIX ---
+        // 1. First, check if the Wi-Fi is enabled on the device at all.
+        bool? isWifiEnabled = await WiFiForIoTPlugin.isEnabled();
+
+        // If Wi-Fi is disabled or we can't determine its state, show the "disconnected" icon.
+        if (isWifiEnabled != true) {
+          if (mounted) {
+            setState(() => _wifiSignalLevel = 0);
+          }
+          return; // Stop further processing
+        }
+        // --- END OF FIX ---
+
+        // 2. Only if Wi-Fi is enabled, proceed to get the signal strength.
+        int? rssi = await WiFiForIoTPlugin.getCurrentSignalStrength();
+
+        if (rssi == null) {
+          // This can happen if Wi-Fi is on but not connected to a network.
+          setState(() => _wifiSignalLevel = 0);
+          return;
+        }
+
+        // Map the RSSI value to our 0-4 level system.
+        int level;
+        if (rssi >= -55) {
+          level = 4; // Excellent
+        } else if (rssi >= -67) {
+          level = 3; // Good
+        } else if (rssi >= -80) {
+          level = 2; // Fair
+        } else {
+          level = 1; // Poor
+        }
+
+        if (mounted) {
+          setState(() => _wifiSignalLevel = level);
+        }
+      } catch (e) {
+        print("Could not get Wi-Fi signal strength: $e");
+        if (mounted) {
+          setState(() => _wifiSignalLevel = 0);
+        }
+      }
+    });
+  }
 
   Future<void> _connectToStatusServer() async {
     if (_robotIpAddress.isEmpty) return;
@@ -531,8 +605,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildCrosshair(double screenWidth, double screenHeight) {
     // Condition 1: Is the app in an attack mode?
+    // bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
+    //     _confirmedServerModeId == CommandIds.AUTO_ATTACK ;
+
     bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
-        _confirmedServerModeId == CommandIds.AUTO_ATTACK;
+        _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
+        _confirmedServerModeId == CommandIds.RECON ||
+        _confirmedServerModeId == CommandIds.DRONE ;
 
     if (!isAttackMode) {
       return const SizedBox.shrink(); // Don't show anything
@@ -546,12 +625,8 @@ class _HomePageState extends State<HomePage> {
     final double targetY = useServerPosition ? _crosshairY : 0.5;
 
     // --- THIS IS THE NEW COLOR LOGIC ---
-    // If the server is providing the position, it means we have a lock, so make it red.
-    // Otherwise, use the default white color.
     final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
-    // --- END OF NEW COLOR LOGIC ---
-
-    final double crosshairSize = 150.0;
+    final double crosshairSize = 900.0;
 
     final double left = (targetX * screenWidth) - (crosshairSize / 2);
     final double top = (targetY * screenHeight) - (crosshairSize / 2);
@@ -813,7 +888,7 @@ class _HomePageState extends State<HomePage> {
 
           Positioned.fill(child: _buildStreamOverlay()),
 
-          _buildWindIndicator(),
+          // _buildWindIndicator(),
           _buildZoomDisplay(),
 
           _buildModeStatusBanner(),
@@ -851,11 +926,10 @@ class _HomePageState extends State<HomePage> {
               onPressed: _navigateToSettings
           ),
 
+          _buildCrosshair(screenWidth, screenHeight),
           // _buildDirectionalControls(),
           _buildMovementJoystick(),
           _buildPanTiltJoystick(),
-
-          _buildCrosshair(screenWidth, screenHeight),
 
           Align(
             alignment: Alignment.bottomCenter,
@@ -1119,9 +1193,64 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+  // --- NEW: A dedicated builder for buttons with a custom image background ---
+  Widget _buildImageBottomBarButton({
+    required String label,
+    required String iconPath,
+    required String backgroundImagePath, // The path to the button's background image
+    required VoidCallback? onPressed,
+  }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final heightScale = screenHeight / 1080.0;
+    final widthScale = screenWidth / 1920.0;
+    final bool isEnabled = onPressed != null;
+
+    // Define the size for this specific button. Adjust as needed.
+    final double buttonWidth = 220 * widthScale;
+    final double buttonHeight = 80 * heightScale;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.5,
+        child: Container(
+          width: buttonWidth,
+          height: buttonHeight,
+          decoration: BoxDecoration(
+            // Use the provided image as the background
+            image: DecorationImage(
+              image: AssetImage(backgroundImagePath),
+              fit: BoxFit.fill, // Stretch the image to fill the container
+            ),
+          ),
+          // The content (icon and text) is placed on top of the background image
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(iconPath, height: 36 * heightScale),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'NotoSans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 36 * heightScale,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     final widthScale = screenWidth / 1920.0;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final heightScale = screenHeight / 1080.0; // Added for consistent icon sizing
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1223,26 +1352,74 @@ class _HomePageState extends State<HomePage> {
           ),
         ];
 
+        // final List<Widget> middleCluster = [
+        //   Row(
+        //     mainAxisSize: MainAxisSize.min,
+        //     crossAxisAlignment: CrossAxisAlignment.baseline,
+        //     textBaseline: TextBaseline.alphabetic,
+        //     children: [
+        //       const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 75, color: Colors.white)),
+        //       SizedBox(width: 8 * widthScale),
+        //       const Text("m", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
+        //     ],
+        //   ),
+        //   SizedBox(width: 20 * widthScale),
+        //   Image.asset(ICON_PATH_WIFI, height: 40),
+        // ];
+
         final List<Widget> middleCluster = [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                ICON_PATH_WIND_W, // Your existing wind icon
+                height: 40 * heightScale,
+              ),
+              SizedBox(width: 8 * widthScale),
+              Text(
+                (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
+                style: TextStyle(
+                  fontFamily: 'NotoSans',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 60 * heightScale, // Adjusted font size for a cleaner look
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          // Add spacing between the indicators
+          SizedBox(width: 40 * widthScale),
           Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              const Text("0", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 75, color: Colors.white)),
+              const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 60, color: Colors.white)),
               SizedBox(width: 8 * widthScale),
-              const Text("Km/h", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
+              const Text("M", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
             ],
           ),
           SizedBox(width: 20 * widthScale),
-          Image.asset(ICON_PATH_WIFI, height: 40),
+          // Use the helper function to get the dynamic icon path
+          Image.asset(_getWifiIconPath(), height: 40),
         ];
 
+        // final List<Widget> rightCluster = [
+        //   _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () async {
+        //     final proceed = await _showExitDialog();
+        //     if (proceed) SystemNavigator.pop();
+        //   }),
+        // ];
         final List<Widget> rightCluster = [
-          _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () async {
-            final proceed = await _showExitDialog();
-            if (proceed) SystemNavigator.pop();
-          }),
+          _buildImageBottomBarButton(
+            label: "EXIT",
+            iconPath: ICON_PATH_EXIT, // The original power symbol icon
+            backgroundImagePath: ICON_PATH_EXIT_BACKGROUND, // The new glossy background image
+            onPressed: () async {
+              final proceed = await _showExitDialog();
+              if (proceed) SystemNavigator.pop();
+            },
+          ),
         ];
 
         return Row(
