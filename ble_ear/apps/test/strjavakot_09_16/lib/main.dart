@@ -603,50 +603,80 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _buildCrosshair(double screenWidth, double screenHeight) {
-    // Condition 1: Is the app in an attack mode?
-    // bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
-    //     _confirmedServerModeId == CommandIds.AUTO_ATTACK ;
+  // Widget _buildCrosshair(double screenWidth, double screenHeight) {
+  //   // Condition 1: Is the app in an attack mode?
+  //   // bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
+  //   //     _confirmedServerModeId == CommandIds.AUTO_ATTACK ;
+  //
+  //   bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
+  //       _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
+  //       _confirmedServerModeId == CommandIds.RECON ||
+  //       _confirmedServerModeId == CommandIds.DRONE ;
+  //
+  //   if (!isAttackMode) {
+  //     return const SizedBox.shrink(); // Don't show anything
+  //   }
+  //
+  //   // Condition 2: Did the robot provide a specific crosshair position?
+  //   bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
+  //
+  //   // Determine the final normalized coordinates for the crosshair's center.
+  //   final double targetX = useServerPosition ? _crosshairX : 0.5;
+  //   final double targetY = useServerPosition ? _crosshairY : 0.5;
+  //
+  //   // --- THIS IS THE NEW COLOR LOGIC ---
+  //   final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
+  //   final double crosshairSize = 900.0;
+  //
+  //   final double left = (targetX * screenWidth) - (crosshairSize / 2);
+  //   final double top = (targetY * screenHeight) - (crosshairSize / 2);
+  //
+  //   return Positioned(
+  //     left: left,
+  //     top: top,
+  //     child: Image.asset(
+  //       'assets/new_icons/crosshair.png',
+  //       width: crosshairSize,
+  //       height: crosshairSize,
+  //
+  //       // --- THESE TWO LINES ARE THE FIX ---
+  //       // 1. Apply the dynamic color we just determined.
+  //       color: crosshairColor,
+  //
+  //       // 2. Use this blend mode to "colorize" the non-transparent parts of the image.
+  //       colorBlendMode: BlendMode.srcIn,
+  //     ),
+  //   );
+  // }
 
+  Widget _buildCrosshair() { // <-- REMOVED screenWidth and screenHeight parameters
+    // Condition 1: Is the app in an attack mode?
     bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
         _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
         _confirmedServerModeId == CommandIds.RECON ||
-        _confirmedServerModeId == CommandIds.DRONE ;
+        _confirmedServerModeId == CommandIds.DRONE;
 
     if (!isAttackMode) {
-      return const SizedBox.shrink(); // Don't show anything
+      return const SizedBox.shrink();
     }
 
     // Condition 2: Did the robot provide a specific crosshair position?
     bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
 
-    // Determine the final normalized coordinates for the crosshair's center.
-    final double targetX = useServerPosition ? _crosshairX : 0.5;
-    final double targetY = useServerPosition ? _crosshairY : 0.5;
-
-    // --- THIS IS THE NEW COLOR LOGIC ---
     final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
     final double crosshairSize = 900.0;
 
-    final double left = (targetX * screenWidth) - (crosshairSize / 2);
-    final double top = (targetY * screenHeight) - (crosshairSize / 2);
-
-    return Positioned(
-      left: left,
-      top: top,
-      child: Image.asset(
-        'assets/new_icons/crosshair.png',
-        width: crosshairSize,
-        height: crosshairSize,
-
-        // --- THESE TWO LINES ARE THE FIX ---
-        // 1. Apply the dynamic color we just determined.
-        color: crosshairColor,
-
-        // 2. Use this blend mode to "colorize" the non-transparent parts of the image.
-        colorBlendMode: BlendMode.srcIn,
-      ),
+    // --- THIS IS THE FIX ---
+    // The function now ONLY returns the Image widget itself.
+    // The positioning is handled in the main build method.
+    return Image.asset(
+      'assets/new_icons/crosshair.png',
+      width: crosshairSize,
+      height: crosshairSize,
+      color: crosshairColor,
+      colorBlendMode: BlendMode.srcIn,
     );
+    // --- END OF FIX ---
   }
 
   Widget _buildModeStatusBanner() {
@@ -900,10 +930,114 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //
+  //   return Scaffold(
+  //     backgroundColor: Colors.black,
+  //     body: _isLoading
+  //         ? const Center(child: CircularProgressIndicator())
+  //         : Stack(
+  //       children: [
+  //         Positioned.fill(
+  //           child: InteractiveViewer(
+  //             transformationController: _transformationController,
+  //             minScale: 1.0, // User cannot pinch-to-zoom out
+  //             maxScale: 5.0, // User can pinch-to-zoom in up to 5x
+  //             panEnabled: false, // Disable panning with finger, only joysticks control it
+  //             child: KeyedSubtree(
+  //               key: _gstreamerViewKey,
+  //               child: AndroidView(
+  //                 viewType: 'gstreamer_view',
+  //                 onPlatformViewCreated: _onGStreamerPlatformViewCreated,
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //
+  //         // --- THIS IS THE FIX ---
+  //         // 2. Add the Danger Overlay on top of the video
+  //         _buildDangerOverlay(),
+  //         // --- END OF FIX ---
+  //
+  //         Positioned.fill(child: _buildStreamOverlay()),
+  //
+  //         if (!_isGStreamerLoading && !_gstreamerHasError)
+  //           Positioned.fill(child: _buildTouchDetector()),
+  //
+  //         // Positioned.fill(child: _buildStreamOverlay()),
+  //
+  //         // _buildWindIndicator(),
+  //         _buildZoomDisplay(),
+  //         _buildModeStatusBanner(),
+  //         _buildConnectionStatusBanner(),
+  //
+  //         _buildCrosshair(screenWidth, screenHeight),
+  //
+  //         _buildModeButton(0, 30, 30, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE),
+  //         _buildModeButton(1, 30, 214, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE),
+  //         _buildModeButton(2, 30, 398, "Manual Attack", ICON_PATH_MANUAL_ATTACK_INACTIVE, ICON_PATH_MANUAL_ATTACK_ACTIVE),
+  //         _buildModeButton(3, 30, 582, "Auto Attack", ICON_PATH_AUTO_ATTACK_INACTIVE, ICON_PATH_AUTO_ATTACK_ACTIVE),
+  //         _buildModeButton(4, 30, 766, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE),
+  //
+  //         _buildViewButton(
+  //           1690, 30, "",
+  //           ICON_PATH_DAY_VIEW_ACTIVE,   // Pass the ACTIVE icon
+  //           ICON_PATH_DAY_VIEW_INACTIVE, // Pass the INACTIVE icon
+  //           _currentCameraIndex == 0,    // This button is active if camera index is 0
+  //           onPressed: () => _switchCamera(0),
+  //         ),
+  //
+  //         // Night View Button (IR Camera)
+  //         _buildViewButton(
+  //           1690, 214, "",
+  //           ICON_PATH_NIGHT_VIEW_ACTIVE,   // Pass the ACTIVE icon
+  //           ICON_PATH_NIGHT_VIEW_INACTIVE, // Pass the INACTIVE icon
+  //           _currentCameraIndex == 1,      // This button is active if camera index is 1
+  //           onPressed: () => _switchCamera(1),
+  //         ),
+  //
+  //         _buildViewButton(
+  //             1690, 720, "Setting",
+  //             ICON_PATH_SETTINGS, // Active icon
+  //             ICON_PATH_SETTINGS, // Inactive icon (the same)
+  //             false,              // Never shows the "active" red background
+  //             onPressed: _navigateToSettings
+  //         ),
+  //
+  //         // _buildCrosshair(screenWidth, screenHeight),
+  //         // _buildDirectionalControls(),
+  //         _buildMovementJoystick(),
+  //         _buildPanTiltJoystick(),
+  //
+  //         Align(
+  //           alignment: Alignment.bottomCenter,
+  //           child: Container(
+  //             margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+  //             decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(50)),
+  //             child: _buildBottomBar(),
+  //           ),
+  //         ),
+  //
+  //       ],
+  //     ),
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
+    // --- Calculate crosshair position here ---
+    bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
+    final double targetX = useServerPosition ? _crosshairX : 0.5;
+    final double targetY = useServerPosition ? _crosshairY : 0.5;
+    final double crosshairSize = 900.0;
+    final double left = (targetX * screenWidth) - (crosshairSize / 2);
+    final double top = (targetY * screenHeight) - (crosshairSize / 2);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -911,12 +1045,13 @@ class _HomePageState extends State<HomePage> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [
+          // --- LAYER 1: VIDEO ---
           Positioned.fill(
             child: InteractiveViewer(
               transformationController: _transformationController,
-              minScale: 1.0, // User cannot pinch-to-zoom out
-              maxScale: 5.0, // User can pinch-to-zoom in up to 5x
-              panEnabled: false, // Disable panning with finger, only joysticks control it
+              minScale: 1.0,
+              maxScale: 5.0,
+              panEnabled: false,
               child: KeyedSubtree(
                 key: _gstreamerViewKey,
                 child: AndroidView(
@@ -927,18 +1062,35 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
+          // --- LAYER 2: DANGER OVERLAY (Visual only) ---
+          _buildDangerOverlay(),
+
+          // --- LAYER 3: STREAM OVERLAYS (Loading/Error) ---
+          Positioned.fill(child: _buildStreamOverlay()),
+
+          // --- LAYER 4: TOUCH DETECTOR ---
           if (!_isGStreamerLoading && !_gstreamerHasError)
             Positioned.fill(child: _buildTouchDetector()),
 
-          Positioned.fill(child: _buildStreamOverlay()),
-
+          // --- LAYER 5: VISUAL-ONLY UI ELEMENTS ---
           // _buildWindIndicator(),
           _buildZoomDisplay(),
-
           _buildModeStatusBanner(),
-
           _buildConnectionStatusBanner(),
 
+          // --- THIS IS THE FIX ---
+          // The Positioned widget is now the direct child of the Stack.
+          Positioned(
+            left: left,
+            top: top,
+            // The IgnorePointer is now INSIDE the Positioned widget.
+            child: IgnorePointer(
+              child: _buildCrosshair(),
+            ),
+          ),
+          // --- END OF FIX ---
+
+          // --- LAYER 6: INTERACTIVE UI ELEMENTS ---
           _buildModeButton(0, 30, 30, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE),
           _buildModeButton(1, 30, 214, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE),
           _buildModeButton(2, 30, 398, "Manual Attack", ICON_PATH_MANUAL_ATTACK_INACTIVE, ICON_PATH_MANUAL_ATTACK_ACTIVE),
@@ -947,31 +1099,26 @@ class _HomePageState extends State<HomePage> {
 
           _buildViewButton(
             1690, 30, "",
-            ICON_PATH_DAY_VIEW_ACTIVE,   // Pass the ACTIVE icon
-            ICON_PATH_DAY_VIEW_INACTIVE, // Pass the INACTIVE icon
-            _currentCameraIndex == 0,    // This button is active if camera index is 0
+            ICON_PATH_DAY_VIEW_ACTIVE,
+            ICON_PATH_DAY_VIEW_INACTIVE,
+            _currentCameraIndex == 0,
             onPressed: () => _switchCamera(0),
           ),
-
-          // Night View Button (IR Camera)
           _buildViewButton(
             1690, 214, "",
-            ICON_PATH_NIGHT_VIEW_ACTIVE,   // Pass the ACTIVE icon
-            ICON_PATH_NIGHT_VIEW_INACTIVE, // Pass the INACTIVE icon
-            _currentCameraIndex == 1,      // This button is active if camera index is 1
+            ICON_PATH_NIGHT_VIEW_ACTIVE,
+            ICON_PATH_NIGHT_VIEW_INACTIVE,
+            _currentCameraIndex == 1,
             onPressed: () => _switchCamera(1),
           ),
-
           _buildViewButton(
               1690, 720, "Setting",
-              ICON_PATH_SETTINGS, // Active icon
-              ICON_PATH_SETTINGS, // Inactive icon (the same)
-              false,              // Never shows the "active" red background
+              ICON_PATH_SETTINGS,
+              ICON_PATH_SETTINGS,
+              false,
               onPressed: _navigateToSettings
           ),
 
-          _buildCrosshair(screenWidth, screenHeight),
-          // _buildDirectionalControls(),
           _buildMovementJoystick(),
           _buildPanTiltJoystick(),
 
@@ -983,7 +1130,6 @@ class _HomePageState extends State<HomePage> {
               child: _buildBottomBar(),
             ),
           ),
-
         ],
       ),
     );
@@ -1501,6 +1647,25 @@ class _HomePageState extends State<HomePage> {
   //     },
   //   );
   // }
+
+  // --- NEW: A dedicated builder for the "Attack Permitted" red overlay ---
+  Widget _buildDangerOverlay() {
+    // This overlay should only be visible when permission has been requested AND granted.
+    bool isVisible = _permissionRequestIsActive && _permissionHasBeenGranted;
+
+    if (!isVisible) {
+      return const SizedBox.shrink(); // Return an empty widget if not visible
+    }
+
+    return Positioned.fill(
+      child: IgnorePointer( // IgnorePointer prevents this overlay from blocking touches
+        child: Container(
+          // Use a red color with low opacity to create the tint effect
+          color: Colors.red.withOpacity(0.3),
+        ),
+      ),
+    );
+  }
 
   Widget _buildBottomBar() {
     final screenWidth = MediaQuery.of(context).size.width;
