@@ -23,7 +23,7 @@ std::string get_coco_name_from_int(int cls)
     std::string result = "N/A";
     switch(cls) {
         case 1:  result = "person"; break;
-        // case 2:  result = "drone";  break; 
+        case 2:  result = "drone";  break; 
     }
     return result;
 }

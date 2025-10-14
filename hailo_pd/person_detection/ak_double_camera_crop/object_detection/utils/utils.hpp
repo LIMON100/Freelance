@@ -24,7 +24,7 @@
 
 #include "hailo/infer_model.hpp" 
 #include "hailo/hailort.h"
-
+#include "ByteTrack/Object.h"
 
 
 
@@ -40,6 +40,39 @@ extern std::vector<cv::Scalar> COLORS;
 namespace fs = std::filesystem;
 
 // --------------------------- FUNCTION DECLARATIONS ---------------------------
+
+struct SingleStreamFrameData {
+    int frame_id;
+    cv::Mat org_frame;
+    cv::Mat resized_for_infer;
+    cv::Mat affine_matrix;
+    cv::Point crop_offset;
+
+    std::vector<std::pair<uint8_t*, hailo_vstream_info_t>> output_data_and_infos;
+    std::vector<std::shared_ptr<uint8_t>> output_guards;
+
+    std::chrono::high_resolution_clock::time_point t_capture_start;
+    std::chrono::high_resolution_clock::time_point t_preprocess_end;
+    std::chrono::high_resolution_clock::time_point t_inference_end;
+};
+
+struct FusedFrameData {
+    int frame_id;
+    cv::Mat display_frame;
+    std::vector<byte_track::Object> fused_detections;
+
+    // --- THIS IS THE FIX ---
+    // All timestamps are now correctly included in this struct.
+    std::chrono::high_resolution_clock::time_point t_eo_capture_start;
+    std::chrono::high_resolution_clock::time_point t_eo_preprocess_end;
+    std::chrono::high_resolution_clock::time_point t_eo_inference_end;
+    
+    std::chrono::high_resolution_clock::time_point t_ir_capture_start;
+    std::chrono::high_resolution_clock::time_point t_ir_preprocess_end;
+    std::chrono::high_resolution_clock::time_point t_ir_inference_end;
+
+    std::chrono::high_resolution_clock::time_point t_fusion_end;
+};
 
 struct CommandLineArgs {
     std::string detection_hef;

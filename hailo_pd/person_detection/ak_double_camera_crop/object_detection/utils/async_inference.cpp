@@ -5,33 +5,33 @@
 #include <sys/mman.h>
 #endif
 
-
 static std::shared_ptr<uint8_t> page_aligned_alloc(size_t size, void* buff = nullptr) {
     #if defined(__unix__)
         auto addr = mmap(buff, size, PROT_WRITE | PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         if (MAP_FAILED == addr) throw std::bad_alloc();
         return std::shared_ptr<uint8_t>(reinterpret_cast<uint8_t*>(addr), [size](void *addr) { munmap(addr, size); });
-    #elif defined(_MSC_VER)
-        auto addr = VirtualAlloc(buff, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-        if (!addr) throw std::bad_alloc();
-        return std::shared_ptr<uint8_t>(reinterpret_cast<uint8_t*>(addr), [](void *addr){ VirtualFree(addr, 0, MEM_RELEASE); });
     #else
-    #pragma error("Aligned alloc not supported")
+        throw std::runtime_error("Aligned alloc not supported on this platform.");
     #endif
 }
 
+// Constructor 1: For the first model instance. Creates and owns the VDevice.
 AsyncModelInfer::AsyncModelInfer(const std::string &hef_path)
+    : m_job_is_running(false) // <-- INITIALIZE FLAG
 {
+    auto vdevice_exp = hailort::VDevice::create();
+    if (!vdevice_exp) {
+        throw std::runtime_error("Failed to create VDevice: " + std::to_string(vdevice_exp.status()));
+    }
+    this->vdevice = std::move(vdevice_exp.release());
 
-    this->vdevice = hailort::VDevice::create().expect("Failed to create VDevice");
-
+    // ... (rest of constructor is the same)
     auto infer_model_exp = this->vdevice->create_infer_model(hef_path);
     if (!infer_model_exp) {
         std::cerr << "Failed to create infer model, status = " << infer_model_exp.status() << std::endl;
         throw std::runtime_error("Failed to create infer model");
     }
     this->infer_model = infer_model_exp.release();
-
     for (auto& output_vstream_info : this->infer_model->hef().get_output_vstream_infos().release()) {
         std::string name(output_vstream_info.name);
         this->output_vstream_info_by_name[name] = output_vstream_info;
@@ -40,21 +40,17 @@ AsyncModelInfer::AsyncModelInfer(const std::string &hef_path)
     this->bindings = configured_infer_model.create_bindings().expect("Failed to create infer bindings");
 }
 
-AsyncModelInfer::AsyncModelInfer(const std::string &hef_path,const std::string &group_id)
+// Constructor 2: For subsequent instances. Shares an existing VDevice.
+AsyncModelInfer::AsyncModelInfer(std::shared_ptr<hailort::VDevice> vdevice, const std::string &hef_path)
+    : vdevice(vdevice), m_job_is_running(false) // <-- INITIALIZE FLAG
 {
-    hailo_vdevice_params_t vdevice_params = {0};
-    hailo_init_vdevice_params(&vdevice_params);
-    vdevice_params.group_id = group_id.c_str();
-    this->vdevice = hailort::VDevice::create(vdevice_params).expect("Failed to create VDevice");
-
-    auto infer_model_exp = vdevice->create_infer_model(hef_path);
+    // ... (rest of constructor is the same)
+    auto infer_model_exp = this->vdevice->create_infer_model(hef_path);
     if (!infer_model_exp) {
-        std::cerr << "Failed to create infer model, status = " << infer_model_exp.status() << std::endl;
+        std::cerr << "Failed to create infer model from shared VDevice, status = " << infer_model_exp.status() << std::endl;
         throw std::runtime_error("Failed to create infer model");
     }
     this->infer_model = infer_model_exp.release();
-
-
     for (auto& output_vstream_info : this->infer_model->hef().get_output_vstream_infos().release()) {
         std::string name(output_vstream_info.name);
         this->output_vstream_info_by_name[name] = output_vstream_info;
@@ -65,24 +61,28 @@ AsyncModelInfer::AsyncModelInfer(const std::string &hef_path,const std::string &
 
 AsyncModelInfer::~AsyncModelInfer()
 {
-    auto status = last_infer_job.wait(std::chrono::milliseconds(1000));
-    if (HAILO_SUCCESS != status) {
-        std::cerr << "Failed to wait for last infer job, status = " << status << std::endl;
+    // --- THIS IS THE FIX ---
+    // Now we check our own reliable flag.
+    if (m_job_is_running) {
+        last_infer_job.wait(std::chrono::milliseconds(1000));
     }
 }
 
+std::shared_ptr<hailort::VDevice> AsyncModelInfer::get_vdevice() {
+    return this->vdevice;
+}
+
 const std::vector<hailort::InferModel::InferStream>& AsyncModelInfer::get_inputs(){
-    return std::move(this->infer_model->inputs());
+    return this->infer_model->inputs();
 }
 
 const std::vector<hailort::InferModel::InferStream>& AsyncModelInfer::get_outputs(){
-    return std::move(this->infer_model->outputs());
+    return this->infer_model->outputs();
 }
 
 const std::shared_ptr<hailort::InferModel> AsyncModelInfer::get_infer_model(){
     return this->infer_model;
 }
-
 
 void AsyncModelInfer::infer(
     std::shared_ptr<cv::Mat> input_data,
@@ -144,13 +144,17 @@ void AsyncModelInfer::wait_and_run_async(
         bindings,
         [callback, output_data_and_infos, input_guards, output_guards](const hailort::AsyncInferCompletionInfo& info)
         {
-            // callback sent by the applicative side
             callback(info, output_data_and_infos, output_guards);
         }
     );
     if (!job) {
         std::cerr << "Failed to start async infer job, status = " << job.status() << std::endl;
+        m_job_is_running = false; // Job failed, so it's not running
+    } else {
+        // --- THIS IS THE FIX ---
+        // If the job was created successfully, set our flag.
+        m_job_is_running = true;
+        last_infer_job = std::move(job.release());
+        last_infer_job.detach();
     }
-    job->detach();
-    last_infer_job = std::move(job.release());
 }
