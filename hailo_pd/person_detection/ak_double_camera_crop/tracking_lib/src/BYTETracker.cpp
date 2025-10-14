@@ -170,6 +170,26 @@ std::vector<BYTETracker::STrackPtr> BYTETracker::update(const std::vector<Object
             output_stracks.push_back(track);
         }
     }
+
+    std::vector<STrackPtr> merged_tracks;
+    for (auto& track : output_stracks) {
+        bool is_duplicate = false;
+        for (auto& existing : merged_tracks) {
+            if (track->getRect().calcIoU(existing->getRect()) > match_thresh_) {  // Use match_thresh for IOU check
+                // Merge: Keep higher-score track, delete the other
+                if (track->getScore() > existing->getScore()) {
+                    existing = track;
+                }
+                is_duplicate = true;
+                break;
+            }
+        }
+        if (!is_duplicate) {
+            merged_tracks.push_back(track);
+        }
+    }
+    output_stracks = merged_tracks;  // Replace with merged
+    
     return output_stracks;
 }
 

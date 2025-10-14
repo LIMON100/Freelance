@@ -6,12 +6,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # --- Find Dependencies ---
-# This is the crucial part that was missing.
 find_package(OpenCV REQUIRED)
 message(STATUS "Found OpenCV for bytetrack library: ${OpenCV_VERSION}")
 
+# --- THIS IS THE FIX ---
+# Find Eigen3. This will set Eigen3_FOUND and Eigen3_INCLUDE_DIRS if it exists.
 find_package(Eigen3 3.3 QUIET)
-if(NOT EIGEN3_FOUND)
+
+# If Eigen3 was not found on the system, then download it.
+if(NOT Eigen3_FOUND)
+  message(STATUS "System Eigen not found. Downloading...")
   include(FetchContent)
   FetchContent_Declare(eigen
     GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
@@ -19,10 +23,15 @@ if(NOT EIGEN3_FOUND)
     GIT_SHALLOW     ON
   )
   FetchContent_MakeAvailable(eigen)
-  message(STATUS "Eigen was not found, downloaded and configured.")
+  # FetchContent sets the variable 'eigen_SOURCE_DIR'
+  set(EIGEN_INCLUDE_DIRS ${eigen_SOURCE_DIR})
+  message(STATUS "Eigen was downloaded and configured.")
 else()
+  # If it was found, use the variable set by find_package.
+  set(EIGEN_INCLUDE_DIRS ${Eigen3_INCLUDE_DIRS})
   message(STATUS "Found system-installed Eigen version: ${EIGEN3_VERSION_STRING}")
 endif()
+# --- END OF FIX ---
 
 # --- Define the Library Target ---
 add_library(${PROJECT_NAME} SHARED
@@ -39,12 +48,11 @@ add_library(${PROJECT_NAME} SHARED
 # automatically inherit these include paths.
 target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  ${EIGEN3_INCLUDE_DIR}
-  ${OpenCV_INCLUDE_DIRS} # <-- Add OpenCV's include directory
+  ${EIGEN_INCLUDE_DIRS}   # <-- Use our new, unified variable
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 # --- Linking for the Library ---
-# Also link the library against the actual OpenCV libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     ${OpenCV_LIBS}
 )
