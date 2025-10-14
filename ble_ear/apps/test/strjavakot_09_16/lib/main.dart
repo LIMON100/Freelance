@@ -664,7 +664,7 @@ class _HomePageState extends State<HomePage> {
     bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
 
     final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
-    final double crosshairSize = 900.0;
+    final double crosshairSize = 450.0;
 
     // --- THIS IS THE FIX ---
     // The function now ONLY returns the Image widget itself.
@@ -860,6 +860,51 @@ class _HomePageState extends State<HomePage> {
   }
 
  // --- NEW: A dedicated builder for the custom Permission to Attack button ---
+ //  Widget _buildPermissionButton({
+ //    required String label,
+ //    required String backgroundImagePath,
+ //    required VoidCallback? onPressed,
+ //  }) {
+ //    final screenHeight = MediaQuery.of(context).size.height;
+ //    final screenWidth = MediaQuery.of(context).size.width;
+ //    final heightScale = screenHeight / 1080.0;
+ //    final widthScale = screenWidth / 1920.0;
+ //    final bool isEnabled = onPressed != null;
+ //
+ //    // Use a fixed width to prevent the UI from shifting
+ //    final double buttonWidth = 450 * widthScale;
+ //    final double buttonHeight = 80 * heightScale;
+ //
+ //    return GestureDetector(
+ //      onTap: onPressed,
+ //      child: Opacity(
+ //        opacity: isEnabled ? 1.0 : 0.7, // Make it slightly less faded when disabled
+ //        child: Container(
+ //          width: buttonWidth,
+ //          height: buttonHeight,
+ //          decoration: BoxDecoration(
+ //            image: DecorationImage(
+ //              image: AssetImage(backgroundImagePath),
+ //              fit: BoxFit.fill,
+ //            ),
+ //          ),
+ //          child: Center( // Center the text within the button
+ //            child: Text(
+ //              label,
+ //              style: TextStyle(
+ //                fontFamily: 'NotoSans',
+ //                fontWeight: FontWeight.w700,
+ //                fontSize: 30 * heightScale,
+ //                color: Colors.white,
+ //              ),
+ //            ),
+ //          ),
+ //        ),
+ //      ),
+ //    );
+ //  }
+
+
   Widget _buildPermissionButton({
     required String label,
     required String backgroundImagePath,
@@ -871,34 +916,53 @@ class _HomePageState extends State<HomePage> {
     final widthScale = screenWidth / 1920.0;
     final bool isEnabled = onPressed != null;
 
-    // Use a fixed width to prevent the UI from shifting
     final double buttonWidth = 450 * widthScale;
     final double buttonHeight = 80 * heightScale;
 
     return GestureDetector(
       onTap: onPressed,
       child: Opacity(
-        opacity: isEnabled ? 1.0 : 0.7, // Make it slightly less faded when disabled
-        child: Container(
+        opacity: isEnabled ? 1.0 : 1.0,
+        child: SizedBox(
           width: buttonWidth,
           height: buttonHeight,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(backgroundImagePath),
-              fit: BoxFit.fill,
-            ),
-          ),
-          child: Center( // Center the text within the button
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'NotoSans',
-                fontWeight: FontWeight.w700,
-                fontSize: 30 * heightScale,
-                color: Colors.white,
+          // --- THIS IS THE FIX ---
+          // Use a Stack to layer the background image and the text.
+          child: Stack(
+            fit: StackFit.expand, // Make the Stack's children fill the SizedBox
+            children: [
+              // 1. The Background Image
+              // Use ClipRRect to enforce the rounded corners on the image.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15 * heightScale), // Adjust this value for more/less rounding
+                child: Image.asset(
+                  backgroundImagePath,
+                  fit: BoxFit.cover, // Cover maintains aspect ratio while filling
+                ),
               ),
-            ),
+              // 2. The Text, centered on top of the image
+              Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'NotoSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 30 * heightScale,
+                    color: Colors.white,
+                    // Optional: Add a subtle shadow to make the text pop
+                    shadows: [
+                      Shadow(
+                        blurRadius: 2.0,
+                        color: Colors.black.withOpacity(0.5),
+                        offset: Offset(1.0, 1.0),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
+          // --- END OF FIX ---
         ),
       ),
     );
@@ -1261,8 +1325,6 @@ class _HomePageState extends State<HomePage> {
         child: Container(
           width: 220 * widthScale,
           height: 175 * heightScale,
-          // --- THIS IS THE FIX ---
-          // Remove padding and use a BoxDecoration for the image
           // This allows the image to fill the entire container.
           decoration: BoxDecoration(
             color: color,
@@ -1708,11 +1770,17 @@ class _HomePageState extends State<HomePage> {
             onPressed: permissionOnPressed,
           ),
           SizedBox(width: 12 * widthScale),
+          // _buildWideBottomBarButton(
+          //   _isModeActive ? "STOP" : "START",
+          //   _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
+          //   [const Color(0xff25a625), const Color(0xff127812)],
+          //   _isServerConnected ? _onStartStopPressed : null,
+          // ),
           _buildWideBottomBarButton(
-            _isModeActive ? "STOP" : "START",
-            _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
-            [const Color(0xff25a625), const Color(0xff127812)],
-            _isServerConnected ? _onStartStopPressed : null,
+            label: _isModeActive ? "STOP" : "START",
+            iconPath: _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
+            backgroundImagePath: ICON_PATH_PERMISSION_GREEN, // Use the green background
+            onPressed: _isServerConnected ? _onStartStopPressed : null,
           ),
           SizedBox(width: 22 * widthScale),
           _buildIconBottomBarButton(
@@ -1795,31 +1863,84 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Make the onPressed parameter nullable by adding '?'
-  Widget _buildWideBottomBarButton(String label, String iconPath, List<Color> gradientColors, VoidCallback? onPressed) {
+  // Widget _buildWideBottomBarButton(String label, String iconPath, List<Color> gradientColors, VoidCallback? onPressed) {
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final heightScale = screenHeight / 1080.0;
+  //   final widthScale = screenWidth / 1920.0;
+  //   final bool isEnabled = onPressed != null;
+  //
+  //   return GestureDetector(
+  //     onTap: onPressed,
+  //     child: Opacity(
+  //       opacity: isEnabled ? 1.0 : 0.5,
+  //       child: Container(
+  //         constraints: BoxConstraints(minWidth: 220 * widthScale),
+  //         height: 80 * heightScale,
+  //         padding: const EdgeInsets.symmetric(horizontal: 74),
+  //         decoration: BoxDecoration(
+  //           gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
+  //           borderRadius: BorderRadius.circular(25 * heightScale),
+  //         ),
+  //         child: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Image.asset(iconPath, height: 36 * heightScale),
+  //             const SizedBox(width: 12),
+  //             Text(label, style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 36 * heightScale, color: Colors.white)),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // --- THIS IS THE CORRECTED WIDE BUTTON BUILDER ---
+  Widget _buildWideBottomBarButton({
+    required String label,
+    required String iconPath,
+    required String backgroundImagePath, // Now takes an image path instead of colors
+    required VoidCallback? onPressed,
+  }) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final heightScale = screenHeight / 1080.0;
     final widthScale = screenWidth / 1920.0;
     final bool isEnabled = onPressed != null;
 
+    // Use a wider width for this specific button
+    final double buttonWidth = 400 * widthScale; // Increased width
+    final double buttonHeight = 78 * heightScale;
+
     return GestureDetector(
       onTap: onPressed,
       child: Opacity(
         opacity: isEnabled ? 1.0 : 0.5,
         child: Container(
-          constraints: BoxConstraints(minWidth: 220 * widthScale),
-          height: 80 * heightScale,
-          padding: const EdgeInsets.symmetric(horizontal: 74),
+          width: buttonWidth,
+          height: buttonHeight,
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
-            borderRadius: BorderRadius.circular(25 * heightScale),
+            // Use the provided image as the background
+            image: DecorationImage(
+              image: AssetImage(backgroundImagePath),
+              fit: BoxFit.fill,
+            ),
           ),
+          // The content (icon and text) is placed on top of the background image
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(iconPath, height: 36 * heightScale),
               const SizedBox(width: 12),
-              Text(label, style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 36 * heightScale, color: Colors.white)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'NotoSans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 36 * heightScale,
+                  color: Colors.white,
+                ),
+              ),
             ],
           ),
         ),
