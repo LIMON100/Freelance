@@ -490,13 +490,8 @@ class _HomePageState extends State<HomePage> {
 
   // void _startCommandTimer() {
   //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-  //     // Create a new, separate command object for driving
   //     DrivingCommand drivingCommand = DrivingCommand();
   //
-  //     // --- THIS IS THE NEW, UNIFIED LOGIC ---
-  //
-  //     // Check if the physical gamepad is actively being used.
-  //     // We consider it "active" if any of its main axes are moved beyond a small deadzone.
   //     bool isGamepadActive = _gamepadConnected &&
   //         ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
   //             (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
@@ -504,43 +499,34 @@ class _HomePageState extends State<HomePage> {
   //             (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
   //
   //     if (isGamepadActive) {
-  //       // Populate the driving command from the gamepad's left stick
+  //       // GAMEPAD IS ACTIVE: It controls everything.
   //       drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
   //       drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
-  //
-  //       // Populate the main state command from the gamepad's right stick
   //       _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
   //       _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
-  //
-  //       // Handle zoom from gamepad
-  //       _currentCommand.zoom_command = 0;
-  //       if (_isZoomInPressed) {
-  //         _currentCommand.zoom_command = 1;
-  //       } else if (_isZoomOutPressed || (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5) {
-  //         _currentCommand.zoom_command = -1;
-  //       }
-  //
   //     } else {
-  //       // Populate the driving command from the left virtual joystick (via _currentCommand)
   //       drivingCommand.move_speed = _currentCommand.move_speed;
   //       drivingCommand.turn_angle = _currentCommand.turn_angle;
-  //
-  //       // The main state command's pan/tilt are already being set by the right virtual joystick's listener.
-  //       // We don't need to do anything extra here for pan/tilt.
-  //
-  //       // Reset zoom state if no gamepad is active
-  //       _currentCommand.zoom_command = 0;
   //     }
   //
-  //     // --- SEND BOTH PACKETS (This part is unchanged) ---
-  //     _sendCommandPacket(_currentCommand); // Sends the state command (TCP)
-  //     _sendDrivingPacket(drivingCommand); // Sends the driving command (UDP)
-  //
-  //     // Reset touch coordinates after sending
-  //     if (_currentCommand.touch_x != -1.0) {
-  //       _currentCommand.touch_x = -1.0;
-  //       _currentCommand.touch_y = -1.0;
+  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+  //     // --- UNIFIED ZOOM LOGIC ---
+  //     _currentCommand.zoom_command = 0;
+  //     if (_isZoomInPressed || _isUiZoomInPressed) {
+  //       _currentCommand.zoom_command = 1;
   //     }
+  //     else if (_isZoomOutPressed ||
+  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+  //         _isUiZoomOutPressed) {
+  //       _currentCommand.zoom_command = -1;
+  //     }
+  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //
+  //     _sendCommandPacket(_currentCommand);
+  //     _sendDrivingPacket(drivingCommand);
   //   });
   // }
 
@@ -548,24 +534,39 @@ class _HomePageState extends State<HomePage> {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       DrivingCommand drivingCommand = DrivingCommand();
 
-      bool isGamepadActive = _gamepadConnected &&
-          ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
-              (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
-              (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
-              (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
+      // bool isGamepadActive = _gamepadConnected &&
+      //     ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
+      //         (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
+      //         (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
+      //         (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
 
-      if (isGamepadActive) {
-        // GAMEPAD IS ACTIVE: It controls everything.
-        drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
-        drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
-        _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
-        _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
+      // if (isGamepadActive) {
+      if (_gamepadConnected) {
+        // 1. Get the raw axis values.
+        double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+        double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+        double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
+        double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
+
+        // 2. Apply a deadzone. If the value is small, treat it as zero.
+        //    This solves the problem of the stick not returning to a perfect 0.0.
+        drivingCommand.move_speed = rawMove.abs() < 15 ? 0 : rawMove.round();
+        drivingCommand.turn_angle = rawTurn.abs() < 15 ? 0 : rawTurn.round();
+        _currentCommand.tilt_speed = rawTilt.abs() < 15 ? 0 : rawTilt.round();
+        _currentCommand.pan_speed = rawPan.abs() < 15 ? 0 : rawPan.round();
+        // --- END OF FIX ---
+
       } else {
+        // VIRTUAL JOYSTICKS ARE ACTIVE:
+        // Their listeners already set the command values to 0 when released,
+        // so we just pass them through.
         drivingCommand.move_speed = _currentCommand.move_speed;
         drivingCommand.turn_angle = _currentCommand.turn_angle;
+        // Pan and tilt are already set on _currentCommand by the right joystick's listener.
       }
 
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+
       // --- UNIFIED ZOOM LOGIC ---
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
@@ -583,12 +584,8 @@ class _HomePageState extends State<HomePage> {
 
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
-
-      // if (_currentCommand.touch_x != -1.0) {
-      //   _currentCommand.touch_x = -1.0;
-      //   _currentCommand.touch_y = -1.0;
-      // }
     });
+
   }
 
   Future<void> _sendDrivingPacket(DrivingCommand command) async {
@@ -603,72 +600,58 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Widget _buildCrosshair(double screenWidth, double screenHeight) {
+  // Widget _buildCrosshair() { // <-- REMOVED screenWidth and screenHeight parameters
   //   // Condition 1: Is the app in an attack mode?
-  //   // bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
-  //   //     _confirmedServerModeId == CommandIds.AUTO_ATTACK ;
-  //
   //   bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
   //       _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
   //       _confirmedServerModeId == CommandIds.RECON ||
-  //       _confirmedServerModeId == CommandIds.DRONE ;
+  //       _confirmedServerModeId == CommandIds.DRONE;
   //
   //   if (!isAttackMode) {
-  //     return const SizedBox.shrink(); // Don't show anything
+  //     return const SizedBox.shrink();
   //   }
   //
   //   // Condition 2: Did the robot provide a specific crosshair position?
   //   bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
   //
-  //   // Determine the final normalized coordinates for the crosshair's center.
-  //   final double targetX = useServerPosition ? _crosshairX : 0.5;
-  //   final double targetY = useServerPosition ? _crosshairY : 0.5;
-  //
-  //   // --- THIS IS THE NEW COLOR LOGIC ---
   //   final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
   //   final double crosshairSize = 900.0;
   //
-  //   final double left = (targetX * screenWidth) - (crosshairSize / 2);
-  //   final double top = (targetY * screenHeight) - (crosshairSize / 2);
-  //
-  //   return Positioned(
-  //     left: left,
-  //     top: top,
-  //     child: Image.asset(
-  //       'assets/new_icons/crosshair.png',
-  //       width: crosshairSize,
-  //       height: crosshairSize,
-  //
-  //       // --- THESE TWO LINES ARE THE FIX ---
-  //       // 1. Apply the dynamic color we just determined.
-  //       color: crosshairColor,
-  //
-  //       // 2. Use this blend mode to "colorize" the non-transparent parts of the image.
-  //       colorBlendMode: BlendMode.srcIn,
-  //     ),
+  //   // --- THIS IS THE FIX ---
+  //   // The function now ONLY returns the Image widget itself.
+  //   // The positioning is handled in the main build method.
+  //   return Image.asset(
+  //     'assets/new_icons/crosshair.png',
+  //     width: crosshairSize,
+  //     height: crosshairSize,
+  //     color: crosshairColor,
+  //     colorBlendMode: BlendMode.srcIn,
   //   );
+  //   // --- END OF FIX ---
   // }
 
-  Widget _buildCrosshair() { // <-- REMOVED screenWidth and screenHeight parameters
-    // Condition 1: Is the app in an attack mode?
-    bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
+  Widget _buildCrosshair() {
+    // Condition 1: Is the app in a mode that should show a crosshair?
+    bool isCrosshairVisible = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
         _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
         _confirmedServerModeId == CommandIds.RECON ||
         _confirmedServerModeId == CommandIds.DRONE;
 
-    if (!isAttackMode) {
-      return const SizedBox.shrink();
+    if (!isCrosshairVisible) {
+      return const SizedBox.shrink(); // Don't show anything if not in a relevant mode
     }
 
-    // Condition 2: Did the robot provide a specific crosshair position?
-    bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
+    // Condition 2: Is the server providing a specific target lock position?
+    bool isTargetLocked = _crosshairX >= 0.0 && _crosshairY >= 0.0;
 
-    final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
+    // Determine color based on lock state
+    final Color crosshairColor = isTargetLocked ? Colors.red : Colors.white;
+
+    // --- THIS IS THE KEY ---
+    // Define the size here. You can now change this to 450, 900, or any other value,
+    // and the centering will still work perfectly.
     final double crosshairSize = 450.0;
 
-    // --- THIS IS THE FIX ---
-    // The function now ONLY returns the Image widget itself.
-    // The positioning is handled in the main build method.
     return Image.asset(
       'assets/new_icons/crosshair.png',
       width: crosshairSize,
@@ -676,7 +659,6 @@ class _HomePageState extends State<HomePage> {
       color: crosshairColor,
       colorBlendMode: BlendMode.srcIn,
     );
-    // --- END OF FIX ---
   }
 
   Widget _buildModeStatusBanner() {
@@ -1071,7 +1053,6 @@ class _HomePageState extends State<HomePage> {
   //             onPressed: _navigateToSettings
   //         ),
   //
-  //         // _buildCrosshair(screenWidth, screenHeight),
   //         // _buildDirectionalControls(),
   //         _buildMovementJoystick(),
   //         _buildPanTiltJoystick(),
@@ -1142,17 +1123,29 @@ class _HomePageState extends State<HomePage> {
           _buildModeStatusBanner(),
           _buildConnectionStatusBanner(),
 
-          // --- THIS IS THE FIX ---
           // The Positioned widget is now the direct child of the Stack.
-          Positioned(
-            left: left,
-            top: top,
-            // The IgnorePointer is now INSIDE the Positioned widget.
+          // Positioned(
+          //   left: left,
+          //   top: top,
+          //   // The IgnorePointer is now INSIDE the Positioned widget.
+          //   child: IgnorePointer(
+          //     child: _buildCrosshair(),
+          //   ),
+          // ),
+
+          Align(
+            // The alignment property takes normalized coordinates from -1.0 to 1.0.
+            // We need to convert our server coordinates (0.0 to 1.0) to this range.
+            // Formula: (value * 2) - 1
+            alignment: Alignment(
+              (_crosshairX >= 0.0 ? _crosshairX * 2 - 1 : 0.0), // Default to center (0.0) if no server X
+              (_crosshairY >= 0.0 ? _crosshairY * 2 - 1 : 0.0), // Default to center (0.0) if no server Y
+            ),
             child: IgnorePointer(
               child: _buildCrosshair(),
             ),
           ),
-          // --- END OF FIX ---
+
 
           // --- LAYER 6: INTERACTIVE UI ELEMENTS ---
           _buildModeButton(0, 30, 30, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE),
