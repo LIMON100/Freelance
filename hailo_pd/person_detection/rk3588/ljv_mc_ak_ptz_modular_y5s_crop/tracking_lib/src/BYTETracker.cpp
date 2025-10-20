@@ -62,7 +62,7 @@ std::vector<BYTETracker::STrackPtr> BYTETracker::update(const std::vector<Object
         strack->predict();
     }
     
-    motion_compensation(strack_pool, affine_matrix);
+    // motion_compensation(strack_pool, affine_matrix);
     
     ////////////////// Step 2: First association, with IoU //////////////////
     std::vector<STrackPtr> current_tracked_stracks;
