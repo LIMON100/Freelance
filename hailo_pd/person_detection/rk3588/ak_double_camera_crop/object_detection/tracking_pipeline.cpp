@@ -326,8 +326,7 @@ void TrackingPipeline::inference_worker_ir() {
 // }
 
 
-// In tracking_pipeline.cpp
-
+// NEW ONE NOT WORKS
 void TrackingPipeline::fusion_worker() {
     while (!m_stop_flag.load()) {
         SingleStreamFrameData eo_item, ir_item;
@@ -456,6 +455,7 @@ void TrackingPipeline::fusion_worker() {
     }
     m_fused_queue->stop();
 }
+
 
 void TrackingPipeline::postprocess_worker() {
     // --- INITIAL SETUP ---
