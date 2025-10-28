@@ -115,6 +115,8 @@ class _HomePageState extends State<HomePage> {
   Timer? _wifiSignalTimer;
   int _wifiSignalLevel = 0;
 
+  bool _wasGamepadActive = false;
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -372,121 +374,262 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Future<void> _handleGamepadEvent(MethodCall call) async {
+  //   if (!mounted) return;
+  //   if (!_gamepadConnected) {
+  //     setState(() {
+  //       _gamepadConnected = true;
+  //       _pendingLateralWindSpeed = _lateralWindSpeed; // Initialize pending value
+  //     });
+  //   }
+  //
+  //   if (call.method == "onMotionEvent") {
+  //     final newAxisValues = Map<String, double>.from(call.arguments);
+  //
+  //     // ---: Handle D-Pad for Wind Speed Adjustment ---
+  //     final double hatX = newAxisValues['AXIS_HAT_X'] ?? 0.0;
+  //     final double prevHatX = _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
+  //
+  //     // Detect a press (transition from 0 to -1 or 1)
+  //     if (hatX != 0 && prevHatX == 0) {
+  //       setState(() {
+  //         if (hatX > 0.5) { // D-Pad Right
+  //           _pendingLateralWindSpeed += 0.1;
+  //         } else if (hatX < -0.5) { // D-Pad Left
+  //           _pendingLateralWindSpeed -= 0.1;
+  //         }
+  //       });
+  //     }
+  //
+  //     setState(() => _gamepadAxisValues = newAxisValues);
+  //
+  //   } else if (call.method == "onButtonDown") {
+  //     final String button = call.arguments['button'];
+  //     setState(() {
+  //       switch (button) {
+  //         case 'KEYCODE_BUTTON_B': // Start
+  //           _onStartStopPressed();
+  //           break;
+  //         case 'KEYCODE_BUTTON_A': // Stop
+  //           if (_isModeActive) _onStartStopPressed();
+  //           break;
+  //         case 'KEYCODE_BUTTON_X': // Dual purpose: Permission AND Confirm Wind
+  //         // --- NEW: Confirm Wind Speed Logic ---
+  //         // If the pending value is different, this press confirms the wind speed.
+  //           if ((_pendingLateralWindSpeed - _lateralWindSpeed).abs() > 0.01) {
+  //             _lateralWindSpeed = _pendingLateralWindSpeed;
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               SnackBar(
+  //                 content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'),
+  //                 duration: const Duration(seconds: 2),
+  //               ),
+  //             );
+  //           } else {
+  //             _onPermissionPressed();
+  //           }
+  //           break;
+  //         case 'KEYCODE_BUTTON_L1':
+  //           _isZoomInPressed = true;
+  //           break;
+  //         case 'KEYCODE_BUTTON_L2':
+  //           _isZoomOutPressed = true;
+  //           break;
+  //       }
+  //     });
+  //   } else if (call.method == "onButtonUp") {
+  //     final String button = call.arguments['button'];
+  //     setState(() {
+  //       switch (button) {
+  //         case 'KEYCODE_BUTTON_L1':
+  //           _isZoomInPressed = false;
+  //           break;
+  //         case 'KEYCODE_BUTTON_L2':
+  //           _isZoomOutPressed = false;
+  //           break;
+  //       }
+  //     });
+  //   }
+  // }
+  //
+  // void _startCommandTimer() {
+  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+  //     DrivingCommand drivingCommand = DrivingCommand();
+  //
+  //     if (_gamepadConnected) {
+  //       // 1. Get the raw axis values.
+  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
+  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
+  //
+  //       // 2. Apply a deadzone. If the value is small, treat it as zero.
+  //       //    This solves the problem of the stick not returning to a perfect 0.0.
+  //       drivingCommand.move_speed = rawMove.abs() < 15 ? 0 : rawMove.round();
+  //       drivingCommand.turn_angle = rawTurn.abs() < 15 ? 0 : rawTurn.round();
+  //       _currentCommand.tilt_speed = rawTilt.abs() < 15 ? 0 : rawTilt.round();
+  //       _currentCommand.pan_speed = rawPan.abs() < 15 ? 0 : rawPan.round();
+  //       // --- END OF FIX ---
+  //
+  //     } else {
+  //       // VIRTUAL JOYSTICKS ARE ACTIVE:
+  //       // Their listeners already set the command values to 0 when released,
+  //       // so we just pass them through.
+  //       drivingCommand.move_speed = _currentCommand.move_speed;
+  //       drivingCommand.turn_angle = _currentCommand.turn_angle;
+  //       // Pan and tilt are already set on _currentCommand by the right joystick's listener.
+  //     }
+  //
+  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+  //
+  //     // --- UNIFIED ZOOM LOGIC ---
+  //     _currentCommand.zoom_command = 0;
+  //     if (_isZoomInPressed || _isUiZoomInPressed) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //     else if (_isZoomOutPressed ||
+  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+  //         _isUiZoomOutPressed) {
+  //       _currentCommand.zoom_command = -1;
+  //     }
+  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //
+  //     _sendCommandPacket(_currentCommand);
+  //     _sendDrivingPacket(drivingCommand);
+  //   });
+  //
+  // }
+
+
+
+
+// Replace your _handleGamepadEvent method with this one
   Future<void> _handleGamepadEvent(MethodCall call) async {
     if (!mounted) return;
+
+    // --- NEW: Handle disconnection robustly ---
+    if (call.method == "onGamepadDisconnected") {
+      setState(() {
+        _gamepadConnected = false;
+        _gamepadAxisValues.clear();
+        _isZoomInPressed = false; // Reset gamepad-specific button states
+        _isZoomOutPressed = false;
+        print("Gamepad disconnected.");
+      });
+      return; // Stop further processing
+    }
+
     if (!_gamepadConnected) {
       setState(() {
         _gamepadConnected = true;
-        _pendingLateralWindSpeed = _lateralWindSpeed; // Initialize pending value
+        _pendingLateralWindSpeed = _lateralWindSpeed;
+        print("Gamepad connected.");
       });
     }
 
     if (call.method == "onMotionEvent") {
       final newAxisValues = Map<String, double>.from(call.arguments);
-
-      // ---: Handle D-Pad for Wind Speed Adjustment ---
       final double hatX = newAxisValues['AXIS_HAT_X'] ?? 0.0;
       final double prevHatX = _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
-
-      // Detect a press (transition from 0 to -1 or 1)
       if (hatX != 0 && prevHatX == 0) {
         setState(() {
-          if (hatX > 0.5) { // D-Pad Right
-            _pendingLateralWindSpeed += 0.1;
-          } else if (hatX < -0.5) { // D-Pad Left
-            _pendingLateralWindSpeed -= 0.1;
-          }
+          if (hatX > 0.5) _pendingLateralWindSpeed += 0.1;
+          else if (hatX < -0.5) _pendingLateralWindSpeed -= 0.1;
         });
       }
-
       setState(() => _gamepadAxisValues = newAxisValues);
-
     } else if (call.method == "onButtonDown") {
       final String button = call.arguments['button'];
       setState(() {
         switch (button) {
-          case 'KEYCODE_BUTTON_B': // Start
-            _onStartStopPressed();
-            break;
-          case 'KEYCODE_BUTTON_A': // Stop
-            if (_isModeActive) _onStartStopPressed();
-            break;
-          case 'KEYCODE_BUTTON_X': // Dual purpose: Permission AND Confirm Wind
-          // --- NEW: Confirm Wind Speed Logic ---
-          // If the pending value is different, this press confirms the wind speed.
+          case 'KEYCODE_BUTTON_B': _onStartStopPressed(); break;
+          case 'KEYCODE_BUTTON_A': if (_isModeActive) _onStartStopPressed(); break;
+          case 'KEYCODE_BUTTON_X':
             if ((_pendingLateralWindSpeed - _lateralWindSpeed).abs() > 0.01) {
               _lateralWindSpeed = _pendingLateralWindSpeed;
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'),
-                  duration: const Duration(seconds: 2),
-                ),
+                SnackBar(content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'), duration: const Duration(seconds: 2)),
               );
             } else {
               _onPermissionPressed();
             }
             break;
-          case 'KEYCODE_BUTTON_L1':
-            _isZoomInPressed = true;
-            break;
-          case 'KEYCODE_BUTTON_L2':
-            _isZoomOutPressed = true;
-            break;
+          case 'KEYCODE_BUTTON_L1': _isZoomInPressed = true; break;
+          case 'KEYCODE_BUTTON_L2': _isZoomOutPressed = true; break;
         }
       });
     } else if (call.method == "onButtonUp") {
       final String button = call.arguments['button'];
       setState(() {
         switch (button) {
-          case 'KEYCODE_BUTTON_L1':
-            _isZoomInPressed = false;
-            break;
-          case 'KEYCODE_BUTTON_L2':
-            _isZoomOutPressed = false;
-            break;
+          case 'KEYCODE_BUTTON_L1': _isZoomInPressed = false; break;
+          case 'KEYCODE_BUTTON_L2': _isZoomOutPressed = false; break;
         }
       });
     }
   }
 
+
+// Replace your _startCommandTimer method with this one
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      DrivingCommand drivingCommand = DrivingCommand();
+      // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
 
-      // bool isGamepadActive = _gamepadConnected &&
-      //     ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
-      //         (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
-      //         (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
-      //         (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
+      int final_move_speed = 0;
+      int final_turn_angle = 0;
+      int final_pan_speed = 0;
+      int final_tilt_speed = 0;
 
-      // if (isGamepadActive) {
+      bool isGamepadDriving = false;
+      bool isGamepadAiming = false;
+
       if (_gamepadConnected) {
-        // 1. Get the raw axis values.
         double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
         double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
         double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
         double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
 
-        // 2. Apply a deadzone. If the value is small, treat it as zero.
-        //    This solves the problem of the stick not returning to a perfect 0.0.
-        drivingCommand.move_speed = rawMove.abs() < 15 ? 0 : rawMove.round();
-        drivingCommand.turn_angle = rawTurn.abs() < 15 ? 0 : rawTurn.round();
-        _currentCommand.tilt_speed = rawTilt.abs() < 15 ? 0 : rawTilt.round();
-        _currentCommand.pan_speed = rawPan.abs() < 15 ? 0 : rawPan.round();
-        // --- END OF FIX ---
+        // Check if driving stick is active (outside deadzone)
+        if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
+          isGamepadDriving = true;
+          final_move_speed = rawMove.round();
+          final_turn_angle = rawTurn.round();
+        }
 
-      } else {
-        // VIRTUAL JOYSTICKS ARE ACTIVE:
-        // Their listeners already set the command values to 0 when released,
-        // so we just pass them through.
-        drivingCommand.move_speed = _currentCommand.move_speed;
-        drivingCommand.turn_angle = _currentCommand.turn_angle;
-        // Pan and tilt are already set on _currentCommand by the right joystick's listener.
+        // Check if aiming stick is active (outside deadzone)
+        if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
+          isGamepadAiming = true;
+          final_tilt_speed = rawTilt.round();
+          final_pan_speed = rawPan.round();
+        }
       }
 
+      // If physical gamepad is NOT driving, fall back to virtual joystick values.
+      if (!isGamepadDriving) {
+        final_move_speed = _currentCommand.move_speed;
+        final_turn_angle = _currentCommand.turn_angle;
+      }
+
+      // If physical gamepad is NOT aiming, fall back to virtual joystick values.
+      if (!isGamepadAiming) {
+        final_pan_speed = _currentCommand.pan_speed;
+        final_tilt_speed = _currentCommand.tilt_speed;
+      }
+
+      // Assemble DrivingCommand with final values
+      DrivingCommand drivingCommand = DrivingCommand(
+        move_speed: final_move_speed,
+        turn_angle: final_turn_angle,
+      );
+
+      // Update main UserCommand with final values
+      _currentCommand.pan_speed = final_pan_speed;
+      _currentCommand.tilt_speed = final_tilt_speed;
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
 
-      // --- UNIFIED ZOOM LOGIC ---
+      // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
@@ -501,11 +644,12 @@ class _HomePageState extends State<HomePage> {
         _currentCommand.zoom_command = 1;
       }
 
+      // Send both packets
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
     });
-
   }
+
 
   Future<void> _sendDrivingPacket(DrivingCommand command) async {
     if (_robotIpAddress.isEmpty) return;
@@ -773,7 +917,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontFamily: 'NotoSans',
                     fontWeight: FontWeight.w700,
-                    fontSize: 32 * heightScale,
+                    fontSize: 34 * heightScale,
                     color: Colors.white,
                     // Optional: Add a subtle shadow to make the text pop
                     shadows: [
