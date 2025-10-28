@@ -142,7 +142,7 @@ class _HomePageState extends State<HomePage> {
     _loadSettingsAndInitialize();
     platform.setMethodCallHandler(_handleGamepadEvent);
 
-    _startWifiSignalChecker(); // <-- ADD THIS CALL
+    _startWifiSignalChecker();
   }
 
   @override
@@ -664,6 +664,7 @@ class _HomePageState extends State<HomePage> {
       child: Opacity(
         opacity: _isServerConnected ? 1.0 : 0.5,
         child: Joystick(
+          includeInitialAnimation: false,
           mode: JoystickMode.all,
           stick: const CircleAvatar(
             radius: 30,
@@ -702,6 +703,7 @@ class _HomePageState extends State<HomePage> {
       child: Opacity(
         opacity: _isServerConnected ? 1.0 : 0.5,
         child: Joystick(
+          includeInitialAnimation: false,
           mode: JoystickMode.all,
           stick: const CircleAvatar(
             radius: 30,
@@ -729,7 +731,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   Widget _buildPermissionButton({
     required String label,
@@ -792,66 +793,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // Widget _buildPermissionButton({
-  //   required String label,
-  //   required String backgroundImagePath,
-  //   required VoidCallback? onPressed,
-  // }) {
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final heightScale = screenHeight / 1080.0;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final bool isEnabled = onPressed != null;
-  //
-  //   final double buttonWidth = 450 * widthScale;
-  //   final double buttonHeight = 80 * heightScale;
-  //
-  //   return GestureDetector(
-  //     onTap: onPressed,
-  //     child: Opacity(
-  //       opacity: isEnabled ? 1.0 : 0.9, // Adjusted opacity for disabled state
-  //       child: SizedBox(
-  //         width: buttonWidth,
-  //         height: buttonHeight,
-  //         child: Stack(
-  //           fit: StackFit.expand,
-  //           children: [
-  //             // --- THIS IS THE FIX ---
-  //             // 1. REMOVED the ClipRRect widget.
-  //             //    The Image widget is now the direct child of the Stack.
-  //             Image.asset(
-  //               backgroundImagePath,
-  //               // 2. CHANGED: Use BoxFit.fill to ensure the entire image asset
-  //               //    is stretched to fit the container, showing the corners and dots.
-  //               fit: BoxFit.fill,
-  //             ),
-  //             // The Text widget remains the same, centered on top.
-  //             Center(
-  //               child: Text(
-  //                 label,
-  //                 style: TextStyle(
-  //                   fontFamily: 'NotoSans',
-  //                   fontWeight: FontWeight.w700,
-  //                   fontSize: 32 * heightScale,
-  //                   color: Colors.white,
-  //                   shadows: [
-  //                     Shadow(
-  //                       blurRadius: 2.0,
-  //                       color: Colors.black.withOpacity(0.5),
-  //                       offset: const Offset(1.0, 1.0),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
 
   Widget _buildConnectionStatusBanner() {
     if (_isServerConnected) {
@@ -1258,67 +1199,6 @@ class _HomePageState extends State<HomePage> {
         String permissionLabel;
         String permissionBackground;
         VoidCallback? permissionOnPressed;
-
-        // if (_permissionRequestIsActive) {
-        //   if (_permissionHasBeenGranted) {
-        //     // State 3: Permission has been granted by the user
-        //     permissionLabel = "Attack Permitted";
-        //     permissionBackground = ICON_PATH_PERMISSION_GREEN;
-        //     permissionOnPressed = null; // Button is disabled
-        //   } else {
-        //     // State 2: Server is requesting permission
-        //     permissionLabel = "Permission to Attack";
-        //     permissionBackground = ICON_PATH_PERMISSION_RED;
-        //     permissionOnPressed = _isServerConnected ? _onPermissionPressed : null; // Button is enabled
-        //   }
-        // } else {
-        //   // State 1: Idle / No request from server
-        //   permissionLabel = "Request Pending";
-        //   permissionBackground = ICON_PATH_PERMISSION_BLUE;
-        //   permissionOnPressed = null; // Button is disabled
-        // }
-        // // --- END OF CORRECTED LOGIC ---
-        //
-        // final List<Widget> leftCluster = [
-        //   _buildPermissionButton(
-        //     label: permissionLabel,
-        //     backgroundImagePath: permissionBackground,
-        //     onPressed: permissionOnPressed,
-        //   ),
-        //   SizedBox(width: 12 * widthScale),
-        //   _buildWideBottomBarButton(
-        //     label: _isModeActive ? "STOP" : "START",
-        //     iconPath: _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
-        //     backgroundImagePath: ICON_PATH_PERMISSION_GREEN, // Use the green background
-        //     onPressed: _isServerConnected ? _onStartStopPressed : null,
-        //   ),
-        //   SizedBox(width: 22 * widthScale),
-        //   _buildIconBottomBarButton(
-        //     ICON_PATH_PLUS,
-        //     _isServerConnected ? () {
-        //       setState(() {
-        //         if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
-        //         else _currentZoomLevel = 5.0;
-        //         _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-        //         _isUiZoomInPressed = true;
-        //         Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomInPressed = false);
-        //       });
-        //     } : null,
-        //   ),
-        //   SizedBox(width: 12 * widthScale),
-        //   _buildIconBottomBarButton(
-        //     ICON_PATH_MINUS,
-        //     _isServerConnected ? () {
-        //       setState(() {
-        //         if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
-        //         else _currentZoomLevel = 1.0;
-        //         _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-        //         _isUiZoomOutPressed = true;
-        //         Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomOutPressed = false);
-        //       });
-        //     } : null,
-        //   ),
-        // ];
 
         if (_permissionRequestIsActive) {
           if (_permissionHasBeenGranted) {
