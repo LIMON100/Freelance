@@ -14,6 +14,7 @@ import 'splash_screen.dart';
 import 'settings_menu_page.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
 import 'DrivingCommand.dart';
+import 'robot_connection_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -116,6 +117,7 @@ class _HomePageState extends State<HomePage> {
   int _wifiSignalLevel = 0;
 
   bool _wasGamepadActive = false;
+  RobotConnectionService? _connectionService;
 
 
   final Map<int, int> _buttonIndexToCommandId = {
@@ -155,6 +157,10 @@ class _HomePageState extends State<HomePage> {
     _transformationController.dispose();
     _statusSocketSubscription?.cancel();
     _statusSocket?.destroy();
+
+    // ++ ADD THIS: Dispose the connection service ++
+    _connectionService?.dispose();
+
     super.dispose();
   }
 
@@ -571,12 +577,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
-// Replace your _startCommandTimer method with this one
   void _startCommandTimer() {
+    _commandTimer?.cancel(); // Ensure no old timers are running
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
+      // If the service isn't ready, don't try to send commands
+      if (_connectionService == null) return;
 
+      // --- UNIFIED INPUT LOGIC (This part is well-structured and can remain) ---
       int final_move_speed = 0;
       int final_turn_angle = 0;
       int final_pan_speed = 0;
@@ -591,14 +598,12 @@ class _HomePageState extends State<HomePage> {
         double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
         double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
 
-        // Check if driving stick is active (outside deadzone)
         if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
           isGamepadDriving = true;
           final_move_speed = rawMove.round();
           final_turn_angle = rawTurn.round();
         }
 
-        // Check if aiming stick is active (outside deadzone)
         if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
           isGamepadAiming = true;
           final_tilt_speed = rawTilt.round();
@@ -606,35 +611,32 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      // If physical gamepad is NOT driving, fall back to virtual joystick values.
       if (!isGamepadDriving) {
         final_move_speed = _currentCommand.move_speed;
         final_turn_angle = _currentCommand.turn_angle;
       }
 
-      // If physical gamepad is NOT aiming, fall back to virtual joystick values.
       if (!isGamepadAiming) {
         final_pan_speed = _currentCommand.pan_speed;
         final_tilt_speed = _currentCommand.tilt_speed;
       }
 
-      // Assemble DrivingCommand with final values
+      // Assemble DrivingCommand
       DrivingCommand drivingCommand = DrivingCommand(
         move_speed: final_move_speed,
         turn_angle: final_turn_angle,
       );
 
-      // Update main UserCommand with final values
+      // Update main UserCommand
       _currentCommand.pan_speed = final_pan_speed;
       _currentCommand.tilt_speed = final_tilt_speed;
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
 
-      // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
+      // UNIFIED ZOOM LOGIC
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
-      }
-      else if (_isZoomOutPressed ||
+      } else if (_isZoomOutPressed ||
           (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
           (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
           _isUiZoomOutPressed) {
@@ -644,24 +646,25 @@ class _HomePageState extends State<HomePage> {
         _currentCommand.zoom_command = 1;
       }
 
-      // Send both packets
-      _sendCommandPacket(_currentCommand);
-      _sendDrivingPacket(drivingCommand);
+      // --- SEND PACKETS USING THE SERVICE ---
+      _connectionService!.sendCommand(_currentCommand);
+      _connectionService!.sendDrivingCommand(drivingCommand);
     });
   }
 
 
-  Future<void> _sendDrivingPacket(DrivingCommand command) async {
-    if (_robotIpAddress.isEmpty) return;
-    try {
-      const int DRIVING_PORT = 65434; // The new port for driving
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
-      socket.close();
-    } catch (e) {
-      print(e);
-    }
-  }
+
+  // Future<void> _sendDrivingPacket(DrivingCommand command) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     const int DRIVING_PORT = 65434; // The new port for driving
+  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  //     socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
+  //     socket.close();
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
 
   Widget _buildCrosshair() {
     // Condition 1: Is the app in a mode that should show a crosshair?
@@ -1666,26 +1669,42 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+  // Future<void> _loadSettingsAndInitialize() async {
+  //   _robotIpAddress = await _settingsService.loadIpAddress();
+  //   _cameraUrls = await _settingsService.loadCameraUrls();
+  //   if (mounted) {
+  //     _connectToStatusServer(); // <-- ADD THIS CALL
+  //     _switchCamera(0);
+  //     _startCommandTimer();
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
+
   Future<void> _loadSettingsAndInitialize() async {
     _robotIpAddress = await _settingsService.loadIpAddress();
     _cameraUrls = await _settingsService.loadCameraUrls();
+
+    // ++ ADD THIS: Initialize the connection service ++
+    _connectionService?.dispose(); // Dispose old service if it exists
+    _connectionService = RobotConnectionService(_robotIpAddress);
+
     if (mounted) {
-      _connectToStatusServer(); // <-- ADD THIS CALL
+      _connectToStatusServer();
       _switchCamera(0);
-      _startCommandTimer();
+      _startCommandTimer(); // This will now use the service
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _sendCommandPacket(UserCommand command) async {
-    if (_robotIpAddress.isEmpty) return;
-    try {
-      final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
-      socket.add(command.toBytes());
-      await socket.flush();
-      socket.close();
-    } catch (e) {}
-  }
+  // Future<void> _sendCommandPacket(UserCommand command) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
+  //     socket.add(command.toBytes());
+  //     await socket.flush();
+  //     socket.close();
+  //   } catch (e) {}
+  // }
 
   Future<void> _sendTouchPacket(TouchCoord coord) async {
     if (_robotIpAddress.isEmpty) return;
