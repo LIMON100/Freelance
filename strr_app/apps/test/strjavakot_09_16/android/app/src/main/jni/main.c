@@ -1,5 +1,4 @@
 //#include <string.h>
-//#include <string.h>
 //#include <stdint.h>
 //#include <jni.h>
 //#include <android/log.h>
@@ -38,12 +37,15 @@
 //} CustomData;
 //
 ///* These global variables cache values which are not changing during execution */
-//static pthread_t gst_app_thread;
+//// FIX: Initialize thread to 0 to signify it's not running.
+//static pthread_t gst_app_thread = 0;
 //static pthread_key_t current_jni_env;
 //static JavaVM *java_vm;
 //static jfieldID custom_data_field_id;
 //static jmethodID set_message_method_id;
 //static jmethodID on_gstreamer_initialized_method_id;
+//static jmethodID on_stream_ready_method_id;
+//static jmethodID on_stream_error_method_id;
 //
 ///*
 // * Private methods
@@ -102,12 +104,13 @@
 //    (*env)->DeleteLocalRef(env, jmessage);
 //}
 //
-///* Retrieve errors from the bus and show them on the UI */
+///* Retrieve errors from the bus and send them to Kotlin/Flutter */
 //static void
 //error_cb(GstBus *bus, GstMessage *msg, CustomData *data) {
 //    GError *err;
 //    gchar *debug_info;
 //    gchar *message_string;
+//    JNIEnv *env = get_jni_env();
 //
 //    gst_message_parse_error(msg, &err, &debug_info);
 //    message_string =
@@ -115,34 +118,55 @@
 //                            GST_OBJECT_NAME (msg->src), err->message);
 //    g_clear_error(&err);
 //    g_free(debug_info);
-//    set_ui_message(message_string, data);
+//
+//    // Notify Kotlin/Flutter about the error
+//    jstring jmessage = (*env)->NewStringUTF(env, message_string);
+//    (*env)->CallVoidMethod(env, data->app, on_stream_error_method_id, jmessage);
+//    if ((*env)->ExceptionCheck(env)) {
+//        GST_ERROR ("Failed to call Java method onStreamError");
+//        (*env)->ExceptionClear(env);
+//    }
+//    (*env)->DeleteLocalRef(env, jmessage);
+//
 //    g_free(message_string);
-//    gst_element_set_state(data->pipeline, GST_STATE_NULL);
+//    if (data && data->pipeline) {
+//        gst_element_set_state(data->pipeline, GST_STATE_NULL);
+//    }
 //}
 //
-///* Notify UI about pipeline state changes */
+///* Notify UI about pipeline state changes and send success callback to Flutter */
 //static void
 //state_changed_cb(GstBus *bus, GstMessage *msg, CustomData *data) {
 //    GstState old_state, new_state, pending_state;
 //    gst_message_parse_state_changed(msg, &old_state, &new_state, &pending_state);
 //    /* Only pay attention to messages coming from the pipeline, not its children */
-//    if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
-//        gchar *message = g_strdup_printf("State changed to %s",
+//    if (data && GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
+//        gchar *message = g_strdup_printf("State changed from %s to %s",
+//                                         gst_element_state_get_name(old_state),
 //                                         gst_element_state_get_name(new_state));
 //        set_ui_message(message, data);
 //        g_free(message);
+//
+//        // Notify Kotlin/Flutter when the stream is successfully playing
+//        if (new_state == GST_STATE_PLAYING) {
+//            JNIEnv *env = get_jni_env();
+//            (*env)->CallVoidMethod(env, data->app, on_stream_ready_method_id);
+//            if ((*env)->ExceptionCheck(env)) {
+//                GST_ERROR ("Failed to call Java method onStreamReady");
+//                (*env)->ExceptionClear(env);
+//            }
+//        }
 //    }
 //}
 //
-///* Check if all conditions are met to report GStreamer as initialized.
-// * These conditions will change depending on the application */
+///* Check if all conditions are met to report GStreamer as initialized. */
 //static void
 //check_initialization_complete(CustomData *data) {
 //    JNIEnv *env = get_jni_env();
 //    if (!data->initialized && data->native_window && data->main_loop) {
 //        GST_DEBUG
-//        ("Initialization complete, notifying application. native_window:%p main_loop:%p",
-//         data->native_window, data->main_loop);
+//                ("Initialization complete, notifying application. native_window:%p main_loop:%p",
+//                 data->native_window, data->main_loop);
 //
 //        /* The main loop is running and we received a native window, inform the sink about it */
 //        gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY (data->video_sink),
@@ -160,7 +184,6 @@
 ///* Main method for the native code. This is executed on its own thread. */
 //static void *
 //app_function(void *userdata) {
-//    JavaVMAttachArgs args;
 //    GstBus *bus;
 //    CustomData *data = (CustomData *) userdata;
 //    GSource *bus_source;
@@ -174,19 +197,21 @@
 //
 //    /* Build pipeline */
 //    data->pipeline =
-//            //gst_parse_launch ("videotestsrc ! warptv ! videoconvert ! autovideosink",
 //            gst_parse_launch(data->gst_desc,
 //                             &error);
 //    if (error) {
 //        gchar *message =
 //                g_strdup_printf("Unable to build pipeline: %s", error->message);
 //        g_clear_error(&error);
-//        set_ui_message(message, data);
+//        JNIEnv *env = get_jni_env();
+//        jstring jmessage = (*env)->NewStringUTF(env, message);
+//        (*env)->CallVoidMethod(env, data->app, on_stream_error_method_id, jmessage);
+//        (*env)->DeleteLocalRef(env, jmessage);
 //        g_free(message);
 //        return NULL;
 //    }
 //
-//    /* Set the pipeline to READY, so it can already accept a window handle, if we have one */
+//    /* Set the pipeline to READY, so it can already accept a window handle */
 //    gst_element_set_state(data->pipeline, GST_STATE_READY);
 //
 //    data->video_sink =
@@ -197,7 +222,7 @@
 //        return NULL;
 //    }
 //
-//    /* Instruct the bus to emit signals for each received message, and connect to the interesting signals */
+//    /* Instruct the bus to emit signals for each received message */
 //    bus = gst_element_get_bus(data->pipeline);
 //    bus_source = gst_bus_create_watch(bus);
 //    g_source_set_callback(bus_source, (GSourceFunc) gst_bus_async_signal_func,
@@ -225,6 +250,8 @@
 //    gst_element_set_state(data->pipeline, GST_STATE_NULL);
 //    gst_object_unref(data->video_sink);
 //    gst_object_unref(data->pipeline);
+//    data->pipeline = NULL;
+//    data->video_sink = NULL;
 //
 //    return NULL;
 //}
@@ -248,12 +275,19 @@
 //static void
 //gst_native_init(JNIEnv *env, jobject thiz, jstring gst_desc) {
 //    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+//    if (!data) return;
+//
+//    // FIX: Ensure we don't start a new thread if one is already running
+//    if (gst_app_thread != 0) {
+//        GST_WARNING("A GStreamer thread is already running. Finalize it first.");
+//        return;
+//    }
+//
 //    const gchar *char_gst_desc = (*env)->GetStringUTFChars(env, gst_desc, NULL);
-//    data->gst_desc = g_strconcat(char_gst_desc, NULL);
+//    data->gst_desc = g_strdup(char_gst_desc);
 //    GST_DEBUG ("Setting pipeline description to %s", char_gst_desc);
 //    (*env)->ReleaseStringUTFChars(env, gst_desc, char_gst_desc);
 //    pthread_create(&gst_app_thread, NULL, &app_function, data);
-//    check_initialization_complete(data);
 //}
 //
 ///* Quit the main loop, remove the native thread and free resources */
@@ -262,11 +296,27 @@
 //    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
 //    if (!data)
 //        return;
+//
 //    GST_DEBUG ("Quitting main loop...");
-//    g_main_loop_quit(data->main_loop);
-//    GST_DEBUG ("Waiting for thread to finish...");
-//    pthread_join(gst_app_thread, NULL);
-//    g_free(data->gst_desc);
+//    if (data->main_loop) {
+//        g_main_loop_quit(data->main_loop);
+//    }
+//
+//    // FIX: Only join the thread if it has been created (is not 0).
+//    if (gst_app_thread != 0) {
+//        GST_DEBUG ("Waiting for thread to finish...");
+//        pthread_join(gst_app_thread, NULL);
+//        GST_DEBUG ("Thread finished.");
+//        // FIX: Reset the thread handle to 0 after it has been joined.
+//        gst_app_thread = 0;
+//    } else {
+//        GST_DEBUG("No active thread to join.");
+//    }
+//
+//    if (data->gst_desc) {
+//        g_free(data->gst_desc);
+//        data->gst_desc = NULL;
+//    }
 //    GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
 //    (*env)->DeleteGlobalRef(env, data->app);
 //    GST_DEBUG ("Freeing CustomData at %p", data);
@@ -279,7 +329,7 @@
 //static void
 //gst_native_play(JNIEnv *env, jobject thiz) {
 //    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-//    if (!data)
+//    if (!data || !data->pipeline)
 //        return;
 //    GST_DEBUG ("Setting state to PLAYING");
 //    gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
@@ -289,7 +339,7 @@
 //static void
 //gst_native_pause(JNIEnv *env, jobject thiz) {
 //    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-//    if (!data)
+//    if (!data || !data->pipeline)
 //        return;
 //    GST_DEBUG ("Setting state to PAUSED");
 //    gst_element_set_state(data->pipeline, GST_STATE_PAUSED);
@@ -304,13 +354,15 @@
 //            (*env)->GetMethodID(env, klass, "setMessage", "(Ljava/lang/String;)V");
 //    on_gstreamer_initialized_method_id =
 //            (*env)->GetMethodID(env, klass, "onGStreamerInitialized", "()V");
+//    on_stream_ready_method_id =
+//            (*env)->GetMethodID(env, klass, "onStreamReady", "()V");
+//    on_stream_error_method_id =
+//            (*env)->GetMethodID(env, klass, "onStreamError", "(Ljava/lang/String;)V");
 //
 //    if (!custom_data_field_id || !set_message_method_id
-//        || !on_gstreamer_initialized_method_id) {
-//        /* We emit this message through the Android log instead of the GStreamer log because the later
-//         * has not been initialized yet.
-//         */
-//        __android_log_print(ANDROID_LOG_ERROR, "tutorial-3",
+//        || !on_gstreamer_initialized_method_id
+//        || !on_stream_ready_method_id || !on_stream_error_method_id) {
+//        __android_log_print(ANDROID_LOG_ERROR, "SkyAutoNet",
 //                            "The calling class does not implement all necessary interface methods");
 //        return JNI_FALSE;
 //    }
@@ -335,6 +387,7 @@
 //                gst_video_overlay_expose(GST_VIDEO_OVERLAY (data->video_sink));
 //                gst_video_overlay_expose(GST_VIDEO_OVERLAY (data->video_sink));
 //            }
+//            ANativeWindow_release(new_native_window); // Release the new one as it's a duplicate
 //            return;
 //        } else {
 //            GST_DEBUG ("Released previous native window %p", data->native_window);
@@ -359,8 +412,10 @@
 //        gst_element_set_state(data->pipeline, GST_STATE_READY);
 //    }
 //
-//    ANativeWindow_release(data->native_window);
-//    data->native_window = NULL;
+//    if (data->native_window) {
+//        ANativeWindow_release(data->native_window);
+//        data->native_window = NULL;
+//    }
 //    data->initialized = FALSE;
 //}
 //
@@ -385,12 +440,12 @@
 //    java_vm = vm;
 //
 //    if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_6) != JNI_OK) {
-//        __android_log_print(ANDROID_LOG_ERROR, "tutorial-3",
+//        __android_log_print(ANDROID_LOG_ERROR, "SkyAutoNet",
 //                            "Could not retrieve JNIEnv");
 //        return 0;
 //    }
 //    jclass klass = (*env)->FindClass(env,
-//                                     "com/example/strjk/GStreamerView");
+//                                     "com/example/strjk/GStreamerView"); // Make sure this package name is correct
 //    (*env)->RegisterNatives(env, klass, native_methods,
 //                            G_N_ELEMENTS (native_methods));
 //
@@ -401,11 +456,7 @@
 
 
 
-
-
-
-
-
+//10_30
 #include <string.h>
 #include <stdint.h>
 #include <jni.h>
@@ -434,14 +485,16 @@ GST_DEBUG_CATEGORY_STATIC (debug_category);
 
 /* Structure to contain all our information, so we can pass it to callbacks */
 typedef struct _CustomData {
-    jobject app;                  /* Application instance, used to call its methods. A global reference is kept. */
-    GstElement *pipeline;         /* The running pipeline */
-    GMainContext *context;        /* GLib context used to run the main loop */
-    GMainLoop *main_loop;         /* GLib main loop */
-    gboolean initialized;         /* To avoid informing the UI multiple times about the initialization */
-    GstElement *video_sink;       /* The video sink element which receives XOverlay commands */
-    ANativeWindow *native_window; /* The Android native window where video will be rendered */
+    jobject app;
+    GstElement *pipeline;
+    GMainContext *context;
+    GMainLoop *main_loop;
+    gboolean initialized;
+    GstElement *video_sink;
+    ANativeWindow *native_window;
     gchar *gst_desc;
+    // ADD THIS LINE:
+    pthread_mutex_t lock; // Mutex to protect against race conditions
 } CustomData;
 
 /* These global variables cache values which are not changing during execution */
@@ -649,17 +702,29 @@ app_function(void *userdata) {
     check_initialization_complete(data);
     g_main_loop_run(data->main_loop);
     GST_DEBUG ("Exited main loop");
-    g_main_loop_unref(data->main_loop);
-    data->main_loop = NULL;
 
-    /* Free resources */
-    g_main_context_pop_thread_default(data->context);
-    g_main_context_unref(data->context);
-    gst_element_set_state(data->pipeline, GST_STATE_NULL);
-    gst_object_unref(data->video_sink);
-    gst_object_unref(data->pipeline);
-    data->pipeline = NULL;
-    data->video_sink = NULL;
+    // --- REPLACE THE OLD CLEANUP WITH THIS ROBUST VERSION ---
+    pthread_mutex_lock(&data->lock);
+
+    if (data->main_loop) {
+        g_main_loop_unref(data->main_loop);
+        data->main_loop = NULL;
+    }
+    if (data->context) {
+        g_main_context_pop_thread_default(data->context);
+        g_main_context_unref(data->context);
+        data->context = NULL;
+    }
+    if (data->pipeline) {
+        gst_element_set_state(data->pipeline, GST_STATE_NULL);
+        // The video_sink is part of the pipeline, so we only unref the top-level pipeline
+        gst_object_unref(data->pipeline);
+        data->pipeline = NULL;
+        data->video_sink = NULL; // Sink is now invalid
+    }
+
+    pthread_mutex_unlock(&data->lock);
+    // --- END OF REPLACEMENT ---
 
     return NULL;
 }
@@ -671,12 +736,14 @@ app_function(void *userdata) {
 static void gst_controller_init(JNIEnv *env, jobject thiz) {
     CustomData *data = g_new0 (CustomData, 1);
     SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
-    GST_DEBUG_CATEGORY_INIT (debug_category, "SkyAutoNet", 0,
-                             "SkyAutoNet");
+    GST_DEBUG_CATEGORY_INIT (debug_category, "SkyAutoNet", 0, "SkyAutoNet");
     gst_debug_set_threshold_for_name("SkyAutoNet", GST_LEVEL_DEBUG);
     GST_DEBUG ("Created CustomData at %p", data);
     data->app = (*env)->NewGlobalRef(env, thiz);
     GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
+
+    // ADD THIS LINE:
+    pthread_mutex_init(&data->lock, NULL); // Initialize the mutex
 }
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
@@ -705,26 +772,34 @@ gst_native_finalize(JNIEnv *env, jobject thiz) {
     if (!data)
         return;
 
-    GST_DEBUG ("Quitting main loop...");
+    GST_DEBUG ("Finalize requested. Quitting main loop...");
     if (data->main_loop) {
         g_main_loop_quit(data->main_loop);
     }
 
-    // FIX: Only join the thread if it has been created (is not 0).
     if (gst_app_thread != 0) {
-        GST_DEBUG ("Waiting for thread to finish...");
+        GST_DEBUG ("Waiting for GStreamer thread to finish...");
         pthread_join(gst_app_thread, NULL);
-        GST_DEBUG ("Thread finished.");
-        // FIX: Reset the thread handle to 0 after it has been joined.
+        GST_DEBUG ("GStreamer thread finished.");
         gst_app_thread = 0;
-    } else {
-        GST_DEBUG("No active thread to join.");
     }
 
+    // --- ADD/UPDATE THIS ENTIRE BLOCK ---
+    GST_DEBUG("Performing final resource cleanup.");
+    pthread_mutex_lock(&data->lock);
     if (data->gst_desc) {
         g_free(data->gst_desc);
         data->gst_desc = NULL;
     }
+    if (data->native_window) {
+        ANativeWindow_release(data->native_window);
+        data->native_window = NULL;
+    }
+    pthread_mutex_unlock(&data->lock);
+
+    pthread_mutex_destroy(&data->lock); // Destroy the mutex
+    // --- END OF BLOCK ---
+
     GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
     (*env)->DeleteGlobalRef(env, data->app);
     GST_DEBUG ("Freeing CustomData at %p", data);
@@ -782,6 +857,10 @@ gst_native_surface_init(JNIEnv *env, jobject thiz, jobject surface) {
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
     if (!data)
         return;
+
+    // ADD THIS LINE:
+    pthread_mutex_lock(&data->lock);
+
     ANativeWindow *new_native_window = ANativeWindow_fromSurface(env, surface);
     GST_DEBUG ("Received surface %p (native window %p)", surface,
                new_native_window);
@@ -804,6 +883,15 @@ gst_native_surface_init(JNIEnv *env, jobject thiz, jobject surface) {
     }
     data->native_window = new_native_window;
 
+    // UPDATE: Move this check inside the locked section for safety
+    if (data->initialized && data->video_sink) {
+        gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(data->video_sink), (guintptr)data->native_window);
+    }
+
+    // ADD THIS LINE:
+    pthread_mutex_unlock(&data->lock);
+
+    // This can be called outside the lock
     check_initialization_complete(data);
 }
 
@@ -812,6 +900,10 @@ gst_native_surface_finalize(JNIEnv *env, jobject thiz) {
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
     if (!data)
         return;
+
+    // ADD THIS LINE:
+    pthread_mutex_lock(&data->lock);
+
     GST_DEBUG ("Releasing Native Window %p", data->native_window);
 
     if (data->video_sink) {
@@ -820,11 +912,19 @@ gst_native_surface_finalize(JNIEnv *env, jobject thiz) {
         gst_element_set_state(data->pipeline, GST_STATE_READY);
     }
 
+    // UPDATE: Keep the state change inside the lock
+    if (data->pipeline) {
+        gst_element_set_state(data->pipeline, GST_STATE_READY);
+    }
+
     if (data->native_window) {
         ANativeWindow_release(data->native_window);
         data->native_window = NULL;
     }
     data->initialized = FALSE;
+
+    // ADD THIS LINE:
+    pthread_mutex_unlock(&data->lock);
 }
 
 /* List of implemented native methods */
