@@ -14,7 +14,7 @@ import 'splash_screen.dart';
 import 'settings_menu_page.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
 import 'DrivingCommand.dart';
-import 'robot_connection_service.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -117,7 +117,6 @@ class _HomePageState extends State<HomePage> {
   int _wifiSignalLevel = 0;
 
   bool _wasGamepadActive = false;
-  RobotConnectionService? _connectionService;
 
 
   final Map<int, int> _buttonIndexToCommandId = {
@@ -143,6 +142,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
+    WakelockPlus.enable();
+
     _loadSettingsAndInitialize();
     platform.setMethodCallHandler(_handleGamepadEvent);
 
@@ -151,16 +153,17 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    // --- THIS IS THE FIX ---
+    // Use the WakelockPlus class
+    WakelockPlus.disable();
+    // --- END OF FIX ---
+
     _commandTimer?.cancel();
     _wifiSignalTimer?.cancel(); // <-- ADD THIS CALL
     _stopGStreamer();
     _transformationController.dispose();
     _statusSocketSubscription?.cancel();
     _statusSocket?.destroy();
-
-    // ++ ADD THIS: Dispose the connection service ++
-    _connectionService?.dispose();
-
     super.dispose();
   }
 
@@ -232,75 +235,162 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Future<void> _connectToStatusServer() async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //
+  //   // Disconnect if already connected
+  //   await _statusSocketSubscription?.cancel();
+  //   _statusSocket?.destroy();
+  //
+  //   try {
+  //     const int STATUS_PORT = 65435;
+  //     _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 5));
+  //     setState(() {
+  //       _isServerConnected = true;
+  //     });
+  //     print("Connected to status server!");
+  //
+  //     _statusSocketSubscription = _statusSocket!.listen(
+  //             (Uint8List data) {
+  //           try {
+  //
+  //             if (_isStoppingMode) {
+  //               return;
+  //             }
+  //
+  //             final status = StatusPacket.fromBytes(data);
+  //             if (mounted) {
+  //               setState(() {
+  //                 // _lateralWindSpeed = status.lateralWindSpeed;
+  //                 // _windDirectionIndex = status.windDirectionIndex;
+  //                 _confirmedServerModeId = status.currentModeId;
+  //
+  //                 // --- NEW: Update permission state from server ---
+  //                 bool serverRequest = status.permissionRequestActive == 1;
+  //
+  //                 _crosshairX = status.crosshairX;
+  //                 _crosshairY = status.crosshairY;
+  //
+  //                 // If the server stops requesting, reset everything
+  //                 if (!serverRequest) {
+  //                   _permissionRequestIsActive = false;
+  //                   _permissionHasBeenGranted = false;
+  //                 } else {
+  //                   // If the server is requesting, update our state, but DON'T reset
+  //                   // the _permissionHasBeenGranted flag. This allows the "Permitted"
+  //                   // state to persist.
+  //                   _permissionRequestIsActive = true;
+  //                 }
+  //               });
+  //             }
+  //           } catch (e) {
+  //             print("Error parsing status packet: $e");
+  //           }
+  //         },
+  //       onError: (error) {
+  //         print("Status socket error: $error");
+  //         setState(() => _isServerConnected = false);
+  //         _reconnectStatusServer();
+  //       },
+  //       onDone: () {
+  //         print("Status server disconnected.");
+  //         setState(() => _isServerConnected = false);
+  //         _reconnectStatusServer();
+  //       },
+  //       cancelOnError: true,
+  //     );
+  //   } catch (e) {
+  //     print("Failed to connect to status server: $e");
+  //     setState(() => _isServerConnected = false);
+  //     _reconnectStatusServer();
+  //   }
+  // }
+
   Future<void> _connectToStatusServer() async {
-    if (_robotIpAddress.isEmpty) return;
+    // If we are already connected or have no IP, do nothing.
+    if (_robotIpAddress.isEmpty || _isServerConnected) return;
 
-    // Disconnect if already connected
-    await _statusSocketSubscription?.cancel();
-    _statusSocket?.destroy();
-
+    print("Attempting to connect to status server...");
     try {
       const int STATUS_PORT = 65435;
-      _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 5));
-      setState(() {
-        _isServerConnected = true;
-      });
+      // Try to connect the socket with a timeout.
+      _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 3));
+
+      // If the line above doesn't throw an exception, the connection was successful.
+      if (mounted) {
+        setState(() {
+          _isServerConnected = true;
+        });
+      }
       print("Connected to status server!");
 
+      // Listen for data, errors, or the connection closing.
       _statusSocketSubscription = _statusSocket!.listen(
-              (Uint8List data) {
-            try {
+            (Uint8List data) {
+          // This is where you handle incoming data from the server.
+          try {
+            if (_isStoppingMode) return;
+            final status = StatusPacket.fromBytes(data);
+            if (mounted) {
+              setState(() {
+                _confirmedServerModeId = status.currentModeId;
+                bool serverRequest = status.permissionRequestActive == 1;
+                _crosshairX = status.crosshairX;
+                _crosshairY = status.crosshairY;
 
-              if (_isStoppingMode) {
-                return;
-              }
-
-              final status = StatusPacket.fromBytes(data);
-              if (mounted) {
-                setState(() {
-                  // _lateralWindSpeed = status.lateralWindSpeed;
-                  // _windDirectionIndex = status.windDirectionIndex;
-                  _confirmedServerModeId = status.currentModeId;
-
-                  // --- NEW: Update permission state from server ---
-                  bool serverRequest = status.permissionRequestActive == 1;
-
-                  _crosshairX = status.crosshairX;
-                  _crosshairY = status.crosshairY;
-
-                  // If the server stops requesting, reset everything
-                  if (!serverRequest) {
-                    _permissionRequestIsActive = false;
-                    _permissionHasBeenGranted = false;
-                  } else {
-                    // If the server is requesting, update our state, but DON'T reset
-                    // the _permissionHasBeenGranted flag. This allows the "Permitted"
-                    // state to persist.
-                    _permissionRequestIsActive = true;
-                  }
-                });
-              }
-            } catch (e) {
-              print("Error parsing status packet: $e");
+                if (!serverRequest) {
+                  _permissionRequestIsActive = false;
+                  _permissionHasBeenGranted = false;
+                } else {
+                  _permissionRequestIsActive = true;
+                }
+              });
             }
-          },
+          } catch (e) {
+            print("Error parsing status packet: $e");
+          }
+        },
         onError: (error) {
           print("Status socket error: $error");
-          setState(() => _isServerConnected = false);
-          _reconnectStatusServer();
+          _handleDisconnect(); // Use the centralized handler for all disconnect events.
         },
         onDone: () {
           print("Status server disconnected.");
-          setState(() => _isServerConnected = false);
-          _reconnectStatusServer();
+          _handleDisconnect(); // Use the centralized handler for all disconnect events.
         },
         cancelOnError: true,
       );
     } catch (e) {
+      // This catch block handles connection failures (e.g., timeout, host not found).
       print("Failed to connect to status server: $e");
-      setState(() => _isServerConnected = false);
-      _reconnectStatusServer();
+      _handleDisconnect(); // Use the centralized handler for all disconnect events.
     }
+  }
+
+  // NEW: Centralized disconnect and cleanup handler
+  void _handleDisconnect() {
+    if (!mounted) return;
+
+    // Only trigger a state update and reconnect if we were previously connected.
+    if (_isServerConnected) {
+      setState(() {
+        _isServerConnected = false;
+      });
+    }
+
+    // Clean up old resources before attempting to reconnect
+    _statusSocketSubscription?.cancel();
+    _statusSocket?.destroy();
+    _statusSocket = null;
+    _statusSocketSubscription = null;
+
+    // Schedule a single reconnect attempt after a delay.
+    // This prevents a rapid, resource-leaking loop.
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted && !_isServerConnected) {
+        _connectToStatusServer();
+      }
+    });
   }
 
   void _reconnectStatusServer() {
@@ -511,7 +601,7 @@ class _HomePageState extends State<HomePage> {
 
 
 
-// Replace your _handleGamepadEvent method with this one
+  // THIS IS NEW UPDATED FOR PARALLEL joystick
   Future<void> _handleGamepadEvent(MethodCall call) async {
     if (!mounted) return;
 
@@ -577,13 +667,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _startCommandTimer() {
-    _commandTimer?.cancel(); // Ensure no old timers are running
-    _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      // If the service isn't ready, don't try to send commands
-      if (_connectionService == null) return;
 
-      // --- UNIFIED INPUT LOGIC (This part is well-structured and can remain) ---
+// Replace your _startCommandTimer method with this one
+  void _startCommandTimer() {
+    _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
       int final_move_speed = 0;
       int final_turn_angle = 0;
       int final_pan_speed = 0;
@@ -598,12 +686,14 @@ class _HomePageState extends State<HomePage> {
         double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
         double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
 
+        // Check if driving stick is active (outside deadzone)
         if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
           isGamepadDriving = true;
           final_move_speed = rawMove.round();
           final_turn_angle = rawTurn.round();
         }
 
+        // Check if aiming stick is active (outside deadzone)
         if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
           isGamepadAiming = true;
           final_tilt_speed = rawTilt.round();
@@ -611,32 +701,35 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
+      // If physical gamepad is NOT driving, fall back to virtual joystick values.
       if (!isGamepadDriving) {
         final_move_speed = _currentCommand.move_speed;
         final_turn_angle = _currentCommand.turn_angle;
       }
 
+      // If physical gamepad is NOT aiming, fall back to virtual joystick values.
       if (!isGamepadAiming) {
         final_pan_speed = _currentCommand.pan_speed;
         final_tilt_speed = _currentCommand.tilt_speed;
       }
 
-      // Assemble DrivingCommand
+      // Assemble DrivingCommand with final values
       DrivingCommand drivingCommand = DrivingCommand(
         move_speed: final_move_speed,
         turn_angle: final_turn_angle,
       );
 
-      // Update main UserCommand
+      // Update main UserCommand with final values
       _currentCommand.pan_speed = final_pan_speed;
       _currentCommand.tilt_speed = final_tilt_speed;
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
 
-      // UNIFIED ZOOM LOGIC
+      // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
-      } else if (_isZoomOutPressed ||
+      }
+      else if (_isZoomOutPressed ||
           (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
           (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
           _isUiZoomOutPressed) {
@@ -646,25 +739,24 @@ class _HomePageState extends State<HomePage> {
         _currentCommand.zoom_command = 1;
       }
 
-      // --- SEND PACKETS USING THE SERVICE ---
-      _connectionService!.sendCommand(_currentCommand);
-      _connectionService!.sendDrivingCommand(drivingCommand);
+      // Send both packets
+      _sendCommandPacket(_currentCommand);
+      _sendDrivingPacket(drivingCommand);
     });
   }
 
 
-
-  // Future<void> _sendDrivingPacket(DrivingCommand command) async {
-  //   if (_robotIpAddress.isEmpty) return;
-  //   try {
-  //     const int DRIVING_PORT = 65434; // The new port for driving
-  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-  //     socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
-  //     socket.close();
-  //   } catch (e) {
-  //     print(e);
-  //   }
-  // }
+  Future<void> _sendDrivingPacket(DrivingCommand command) async {
+    if (_robotIpAddress.isEmpty) return;
+    try {
+      const int DRIVING_PORT = 65434; // The new port for driving
+      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
+      socket.close();
+    } catch (e) {
+      print(e);
+    }
+  }
 
   Widget _buildCrosshair() {
     // Condition 1: Is the app in a mode that should show a crosshair?
@@ -683,7 +775,6 @@ class _HomePageState extends State<HomePage> {
     // Determine color based on lock state
     final Color crosshairColor = isTargetLocked ? Colors.red : Colors.white;
 
-    // --- THIS IS THE KEY ---
     // Define the size here. You can now change this to 450, 900, or any other value,
     // and the centering will still work perfectly.
     final double crosshairSize = 450.0;
@@ -1636,9 +1727,14 @@ class _HomePageState extends State<HomePage> {
     // --- THIS IS THE FIX ---
     // No matter what happens (success or error), the switching process is now over.
     // So, we unlock the button.
-    setState(() {
-      _isSwitchingCamera = false; // 2. Unlock the button
-    });
+    // setState(() {
+    //   _isSwitchingCamera = false; // 2. Unlock the button
+    // });
+    if (_isSwitchingCamera) {
+      setState(() {
+        _isSwitchingCamera = false; // 2. Unlock the button
+      });
+    }
     // --- END OF FIX ---
 
     switch (call.method) {
@@ -1669,42 +1765,26 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-  // Future<void> _loadSettingsAndInitialize() async {
-  //   _robotIpAddress = await _settingsService.loadIpAddress();
-  //   _cameraUrls = await _settingsService.loadCameraUrls();
-  //   if (mounted) {
-  //     _connectToStatusServer(); // <-- ADD THIS CALL
-  //     _switchCamera(0);
-  //     _startCommandTimer();
-  //     setState(() => _isLoading = false);
-  //   }
-  // }
-
   Future<void> _loadSettingsAndInitialize() async {
     _robotIpAddress = await _settingsService.loadIpAddress();
     _cameraUrls = await _settingsService.loadCameraUrls();
-
-    // ++ ADD THIS: Initialize the connection service ++
-    _connectionService?.dispose(); // Dispose old service if it exists
-    _connectionService = RobotConnectionService(_robotIpAddress);
-
     if (mounted) {
-      _connectToStatusServer();
+      _connectToStatusServer(); // <-- ADD THIS CALL
       _switchCamera(0);
-      _startCommandTimer(); // This will now use the service
+      _startCommandTimer();
       setState(() => _isLoading = false);
     }
   }
 
-  // Future<void> _sendCommandPacket(UserCommand command) async {
-  //   if (_robotIpAddress.isEmpty) return;
-  //   try {
-  //     final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
-  //     socket.add(command.toBytes());
-  //     await socket.flush();
-  //     socket.close();
-  //   } catch (e) {}
-  // }
+  Future<void> _sendCommandPacket(UserCommand command) async {
+    if (_robotIpAddress.isEmpty) return;
+    try {
+      final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
+      socket.add(command.toBytes());
+      await socket.flush();
+      socket.close();
+    } catch (e) {}
+  }
 
   Future<void> _sendTouchPacket(TouchCoord coord) async {
     if (_robotIpAddress.isEmpty) return;
