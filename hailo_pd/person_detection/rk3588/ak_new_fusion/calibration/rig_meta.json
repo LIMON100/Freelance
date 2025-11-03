@@ -1,0 +1,23 @@
+{
+  "sensors": {
+    "zoom_rgb": {
+      "res": [
+        1280,
+        720
+      ],
+      "model": "pinhole"
+    },
+    "thermal": {
+      "res": [
+        640,
+        512
+      ],
+      "model": "pinhole"
+    }
+  },
+  "unit": {
+    "length": "m",
+    "angle": "deg"
+  },
+  "date": "2025-10-24"
+}
