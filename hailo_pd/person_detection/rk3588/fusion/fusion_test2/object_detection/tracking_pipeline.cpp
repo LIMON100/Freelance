@@ -50,13 +50,13 @@ TrackingPipeline::TrackingPipeline(const PipelineConfig& config)
     }
 
     // Load the boresight calibration matrix
-    cv::FileStorage fs(m_config.boresight_calib_path, cv::FileStorage::READ);
-    if (!fs.isOpened()) {
-        throw std::runtime_error("Error: Could not open boresight calibration file: " + m_config.boresight_calib_path);
-    }
-    fs["boresight_matrix"] >> m_boresight_matrix;
-    fs.release();
-    std::cout << "-I- Boresight calibration matrix loaded successfully." << std::endl;
+    // cv::FileStorage fs(m_config.boresight_calib_path, cv::FileStorage::READ);
+    // if (!fs.isOpened()) {
+    //     throw std::runtime_error("Error: Could not open boresight calibration file: " + m_config.boresight_calib_path);
+    // }
+    // fs["boresight_matrix"] >> m_boresight_matrix;
+    // fs.release();
+    // std::cout << "-I- Boresight calibration matrix loaded successfully." << std::endl;
 
     m_total_frames = m_capture_eo.get(cv::CAP_PROP_FRAME_COUNT);
     double fps = m_capture_eo.get(cv::CAP_PROP_FPS);
