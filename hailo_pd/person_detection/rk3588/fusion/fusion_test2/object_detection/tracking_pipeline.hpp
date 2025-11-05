@@ -54,7 +54,7 @@ private:
     cv::VideoWriter m_video_writer;
     
     std::unique_ptr<byte_track::BYTETracker> m_tracker;
-    cv::Mat m_boresight_matrix;
+    // cv::Mat m_boresight_matrix;
 
     std::chrono::duration<double> m_inference_time_eo;
     std::chrono::duration<double> m_inference_time_ir;

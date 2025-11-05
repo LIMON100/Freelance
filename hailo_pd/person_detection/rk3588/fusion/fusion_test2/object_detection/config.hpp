@@ -6,10 +6,10 @@
 
 struct PipelineConfig {
     // --- SOURCE CONFIGURATION ---
-    std::string eo_video_path = "./50eo.mp4"; // Example path for EO video
-    std::string ir_video_path = "./50ir.mp4"; // Example path for IR video
+    std::string eo_video_path = "./30eo.mp4"; // Example path for EO video
+    std::string ir_video_path = "./30ir.mp4"; // Example path for IR video
     
-    std::string boresight_calib_path = "./boresight_matrix.xml";
+    // std::string boresight_calib_path = "./boresight_matrix.xml";
 
     // --- MODEL & PROCESSING CONFIGURATION ---
     // Using one model for both streams as requested
@@ -26,7 +26,7 @@ struct PipelineConfig {
     bool enable_global_stabilization = false; 
     bool enable_visualization = false;
     bool save_output_video = true; 
-    bool enable_center_crop = true; 
+    bool enable_center_crop = false; 
     int crop_size = 500;
     std::string output_video_path = "./processed_video.avi";
 
