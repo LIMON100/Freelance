@@ -14,6 +14,7 @@ import 'splash_screen.dart';
 import 'settings_menu_page.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
 import 'DrivingCommand.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -115,6 +116,13 @@ class _HomePageState extends State<HomePage> {
   Timer? _wifiSignalTimer;
   int _wifiSignalLevel = 0;
 
+  bool _wasGamepadActive = false;
+
+  // --- ADD THESE LINES ---
+  RawDatagramSocket? _drivingSocket;
+  RawDatagramSocket? _touchSocket;
+  // --- END OF ADD ---
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -139,16 +147,37 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
+    WakelockPlus.enable();
+    _initializeSockets();
+
     _loadSettingsAndInitialize();
     platform.setMethodCallHandler(_handleGamepadEvent);
 
-    _startWifiSignalChecker(); // <-- ADD THIS CALL
+    _startWifiSignalChecker();
   }
+
+  // --- ADD THIS ENTIRE NEW FUNCTION ---
+  Future<void> _initializeSockets() async {
+    try {
+      _drivingSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      _touchSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      print("UDP Sockets initialized successfully.");
+    } catch (e) {
+      print("Error initializing UDP sockets: $e");
+    }
+  }
+// --- END OF NEW FUNCTION ---
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _commandTimer?.cancel();
-    _wifiSignalTimer?.cancel(); // <-- ADD THIS CALL
+    _wifiSignalTimer?.cancel();
+
+    _drivingSocket?.close(); // <-- ADD THIS
+    _touchSocket?.close();   // <-- ADD THIS
+
     _stopGStreamer();
     _transformationController.dispose();
     _statusSocketSubscription?.cancel();
@@ -224,92 +253,162 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Future<void> _connectToStatusServer() async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //
+  //   // Disconnect if already connected
+  //   await _statusSocketSubscription?.cancel();
+  //   _statusSocket?.destroy();
+  //
+  //   try {
+  //     const int STATUS_PORT = 65435;
+  //     _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 5));
+  //     setState(() {
+  //       _isServerConnected = true;
+  //     });
+  //     print("Connected to status server!");
+  //
+  //     _statusSocketSubscription = _statusSocket!.listen(
+  //             (Uint8List data) {
+  //           try {
+  //
+  //             if (_isStoppingMode) {
+  //               return;
+  //             }
+  //
+  //             final status = StatusPacket.fromBytes(data);
+  //             if (mounted) {
+  //               setState(() {
+  //                 // _lateralWindSpeed = status.lateralWindSpeed;
+  //                 // _windDirectionIndex = status.windDirectionIndex;
+  //                 _confirmedServerModeId = status.currentModeId;
+  //
+  //                 // --- NEW: Update permission state from server ---
+  //                 bool serverRequest = status.permissionRequestActive == 1;
+  //
+  //                 _crosshairX = status.crosshairX;
+  //                 _crosshairY = status.crosshairY;
+  //
+  //                 // If the server stops requesting, reset everything
+  //                 if (!serverRequest) {
+  //                   _permissionRequestIsActive = false;
+  //                   _permissionHasBeenGranted = false;
+  //                 } else {
+  //                   // If the server is requesting, update our state, but DON'T reset
+  //                   // the _permissionHasBeenGranted flag. This allows the "Permitted"
+  //                   // state to persist.
+  //                   _permissionRequestIsActive = true;
+  //                 }
+  //               });
+  //             }
+  //           } catch (e) {
+  //             print("Error parsing status packet: $e");
+  //           }
+  //         },
+  //       onError: (error) {
+  //         print("Status socket error: $error");
+  //         setState(() => _isServerConnected = false);
+  //         _reconnectStatusServer();
+  //       },
+  //       onDone: () {
+  //         print("Status server disconnected.");
+  //         setState(() => _isServerConnected = false);
+  //         _reconnectStatusServer();
+  //       },
+  //       cancelOnError: true,
+  //     );
+  //   } catch (e) {
+  //     print("Failed to connect to status server: $e");
+  //     setState(() => _isServerConnected = false);
+  //     _reconnectStatusServer();
+  //   }
+  // }
+
   Future<void> _connectToStatusServer() async {
-    if (_robotIpAddress.isEmpty) return;
+    // If we are already connected or have no IP, do nothing.
+    if (_robotIpAddress.isEmpty || _isServerConnected) return;
 
-    // Disconnect if already connected
-    await _statusSocketSubscription?.cancel();
-    _statusSocket?.destroy();
-
+    print("Attempting to connect to status server...");
     try {
       const int STATUS_PORT = 65435;
-      _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 5));
-      setState(() {
-        _isServerConnected = true;
-      });
+      // Try to connect the socket with a timeout.
+      _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 3));
+
+      // If the line above doesn't throw an exception, the connection was successful.
+      if (mounted) {
+        setState(() {
+          _isServerConnected = true;
+        });
+      }
       print("Connected to status server!");
 
-      // _statusSocketSubscription = _statusSocket!.listen(
-      //       (Uint8List data) {
-      //     try {
-      //       final status = StatusPacket.fromBytes(data);
-      //       // Update the UI with the new data from the server
-      //       if (mounted) {
-      //         setState(() {
-      //           _lateralWindSpeed = status.lateralWindSpeed;
-      //           _windDirectionIndex = status.windDirectionIndex;
-      //
-      //           _confirmedServerModeId = status.currentModeId;
-      //         });
-      //       }
-      //     } catch (e) {
-      //       print("Error parsing status packet: $e");
-      //     }
-      //   },
+      // Listen for data, errors, or the connection closing.
       _statusSocketSubscription = _statusSocket!.listen(
-              (Uint8List data) {
-            try {
+            (Uint8List data) {
+          // This is where you handle incoming data from the server.
+          try {
+            if (_isStoppingMode) return;
+            final status = StatusPacket.fromBytes(data);
+            if (mounted) {
+              setState(() {
+                _confirmedServerModeId = status.currentModeId;
+                bool serverRequest = status.permissionRequestActive == 1;
+                _crosshairX = status.crosshairX;
+                _crosshairY = status.crosshairY;
 
-              if (_isStoppingMode) {
-                return;
-              }
-
-              final status = StatusPacket.fromBytes(data);
-              if (mounted) {
-                setState(() {
-                  // _lateralWindSpeed = status.lateralWindSpeed;
-                  // _windDirectionIndex = status.windDirectionIndex;
-                  _confirmedServerModeId = status.currentModeId;
-
-                  // --- NEW: Update permission state from server ---
-                  bool serverRequest = status.permissionRequestActive == 1;
-
-                  _crosshairX = status.crosshairX;
-                  _crosshairY = status.crosshairY;
-
-                  // If the server stops requesting, reset everything
-                  if (!serverRequest) {
-                    _permissionRequestIsActive = false;
-                    _permissionHasBeenGranted = false;
-                  } else {
-                    // If the server is requesting, update our state, but DON'T reset
-                    // the _permissionHasBeenGranted flag. This allows the "Permitted"
-                    // state to persist.
-                    _permissionRequestIsActive = true;
-                  }
-                });
-              }
-            } catch (e) {
-              print("Error parsing status packet: $e");
+                if (!serverRequest) {
+                  _permissionRequestIsActive = false;
+                  _permissionHasBeenGranted = false;
+                } else {
+                  _permissionRequestIsActive = true;
+                }
+              });
             }
-          },
+          } catch (e) {
+            print("Error parsing status packet: $e");
+          }
+        },
         onError: (error) {
           print("Status socket error: $error");
-          setState(() => _isServerConnected = false);
-          _reconnectStatusServer();
+          _handleDisconnect(); // Use the centralized handler for all disconnect events.
         },
         onDone: () {
           print("Status server disconnected.");
-          setState(() => _isServerConnected = false);
-          _reconnectStatusServer();
+          _handleDisconnect(); // Use the centralized handler for all disconnect events.
         },
         cancelOnError: true,
       );
     } catch (e) {
+      // This catch block handles connection failures (e.g., timeout, host not found).
       print("Failed to connect to status server: $e");
-      setState(() => _isServerConnected = false);
-      _reconnectStatusServer();
+      _handleDisconnect(); // Use the centralized handler for all disconnect events.
     }
+  }
+
+  // NEW: Centralized disconnect and cleanup handler
+  void _handleDisconnect() {
+    if (!mounted) return;
+
+    // Only trigger a state update and reconnect if we were previously connected.
+    if (_isServerConnected) {
+      setState(() {
+        _isServerConnected = false;
+      });
+    }
+
+    // Clean up old resources before attempting to reconnect
+    _statusSocketSubscription?.cancel();
+    _statusSocket?.destroy();
+    _statusSocket = null;
+    _statusSocketSubscription = null;
+
+    // Schedule a single reconnect attempt after a delay.
+    // This prevents a rapid, resource-leaking loop.
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted && !_isServerConnected) {
+        _connectToStatusServer();
+      }
+    });
   }
 
   void _reconnectStatusServer() {
@@ -353,21 +452,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // void _stopCurrentMode() {
-  //   _isModeActive = false;
-  //   _selectedModeIndex = -1;
-  //   _currentCommand.command_id = CommandIds.IDLE;
-  //   _isForwardPressed = false;
-  //   _isBackPressed = false;
-  //   _isLeftPressed = false;
-  //   _isRightPressed = false;
-  //
-  //   // --- THIS IS THE FIX ---
-  //   // Automatically reset the attack permission when stopping any mode.
-  //   _isPermissionToAttackOn = false;
-  //   _currentCommand.attack_permission = false;
-  // }
-
   void _stopCurrentMode() {
     _isStoppingMode = true;
     _isModeActive = false;
@@ -393,13 +477,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // void _onPermissionPressed() {
-  //   setState(() {
-  //     _isPermissionToAttackOn = !_isPermissionToAttackOn;
-  //     _currentCommand.attack_permission = _isPermissionToAttackOn;
-  //   });
-  // }
-
   void _onPermissionPressed() {
     // This button should only be tappable when a request is active
     if (_permissionRequestIsActive && !_permissionHasBeenGranted) {
@@ -411,105 +488,113 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _handleGamepadEvent(MethodCall call) async {
-    if (!mounted) return;
-    if (!_gamepadConnected) {
-      setState(() {
-        _gamepadConnected = true;
-        _pendingLateralWindSpeed = _lateralWindSpeed; // Initialize pending value
-      });
-    }
-
-    if (call.method == "onMotionEvent") {
-      final newAxisValues = Map<String, double>.from(call.arguments);
-
-      // ---: Handle D-Pad for Wind Speed Adjustment ---
-      final double hatX = newAxisValues['AXIS_HAT_X'] ?? 0.0;
-      final double prevHatX = _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
-
-      // Detect a press (transition from 0 to -1 or 1)
-      if (hatX != 0 && prevHatX == 0) {
-        setState(() {
-          if (hatX > 0.5) { // D-Pad Right
-            _pendingLateralWindSpeed += 0.1;
-          } else if (hatX < -0.5) { // D-Pad Left
-            _pendingLateralWindSpeed -= 0.1;
-          }
-        });
-      }
-
-      setState(() => _gamepadAxisValues = newAxisValues);
-
-    } else if (call.method == "onButtonDown") {
-      final String button = call.arguments['button'];
-      setState(() {
-        switch (button) {
-          case 'KEYCODE_BUTTON_B': // Start
-            _onStartStopPressed();
-            break;
-          case 'KEYCODE_BUTTON_A': // Stop
-            if (_isModeActive) _onStartStopPressed();
-            break;
-          case 'KEYCODE_BUTTON_X': // Dual purpose: Permission AND Confirm Wind
-          // --- NEW: Confirm Wind Speed Logic ---
-          // If the pending value is different, this press confirms the wind speed.
-            if ((_pendingLateralWindSpeed - _lateralWindSpeed).abs() > 0.01) {
-              _lateralWindSpeed = _pendingLateralWindSpeed;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            } else {
-              _onPermissionPressed();
-            }
-            break;
-          case 'KEYCODE_BUTTON_L1':
-            _isZoomInPressed = true;
-            break;
-          case 'KEYCODE_BUTTON_L2':
-            _isZoomOutPressed = true;
-            break;
-        }
-      });
-    } else if (call.method == "onButtonUp") {
-      final String button = call.arguments['button'];
-      setState(() {
-        switch (button) {
-          case 'KEYCODE_BUTTON_L1':
-            _isZoomInPressed = false;
-            break;
-          case 'KEYCODE_BUTTON_L2':
-            _isZoomOutPressed = false;
-            break;
-        }
-      });
-    }
-  }
-
+  // Future<void> _handleGamepadEvent(MethodCall call) async {
+  //   if (!mounted) return;
+  //   if (!_gamepadConnected) {
+  //     setState(() {
+  //       _gamepadConnected = true;
+  //       _pendingLateralWindSpeed = _lateralWindSpeed; // Initialize pending value
+  //     });
+  //   }
+  //
+  //   if (call.method == "onMotionEvent") {
+  //     final newAxisValues = Map<String, double>.from(call.arguments);
+  //
+  //     // ---: Handle D-Pad for Wind Speed Adjustment ---
+  //     final double hatX = newAxisValues['AXIS_HAT_X'] ?? 0.0;
+  //     final double prevHatX = _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
+  //
+  //     // Detect a press (transition from 0 to -1 or 1)
+  //     if (hatX != 0 && prevHatX == 0) {
+  //       setState(() {
+  //         if (hatX > 0.5) { // D-Pad Right
+  //           _pendingLateralWindSpeed += 0.1;
+  //         } else if (hatX < -0.5) { // D-Pad Left
+  //           _pendingLateralWindSpeed -= 0.1;
+  //         }
+  //       });
+  //     }
+  //
+  //     setState(() => _gamepadAxisValues = newAxisValues);
+  //
+  //   } else if (call.method == "onButtonDown") {
+  //     final String button = call.arguments['button'];
+  //     setState(() {
+  //       switch (button) {
+  //         case 'KEYCODE_BUTTON_B': // Start
+  //           _onStartStopPressed();
+  //           break;
+  //         case 'KEYCODE_BUTTON_A': // Stop
+  //           if (_isModeActive) _onStartStopPressed();
+  //           break;
+  //         case 'KEYCODE_BUTTON_X': // Dual purpose: Permission AND Confirm Wind
+  //         // --- NEW: Confirm Wind Speed Logic ---
+  //         // If the pending value is different, this press confirms the wind speed.
+  //           if ((_pendingLateralWindSpeed - _lateralWindSpeed).abs() > 0.01) {
+  //             _lateralWindSpeed = _pendingLateralWindSpeed;
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               SnackBar(
+  //                 content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'),
+  //                 duration: const Duration(seconds: 2),
+  //               ),
+  //             );
+  //           } else {
+  //             _onPermissionPressed();
+  //           }
+  //           break;
+  //         case 'KEYCODE_BUTTON_L1':
+  //           _isZoomInPressed = true;
+  //           break;
+  //         case 'KEYCODE_BUTTON_L2':
+  //           _isZoomOutPressed = true;
+  //           break;
+  //       }
+  //     });
+  //   } else if (call.method == "onButtonUp") {
+  //     final String button = call.arguments['button'];
+  //     setState(() {
+  //       switch (button) {
+  //         case 'KEYCODE_BUTTON_L1':
+  //           _isZoomInPressed = false;
+  //           break;
+  //         case 'KEYCODE_BUTTON_L2':
+  //           _isZoomOutPressed = false;
+  //           break;
+  //       }
+  //     });
+  //   }
+  // }
+  //
   // void _startCommandTimer() {
   //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
   //     DrivingCommand drivingCommand = DrivingCommand();
   //
-  //     bool isGamepadActive = _gamepadConnected &&
-  //         ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
-  //             (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
-  //             (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
-  //             (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
+  //     if (_gamepadConnected) {
+  //       // 1. Get the raw axis values.
+  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
+  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
   //
-  //     if (isGamepadActive) {
-  //       // GAMEPAD IS ACTIVE: It controls everything.
-  //       drivingCommand.move_speed = ((_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100).round();
-  //       drivingCommand.turn_angle = ((_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100).round();
-  //       _currentCommand.tilt_speed = ((_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100).round();
-  //       _currentCommand.pan_speed = ((_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100).round();
+  //       // 2. Apply a deadzone. If the value is small, treat it as zero.
+  //       //    This solves the problem of the stick not returning to a perfect 0.0.
+  //       drivingCommand.move_speed = rawMove.abs() < 15 ? 0 : rawMove.round();
+  //       drivingCommand.turn_angle = rawTurn.abs() < 15 ? 0 : rawTurn.round();
+  //       _currentCommand.tilt_speed = rawTilt.abs() < 15 ? 0 : rawTilt.round();
+  //       _currentCommand.pan_speed = rawPan.abs() < 15 ? 0 : rawPan.round();
+  //       // --- END OF FIX ---
+  //
   //     } else {
+  //       // VIRTUAL JOYSTICKS ARE ACTIVE:
+  //       // Their listeners already set the command values to 0 when released,
+  //       // so we just pass them through.
   //       drivingCommand.move_speed = _currentCommand.move_speed;
   //       drivingCommand.turn_angle = _currentCommand.turn_angle;
+  //       // Pan and tilt are already set on _currentCommand by the right joystick's listener.
   //     }
   //
   //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+  //
   //     // --- UNIFIED ZOOM LOGIC ---
   //     _currentCommand.zoom_command = 0;
   //     if (_isZoomInPressed || _isUiZoomInPressed) {
@@ -528,46 +613,220 @@ class _HomePageState extends State<HomePage> {
   //     _sendCommandPacket(_currentCommand);
   //     _sendDrivingPacket(drivingCommand);
   //   });
+  //
   // }
 
+
+
+
+  // THIS IS NEW UPDATED FOR PARALLEL joystick
+  Future<void> _handleGamepadEvent(MethodCall call) async {
+    if (!mounted) return;
+
+    // --- NEW: Handle disconnection robustly ---
+    if (call.method == "onGamepadDisconnected") {
+      setState(() {
+        _gamepadConnected = false;
+        _gamepadAxisValues.clear();
+        _isZoomInPressed = false; // Reset gamepad-specific button states
+        _isZoomOutPressed = false;
+        print("Gamepad disconnected.");
+      });
+      return; // Stop further processing
+    }
+
+    if (!_gamepadConnected) {
+      setState(() {
+        _gamepadConnected = true;
+        _pendingLateralWindSpeed = _lateralWindSpeed;
+        print("Gamepad connected.");
+      });
+    }
+
+    if (call.method == "onMotionEvent") {
+      final newAxisValues = Map<String, double>.from(call.arguments);
+      final double hatX = newAxisValues['AXIS_HAT_X'] ?? 0.0;
+      final double prevHatX = _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
+      if (hatX != 0 && prevHatX == 0) {
+        setState(() {
+          if (hatX > 0.5) _pendingLateralWindSpeed += 0.1;
+          else if (hatX < -0.5) _pendingLateralWindSpeed -= 0.1;
+        });
+      }
+      setState(() => _gamepadAxisValues = newAxisValues);
+    } else if (call.method == "onButtonDown") {
+      final String button = call.arguments['button'];
+      setState(() {
+        switch (button) {
+          case 'KEYCODE_BUTTON_B': _onStartStopPressed(); break;
+          case 'KEYCODE_BUTTON_A': if (_isModeActive) _onStartStopPressed(); break;
+          case 'KEYCODE_BUTTON_X':
+            if ((_pendingLateralWindSpeed - _lateralWindSpeed).abs() > 0.01) {
+              _lateralWindSpeed = _pendingLateralWindSpeed;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'), duration: const Duration(seconds: 2)),
+              );
+            } else {
+              _onPermissionPressed();
+            }
+            break;
+          case 'KEYCODE_BUTTON_L1': _isZoomInPressed = true; break;
+          case 'KEYCODE_BUTTON_L2': _isZoomOutPressed = true; break;
+        }
+      });
+    } else if (call.method == "onButtonUp") {
+      final String button = call.arguments['button'];
+      setState(() {
+        switch (button) {
+          case 'KEYCODE_BUTTON_L1': _isZoomInPressed = false; break;
+          case 'KEYCODE_BUTTON_L2': _isZoomOutPressed = false; break;
+        }
+      });
+    }
+  }
+
+
+  // FUlly WORKABLE . only other brand joystick not works.
+  // void _startCommandTimer() {
+  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+  //     // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
+  //     int final_move_speed = 0;
+  //     int final_turn_angle = 0;
+  //     int final_pan_speed = 0;
+  //     int final_tilt_speed = 0;
+  //
+  //     bool isGamepadDriving = false;
+  //     bool isGamepadAiming = false;
+  //
+  //     if (_gamepadConnected) {
+  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
+  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
+  //
+  //       // Check if driving stick is active (outside deadzone)
+  //       if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
+  //         isGamepadDriving = true;
+  //         final_move_speed = rawMove.round();
+  //         final_turn_angle = rawTurn.round();
+  //       }
+  //
+  //       // Check if aiming stick is active (outside deadzone)
+  //       if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
+  //         isGamepadAiming = true;
+  //         final_tilt_speed = rawTilt.round();
+  //         final_pan_speed = rawPan.round();
+  //       }
+  //     }
+  //
+  //     // If physical gamepad is NOT driving, fall back to virtual joystick values.
+  //     if (!isGamepadDriving) {
+  //       final_move_speed = _currentCommand.move_speed;
+  //       final_turn_angle = _currentCommand.turn_angle;
+  //     }
+  //
+  //     // If physical gamepad is NOT aiming, fall back to virtual joystick values.
+  //     if (!isGamepadAiming) {
+  //       final_pan_speed = _currentCommand.pan_speed;
+  //       final_tilt_speed = _currentCommand.tilt_speed;
+  //     }
+  //
+  //     // Assemble DrivingCommand with final values
+  //     DrivingCommand drivingCommand = DrivingCommand(
+  //       move_speed: final_move_speed,
+  //       turn_angle: final_turn_angle,
+  //     );
+  //
+  //     // Update main UserCommand with final values
+  //     _currentCommand.pan_speed = final_pan_speed;
+  //     _currentCommand.tilt_speed = final_tilt_speed;
+  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+  //
+  //     // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
+  //     _currentCommand.zoom_command = 0;
+  //     if (_isZoomInPressed || _isUiZoomInPressed) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //     else if (_isZoomOutPressed ||
+  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+  //         _isUiZoomOutPressed) {
+  //       _currentCommand.zoom_command = -1;
+  //     }
+  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //
+  //     // Send both packets
+  //     _sendCommandPacket(_currentCommand);
+  //     _sendDrivingPacket(drivingCommand);
+  //   });
+  // }
+
+
+  // TEST of all physical n virtual joystick
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      DrivingCommand drivingCommand = DrivingCommand();
+      // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
+      int final_move_speed = 0;
+      int final_turn_angle = 0;
+      int final_pan_speed = 0;
+      int final_tilt_speed = 0;
 
-      // bool isGamepadActive = _gamepadConnected &&
-      //     ((_gamepadAxisValues['AXIS_X']?.abs() ?? 0) > 0.1 ||
-      //         (_gamepadAxisValues['AXIS_Y']?.abs() ?? 0) > 0.1 ||
-      //         (_gamepadAxisValues['AXIS_Z']?.abs() ?? 0) > 0.1 ||
-      //         (_gamepadAxisValues['AXIS_RZ']?.abs() ?? 0) > 0.1);
+      bool isGamepadDriving = false;
+      bool isGamepadAiming = false;
 
-      // if (isGamepadActive) {
       if (_gamepadConnected) {
-        // 1. Get the raw axis values.
+        // --- THIS IS THE FIX: Check for multiple common axis mappings ---
+
+        // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
         double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
         double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
-        double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
-        double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
 
-        // 2. Apply a deadzone. If the value is small, treat it as zero.
-        //    This solves the problem of the stick not returning to a perfect 0.0.
-        drivingCommand.move_speed = rawMove.abs() < 15 ? 0 : rawMove.round();
-        drivingCommand.turn_angle = rawTurn.abs() < 15 ? 0 : rawTurn.round();
-        _currentCommand.tilt_speed = rawTilt.abs() < 15 ? 0 : rawTilt.round();
-        _currentCommand.pan_speed = rawPan.abs() < 15 ? 0 : rawPan.round();
+        // Aiming Stick (Right Stick) - Check for Z/RZ first, then fall back to RX/RY
+        double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
+        double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
         // --- END OF FIX ---
 
-      } else {
-        // VIRTUAL JOYSTICKS ARE ACTIVE:
-        // Their listeners already set the command values to 0 when released,
-        // so we just pass them through.
-        drivingCommand.move_speed = _currentCommand.move_speed;
-        drivingCommand.turn_angle = _currentCommand.turn_angle;
-        // Pan and tilt are already set on _currentCommand by the right joystick's listener.
+        // Check if driving stick is active (outside deadzone)
+        if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
+          isGamepadDriving = true;
+          final_move_speed = rawMove.round();
+          final_turn_angle = rawTurn.round();
+        }
+
+        // Check if aiming stick is active (outside deadzone)
+        if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
+          isGamepadAiming = true;
+          final_tilt_speed = rawTilt.round();
+          final_pan_speed = rawPan.round();
+        }
       }
 
+      // If physical gamepad is NOT driving, fall back to virtual joystick values.
+      if (!isGamepadDriving) {
+        final_move_speed = _currentCommand.move_speed;
+        final_turn_angle = _currentCommand.turn_angle;
+      }
+
+      // If physical gamepad is NOT aiming, fall back to virtual joystick values.
+      if (!isGamepadAiming) {
+        final_pan_speed = _currentCommand.pan_speed;
+        final_tilt_speed = _currentCommand.tilt_speed;
+      }
+
+      // Assemble DrivingCommand with final values
+      DrivingCommand drivingCommand = DrivingCommand(
+        move_speed: final_move_speed,
+        turn_angle: final_turn_angle,
+      );
+
+      // Update main UserCommand with final values
+      _currentCommand.pan_speed = final_pan_speed;
+      _currentCommand.tilt_speed = final_tilt_speed;
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
 
-      // --- UNIFIED ZOOM LOGIC ---
+      // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
@@ -582,53 +841,33 @@ class _HomePageState extends State<HomePage> {
         _currentCommand.zoom_command = 1;
       }
 
+      // Send both packets
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
     });
-
   }
+
+  // Future<void> _sendDrivingPacket(DrivingCommand command) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     const int DRIVING_PORT = 65434; // The new port for driving
+  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  //     socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
+  //     socket.close();
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
 
   Future<void> _sendDrivingPacket(DrivingCommand command) async {
-    if (_robotIpAddress.isEmpty) return;
+    if (_robotIpAddress.isEmpty || _drivingSocket == null) return;
     try {
-      const int DRIVING_PORT = 65434; // The new port for driving
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
-      socket.close();
+      const int DRIVING_PORT = 65434;
+      _drivingSocket!.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
     } catch (e) {
-      print(e);
+      print("Error sending driving packet: $e");
     }
   }
-
-  // Widget _buildCrosshair() { // <-- REMOVED screenWidth and screenHeight parameters
-  //   // Condition 1: Is the app in an attack mode?
-  //   bool isAttackMode = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
-  //       _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
-  //       _confirmedServerModeId == CommandIds.RECON ||
-  //       _confirmedServerModeId == CommandIds.DRONE;
-  //
-  //   if (!isAttackMode) {
-  //     return const SizedBox.shrink();
-  //   }
-  //
-  //   // Condition 2: Did the robot provide a specific crosshair position?
-  //   bool useServerPosition = _crosshairX >= 0.0 && _crosshairY >= 0.0;
-  //
-  //   final Color crosshairColor = useServerPosition ? Colors.red : Colors.white;
-  //   final double crosshairSize = 900.0;
-  //
-  //   // --- THIS IS THE FIX ---
-  //   // The function now ONLY returns the Image widget itself.
-  //   // The positioning is handled in the main build method.
-  //   return Image.asset(
-  //     'assets/new_icons/crosshair.png',
-  //     width: crosshairSize,
-  //     height: crosshairSize,
-  //     color: crosshairColor,
-  //     colorBlendMode: BlendMode.srcIn,
-  //   );
-  //   // --- END OF FIX ---
-  // }
 
   Widget _buildCrosshair() {
     // Condition 1: Is the app in a mode that should show a crosshair?
@@ -647,7 +886,6 @@ class _HomePageState extends State<HomePage> {
     // Determine color based on lock state
     final Color crosshairColor = isTargetLocked ? Colors.red : Colors.white;
 
-    // --- THIS IS THE KEY ---
     // Define the size here. You can now change this to 450, 900, or any other value,
     // and the centering will still work perfectly.
     final double crosshairSize = 450.0;
@@ -775,6 +1013,7 @@ class _HomePageState extends State<HomePage> {
       child: Opacity(
         opacity: _isServerConnected ? 1.0 : 0.5,
         child: Joystick(
+          includeInitialAnimation: false,
           mode: JoystickMode.all,
           stick: const CircleAvatar(
             radius: 30,
@@ -813,6 +1052,7 @@ class _HomePageState extends State<HomePage> {
       child: Opacity(
         opacity: _isServerConnected ? 1.0 : 0.5,
         child: Joystick(
+          includeInitialAnimation: false,
           mode: JoystickMode.all,
           stick: const CircleAvatar(
             radius: 30,
@@ -841,52 +1081,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
- // --- NEW: A dedicated builder for the custom Permission to Attack button ---
- //  Widget _buildPermissionButton({
- //    required String label,
- //    required String backgroundImagePath,
- //    required VoidCallback? onPressed,
- //  }) {
- //    final screenHeight = MediaQuery.of(context).size.height;
- //    final screenWidth = MediaQuery.of(context).size.width;
- //    final heightScale = screenHeight / 1080.0;
- //    final widthScale = screenWidth / 1920.0;
- //    final bool isEnabled = onPressed != null;
- //
- //    // Use a fixed width to prevent the UI from shifting
- //    final double buttonWidth = 450 * widthScale;
- //    final double buttonHeight = 80 * heightScale;
- //
- //    return GestureDetector(
- //      onTap: onPressed,
- //      child: Opacity(
- //        opacity: isEnabled ? 1.0 : 0.7, // Make it slightly less faded when disabled
- //        child: Container(
- //          width: buttonWidth,
- //          height: buttonHeight,
- //          decoration: BoxDecoration(
- //            image: DecorationImage(
- //              image: AssetImage(backgroundImagePath),
- //              fit: BoxFit.fill,
- //            ),
- //          ),
- //          child: Center( // Center the text within the button
- //            child: Text(
- //              label,
- //              style: TextStyle(
- //                fontFamily: 'NotoSans',
- //                fontWeight: FontWeight.w700,
- //                fontSize: 30 * heightScale,
- //                color: Colors.white,
- //              ),
- //            ),
- //          ),
- //        ),
- //      ),
- //    );
- //  }
-
-
   Widget _buildPermissionButton({
     required String label,
     required String backgroundImagePath,
@@ -908,7 +1102,6 @@ class _HomePageState extends State<HomePage> {
         child: SizedBox(
           width: buttonWidth,
           height: buttonHeight,
-          // --- THIS IS THE FIX ---
           // Use a Stack to layer the background image and the text.
           child: Stack(
             fit: StackFit.expand, // Make the Stack's children fill the SizedBox
@@ -916,7 +1109,7 @@ class _HomePageState extends State<HomePage> {
               // 1. The Background Image
               // Use ClipRRect to enforce the rounded corners on the image.
               ClipRRect(
-                borderRadius: BorderRadius.circular(15 * heightScale), // Adjust this value for more/less rounding
+                borderRadius: BorderRadius.circular(22 * heightScale), // Adjust this value for more/less rounding
                 child: Image.asset(
                   backgroundImagePath,
                   fit: BoxFit.cover, // Cover maintains aspect ratio while filling
@@ -929,7 +1122,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontFamily: 'NotoSans',
                     fontWeight: FontWeight.w700,
-                    fontSize: 30 * heightScale,
+                    fontSize: 34 * heightScale,
                     color: Colors.white,
                     // Optional: Add a subtle shadow to make the text pop
                     shadows: [
@@ -975,101 +1168,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //
-  //   return Scaffold(
-  //     backgroundColor: Colors.black,
-  //     body: _isLoading
-  //         ? const Center(child: CircularProgressIndicator())
-  //         : Stack(
-  //       children: [
-  //         Positioned.fill(
-  //           child: InteractiveViewer(
-  //             transformationController: _transformationController,
-  //             minScale: 1.0, // User cannot pinch-to-zoom out
-  //             maxScale: 5.0, // User can pinch-to-zoom in up to 5x
-  //             panEnabled: false, // Disable panning with finger, only joysticks control it
-  //             child: KeyedSubtree(
-  //               key: _gstreamerViewKey,
-  //               child: AndroidView(
-  //                 viewType: 'gstreamer_view',
-  //                 onPlatformViewCreated: _onGStreamerPlatformViewCreated,
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //
-  //         // --- THIS IS THE FIX ---
-  //         // 2. Add the Danger Overlay on top of the video
-  //         _buildDangerOverlay(),
-  //         // --- END OF FIX ---
-  //
-  //         Positioned.fill(child: _buildStreamOverlay()),
-  //
-  //         if (!_isGStreamerLoading && !_gstreamerHasError)
-  //           Positioned.fill(child: _buildTouchDetector()),
-  //
-  //         // Positioned.fill(child: _buildStreamOverlay()),
-  //
-  //         // _buildWindIndicator(),
-  //         _buildZoomDisplay(),
-  //         _buildModeStatusBanner(),
-  //         _buildConnectionStatusBanner(),
-  //
-  //         _buildCrosshair(screenWidth, screenHeight),
-  //
-  //         _buildModeButton(0, 30, 30, "Driving", ICON_PATH_DRIVING_INACTIVE, ICON_PATH_DRIVING_ACTIVE),
-  //         _buildModeButton(1, 30, 214, "Recon", ICON_PATH_RECON_INACTIVE, ICON_PATH_RECON_ACTIVE),
-  //         _buildModeButton(2, 30, 398, "Manual Attack", ICON_PATH_MANUAL_ATTACK_INACTIVE, ICON_PATH_MANUAL_ATTACK_ACTIVE),
-  //         _buildModeButton(3, 30, 582, "Auto Attack", ICON_PATH_AUTO_ATTACK_INACTIVE, ICON_PATH_AUTO_ATTACK_ACTIVE),
-  //         _buildModeButton(4, 30, 766, "Drone", ICON_PATH_DRONE_INACTIVE, ICON_PATH_DRONE_ACTIVE),
-  //
-  //         _buildViewButton(
-  //           1690, 30, "",
-  //           ICON_PATH_DAY_VIEW_ACTIVE,   // Pass the ACTIVE icon
-  //           ICON_PATH_DAY_VIEW_INACTIVE, // Pass the INACTIVE icon
-  //           _currentCameraIndex == 0,    // This button is active if camera index is 0
-  //           onPressed: () => _switchCamera(0),
-  //         ),
-  //
-  //         // Night View Button (IR Camera)
-  //         _buildViewButton(
-  //           1690, 214, "",
-  //           ICON_PATH_NIGHT_VIEW_ACTIVE,   // Pass the ACTIVE icon
-  //           ICON_PATH_NIGHT_VIEW_INACTIVE, // Pass the INACTIVE icon
-  //           _currentCameraIndex == 1,      // This button is active if camera index is 1
-  //           onPressed: () => _switchCamera(1),
-  //         ),
-  //
-  //         _buildViewButton(
-  //             1690, 720, "Setting",
-  //             ICON_PATH_SETTINGS, // Active icon
-  //             ICON_PATH_SETTINGS, // Inactive icon (the same)
-  //             false,              // Never shows the "active" red background
-  //             onPressed: _navigateToSettings
-  //         ),
-  //
-  //         // _buildDirectionalControls(),
-  //         _buildMovementJoystick(),
-  //         _buildPanTiltJoystick(),
-  //
-  //         Align(
-  //           alignment: Alignment.bottomCenter,
-  //           child: Container(
-  //             margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
-  //             decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(50)),
-  //             child: _buildBottomBar(),
-  //           ),
-  //         ),
-  //
-  //       ],
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -1118,20 +1216,9 @@ class _HomePageState extends State<HomePage> {
             Positioned.fill(child: _buildTouchDetector()),
 
           // --- LAYER 5: VISUAL-ONLY UI ELEMENTS ---
-          // _buildWindIndicator(),
           _buildZoomDisplay(),
           _buildModeStatusBanner(),
           _buildConnectionStatusBanner(),
-
-          // The Positioned widget is now the direct child of the Stack.
-          // Positioned(
-          //   left: left,
-          //   top: top,
-          //   // The IgnorePointer is now INSIDE the Positioned widget.
-          //   child: IgnorePointer(
-          //     child: _buildCrosshair(),
-          //   ),
-          // ),
 
           Align(
             // The alignment property takes normalized coordinates from -1.0 to 1.0.
@@ -1232,66 +1319,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // Widget _buildViewButton(
-  //     double left,
-  //     double top,
-  //     String label,
-  //     String activeIconPath,
-  //     String inactiveIconPath,
-  //     bool isActive,
-  //     {VoidCallback? onPressed}
-  //     ) {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final heightScale = screenHeight / 1080.0;
-  //
-  //   // --- THIS IS THE FIX ---
-  //   // The background color is determined by the active state.
-  //   final Color color = isActive ? Colors.grey : Colors.black.withOpacity(0.6);
-  //   // The icon path is ALSO determined by the active state.
-  //   final String iconToDisplay = isActive ? activeIconPath : inactiveIconPath;
-  //
-  //   return Positioned(
-  //     left: left * widthScale,
-  //     top: top * heightScale,
-  //     child: GestureDetector(
-  //       onTap: onPressed,
-  //       child: Container(
-  //         width: 220 * widthScale,
-  //         height: 175 * heightScale,
-  //         padding: EdgeInsets.symmetric(vertical: 10.0 * heightScale),
-  //         decoration: BoxDecoration(
-  //           color: color,
-  //           borderRadius: BorderRadius.circular(15),
-  //           border: Border.all(color: isActive ? Colors.white : Colors.transparent, width: 2.5),
-  //         ),
-  //         child: Column(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           children: [
-  //             Expanded(
-  //                 flex: 3,
-  //                 // Use the dynamically selected icon path
-  //                 child: Image.asset(iconToDisplay, fit: BoxFit.contain)
-  //             ),
-  //             SizedBox(height: 8 * heightScale),
-  //             Text(
-  //                 label,
-  //                 textAlign: TextAlign.center,
-  //                 style: TextStyle(
-  //                     fontFamily: 'NotoSans',
-  //                     fontWeight: FontWeight.w700,
-  //                     fontSize: 26 * heightScale,
-  //                     color: Colors.white
-  //                 )
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildViewButton(
       double left,
@@ -1491,218 +1518,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget _buildBottomBar() {
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final heightScale = screenHeight / 1080.0; // Added for consistent icon sizing
-  //
-  //   return LayoutBuilder(
-  //     builder: (context, constraints) {
-  //       List<Color> permissionButtonColors;
-  //       bool isCombatModeActive = _isModeActive && (_selectedModeIndex == 2 || _selectedModeIndex == 3);
-  //
-  //       if (isCombatModeActive) {
-  //         permissionButtonColors = _isPermissionToAttackOn ? _permissionOnColors : _permissionOffColors;
-  //       } else {
-  //         permissionButtonColors = _permissionDisabledColors;
-  //       }
-  //
-  //       Color permissionTextColor = Colors.white;
-  //       // String permissionLabel;
-  //       // VoidCallback? permissionOnPressed = null; // Button is disabled by default
-  //
-  //       String permissionLabel;
-  //       String permissionBackground;
-  //       VoidCallback? permissionOnPressed;
-  //
-  //       // if (_permissionRequestIsActive) {
-  //       //   if (_permissionHasBeenGranted) {
-  //       //     // State 3: Permitted
-  //       //     permissionLabel = "Permitted";
-  //       //     permissionButtonColors = _permissionDisabledColors; // Gray
-  //       //     permissionOnPressed = null;
-  //       //     permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
-  //       //   } else {
-  //       //     // State 2: Request Pending
-  //       //     permissionLabel = "Request Pending";
-  //       //     permissionButtonColors = _permissionOffColors; // Red
-  //       //     permissionOnPressed = _isServerConnected ? _onPermissionPressed : null;
-  //       //     // Text color remains white
-  //       //   }
-  //       // } else {
-  //       //   // State 1: Idle
-  //       //   permissionLabel = "Permission to Attack";
-  //       //   permissionButtonColors = _permissionDisabledColors; // Gray
-  //       //   permissionOnPressed = null;
-  //       //   permissionTextColor = Colors.black; // <-- SET TEXT TO BLACK
-  //       // }
-  //
-  //       if (_permissionRequestIsActive) {
-  //         if (_permissionHasBeenGranted) {
-  //           // State 3: Permission has been granted by the user
-  //           permissionLabel = "Attack Permitted";
-  //           permissionBackground = ICON_PATH_PERMISSION_GREEN;
-  //           permissionOnPressed = null; // Button is disabled
-  //         } else {
-  //           // State 2: Server is requesting permission
-  //           permissionLabel = "Permission to Attack";
-  //           permissionBackground = ICON_PATH_PERMISSION_RED;
-  //           permissionOnPressed = _isServerConnected ? _onPermissionPressed : null; // Button is enabled
-  //         }
-  //       } else {
-  //         // State 1: Idle / No request from server
-  //         permissionLabel = "Request Pending";
-  //         permissionBackground = ICON_PATH_PERMISSION_BLUE;
-  //         permissionOnPressed = null; // Button is disabled
-  //       }
-  //
-  //       final List<Widget> leftCluster = [
-  //         // _buildBottomBarButton(
-  //         //   permissionLabel,
-  //         //   null,
-  //         //   permissionButtonColors,
-  //         //   permissionOnPressed,
-  //         //   textColor: permissionTextColor, // <-- PASS THE COLOR TO THE WIDGET
-  //         // ),
-  //
-  //         SizedBox(
-  //           width: 450 * widthScale,
-  //           child: _buildBottomBarButton(
-  //             permissionLabel,
-  //             null,
-  //             permissionButtonColors,
-  //             permissionOnPressed,
-  //             textColor: permissionTextColor,
-  //           ),
-  //         ),
-  //         SizedBox(width: 12 * widthScale),
-  //         _buildWideBottomBarButton(
-  //           _isModeActive ? "STOP" : "START",
-  //           _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
-  //           [const Color(0xff25a625), const Color(0xff127812)],
-  //           _isServerConnected ? _onStartStopPressed : null,
-  //         ),
-  //         SizedBox(width: 22 * widthScale),
-  //
-  //         _buildIconBottomBarButton(
-  //           ICON_PATH_PLUS,
-  //           _isServerConnected ? () {
-  //             // --- UPDATED ZOOM IN LOGIC ---
-  //             setState(() {
-  //               if (_currentZoomLevel < 5.0) _currentZoomLevel += 0.1;
-  //               else _currentZoomLevel = 5.0;
-  //               _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-  //
-  //               // Set the flag for the command timer
-  //               _isUiZoomInPressed = true;
-  //               // Clear the flag after a moment so we only send one command per press
-  //               Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomInPressed = false);
-  //             });
-  //           } : null,
-  //         ),
-  //         SizedBox(width: 12 * widthScale),
-  //         _buildIconBottomBarButton(
-  //           ICON_PATH_MINUS,
-  //           _isServerConnected ? () {
-  //             // --- UPDATED ZOOM OUT LOGIC ---
-  //             setState(() {
-  //               if (_currentZoomLevel > 1.0) _currentZoomLevel -= 0.1;
-  //               else _currentZoomLevel = 1.0;
-  //               _transformationController.value = Matrix4.identity()..scale(_currentZoomLevel);
-  //
-  //               // Set the flag for the command timer
-  //               _isUiZoomOutPressed = true;
-  //               // Clear the flag after a moment
-  //               Future.delayed(const Duration(milliseconds: 150), () => _isUiZoomOutPressed = false);
-  //             });
-  //           } : null,
-  //         ),
-  //       ];
-  //
-  //       // final List<Widget> middleCluster = [
-  //       //   Row(
-  //       //     mainAxisSize: MainAxisSize.min,
-  //       //     crossAxisAlignment: CrossAxisAlignment.baseline,
-  //       //     textBaseline: TextBaseline.alphabetic,
-  //       //     children: [
-  //       //       const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 75, color: Colors.white)),
-  //       //       SizedBox(width: 8 * widthScale),
-  //       //       const Text("m", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
-  //       //     ],
-  //       //   ),
-  //       //   SizedBox(width: 20 * widthScale),
-  //       //   Image.asset(ICON_PATH_WIFI, height: 40),
-  //       // ];
-  //
-  //       final List<Widget> middleCluster = [
-  //         Row(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             Image.asset(
-  //               ICON_PATH_WIND_W, // Your existing wind icon
-  //               height: 40 * heightScale,
-  //             ),
-  //             SizedBox(width: 8 * widthScale),
-  //             Text(
-  //               (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
-  //               style: TextStyle(
-  //                 fontFamily: 'NotoSans',
-  //                 fontWeight: FontWeight.w600,
-  //                 fontSize: 60 * heightScale, // Adjusted font size for a cleaner look
-  //                 color: Colors.white,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //         // Add spacing between the indicators
-  //         SizedBox(width: 40 * widthScale),
-  //         Row(
-  //           mainAxisSize: MainAxisSize.min,
-  //           crossAxisAlignment: CrossAxisAlignment.baseline,
-  //           textBaseline: TextBaseline.alphabetic,
-  //           children: [
-  //             const Text("60", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 60, color: Colors.white)),
-  //             SizedBox(width: 8 * widthScale),
-  //             const Text("M", style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 37, color: Colors.white)),
-  //           ],
-  //         ),
-  //         SizedBox(width: 20 * widthScale),
-  //         // Use the helper function to get the dynamic icon path
-  //         Image.asset(_getWifiIconPath(), height: 40),
-  //       ];
-  //
-  //       // final List<Widget> rightCluster = [
-  //       //   _buildBottomBarButton("EXIT", ICON_PATH_EXIT, [const Color(0xff1e78c3), const Color(0xff12569b)], () async {
-  //       //     final proceed = await _showExitDialog();
-  //       //     if (proceed) SystemNavigator.pop();
-  //       //   }),
-  //       // ];
-  //       final List<Widget> rightCluster = [
-  //         _buildImageBottomBarButton(
-  //           label: "EXIT",
-  //           iconPath: ICON_PATH_EXIT, // The original power symbol icon
-  //           backgroundImagePath: ICON_PATH_EXIT_BACKGROUND, // The new glossy background image
-  //           onPressed: () async {
-  //             final proceed = await _showExitDialog();
-  //             if (proceed) SystemNavigator.pop();
-  //           },
-  //         ),
-  //       ];
-  //
-  //       return Row(
-  //         children: [
-  //           ...leftCluster,
-  //           const Spacer(),
-  //           ...middleCluster,
-  //           const Spacer(),
-  //           ...rightCluster,
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
-
   // --- NEW: A dedicated builder for the "Attack Permitted" red overlay ---
   Widget _buildDangerOverlay() {
     // This overlay should only be visible when permission has been requested AND granted.
@@ -1730,8 +1545,6 @@ class _HomePageState extends State<HomePage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // --- THIS IS THE CORRECTED LOGIC ---
-        // We only need these three variables for the permission button.
         String permissionLabel;
         String permissionBackground;
         VoidCallback? permissionOnPressed;
@@ -1754,28 +1567,27 @@ class _HomePageState extends State<HomePage> {
           permissionBackground = ICON_PATH_PERMISSION_BLUE;
           permissionOnPressed = null; // Button is disabled
         }
-        // --- END OF CORRECTED LOGIC ---
+        // --- END OF LOGIC ---
 
+        // --- THIS IS THE FIX: Swap the order of the first two buttons ---
         final List<Widget> leftCluster = [
-          _buildPermissionButton(
-            label: permissionLabel,
-            backgroundImagePath: permissionBackground,
-            onPressed: permissionOnPressed,
-          ),
-          SizedBox(width: 12 * widthScale),
-          // _buildWideBottomBarButton(
-          //   _isModeActive ? "STOP" : "START",
-          //   _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
-          //   [const Color(0xff25a625), const Color(0xff127812)],
-          //   _isServerConnected ? _onStartStopPressed : null,
-          // ),
+          // 1. START/STOP button is now first
           _buildWideBottomBarButton(
             label: _isModeActive ? "STOP" : "START",
             iconPath: _isModeActive ? ICON_PATH_STOP : ICON_PATH_START,
             backgroundImagePath: ICON_PATH_PERMISSION_GREEN, // Use the green background
             onPressed: _isServerConnected ? _onStartStopPressed : null,
           ),
+          SizedBox(width: 12 * widthScale),
+          // 2. PERMISSION button is now second
+          _buildPermissionButton(
+            label: permissionLabel,
+            backgroundImagePath: permissionBackground,
+            onPressed: permissionOnPressed,
+            // iconPath: '',
+          ),
           SizedBox(width: 22 * widthScale),
+          // 3. ZOOM IN button remains the same
           _buildIconBottomBarButton(
             ICON_PATH_PLUS,
             _isServerConnected ? () {
@@ -1789,6 +1601,7 @@ class _HomePageState extends State<HomePage> {
             } : null,
           ),
           SizedBox(width: 12 * widthScale),
+          // 4. ZOOM OUT button remains the same
           _buildIconBottomBarButton(
             ICON_PATH_MINUS,
             _isServerConnected ? () {
@@ -1854,39 +1667,6 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
-
-  // Make the onPressed parameter nullable by adding '?'
-  // Widget _buildWideBottomBarButton(String label, String iconPath, List<Color> gradientColors, VoidCallback? onPressed) {
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final heightScale = screenHeight / 1080.0;
-  //   final widthScale = screenWidth / 1920.0;
-  //   final bool isEnabled = onPressed != null;
-  //
-  //   return GestureDetector(
-  //     onTap: onPressed,
-  //     child: Opacity(
-  //       opacity: isEnabled ? 1.0 : 0.5,
-  //       child: Container(
-  //         constraints: BoxConstraints(minWidth: 220 * widthScale),
-  //         height: 80 * heightScale,
-  //         padding: const EdgeInsets.symmetric(horizontal: 74),
-  //         decoration: BoxDecoration(
-  //           gradient: LinearGradient(colors: gradientColors, begin: Alignment.topCenter, end: Alignment.bottomCenter),
-  //           borderRadius: BorderRadius.circular(25 * heightScale),
-  //         ),
-  //         child: Row(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           children: [
-  //             Image.asset(iconPath, height: 36 * heightScale),
-  //             const SizedBox(width: 12),
-  //             Text(label, style: TextStyle(fontFamily: 'NotoSans', fontWeight: FontWeight.w700, fontSize: 36 * heightScale, color: Colors.white)),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   // --- THIS IS THE CORRECTED WIDE BUTTON BUILDER ---
   Widget _buildWideBottomBarButton({
@@ -2058,9 +1838,14 @@ class _HomePageState extends State<HomePage> {
     // --- THIS IS THE FIX ---
     // No matter what happens (success or error), the switching process is now over.
     // So, we unlock the button.
-    setState(() {
-      _isSwitchingCamera = false; // 2. Unlock the button
-    });
+    // setState(() {
+    //   _isSwitchingCamera = false; // 2. Unlock the button
+    // });
+    if (_isSwitchingCamera) {
+      setState(() {
+        _isSwitchingCamera = false; // 2. Unlock the button
+      });
+    }
     // --- END OF FIX ---
 
     switch (call.method) {
@@ -2074,22 +1859,70 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // void _retryStream() {
+  //   if (_currentCameraIndex == -1) {
+  //     print("Retry failed: No camera index selected.");
+  //     return;
+  //   }
+  //   print("Retrying stream for camera index: $_currentCameraIndex");
+  //
+  //   setState(() {
+  //     _gstreamerViewKey = UniqueKey(); // This is the MOST IMPORTANT line. It forces the widget to be destroyed and recreated.
+  //     _isGStreamerReady = false;
+  //     _isGStreamerLoading = true; // Show the loading spinner again
+  //     _gstreamerHasError = false; // Clear the error state
+  //     _errorMessage = null;
+  //   });
+  // }
+
   void _retryStream() {
     if (_currentCameraIndex == -1) {
       print("Retry failed: No camera index selected.");
       return;
     }
-    print("Retrying stream for camera index: $_currentCameraIndex");
+    print("Retrying stream via full native reset for camera index: $_currentCameraIndex");
 
-    setState(() {
-      _gstreamerViewKey = UniqueKey(); // This is the MOST IMPORTANT line. It forces the widget to be destroyed and recreated.
-      _isGStreamerReady = false;
-      _isGStreamerLoading = true; // Show the loading spinner again
-      _gstreamerHasError = false; // Clear the error state
-      _errorMessage = null;
-    });
+    // --- THIS IS THE FIX ---
+    // Instead of calling _switchCamera, we now have a dedicated path for retrying
+    // that calls a new, more powerful native reset method.
+    if (_gstreamerChannel != null && _isGStreamerReady) {
+      setState(() {
+        _isGStreamerLoading = true;
+        _gstreamerHasError = false;
+        _errorMessage = null;
+      });
+
+      // Start the timeout timer for the retry attempt
+      _streamTimeoutTimer?.cancel();
+      _streamTimeoutTimer = Timer(const Duration(seconds: 8), () {
+        if (mounted && _isGStreamerLoading) {
+          setState(() {
+            _gstreamerHasError = true;
+            _errorMessage = "Connection timed out.";
+            _isGStreamerLoading = false;
+          });
+        }
+      });
+
+      try {
+        final String url = _cameraUrls[_currentCameraIndex];
+        // Call the new native method
+        _gstreamerChannel!.invokeMethod('resetAndRestartStream', {'url': url});
+      } catch (e) {
+        _streamTimeoutTimer?.cancel();
+        if (mounted) {
+          setState(() {
+            _gstreamerHasError = true;
+            _errorMessage = "Failed to retry stream: ${e.toString()}";
+            _isGStreamerLoading = false;
+          });
+        }
+      }
+    } else {
+      // Fallback if the channel isn't ready for some reason, do a full widget rebuild
+      _switchCamera(_currentCameraIndex);
+    }
   }
-
 
   Future<void> _loadSettingsAndInitialize() async {
     _robotIpAddress = await _settingsService.loadIpAddress();
@@ -2112,13 +1945,24 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {}
   }
 
+  // Future<void> _sendTouchPacket(TouchCoord coord) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     const int TOUCH_PORT = 65433;
+  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  //     socket.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
+  //     socket.close();
+  //     print('Sent Touch Packet (UDP): X=${coord.x}, Y=${coord.y}');
+  //   } catch (e) {
+  //     print('Error sending touch UDP packet: $e');
+  //   }
+  // }
+
   Future<void> _sendTouchPacket(TouchCoord coord) async {
-    if (_robotIpAddress.isEmpty) return;
+    if (_robotIpAddress.isEmpty || _touchSocket == null) return;
     try {
       const int TOUCH_PORT = 65433;
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
-      socket.close();
+      _touchSocket!.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
       print('Sent Touch Packet (UDP): X=${coord.x}, Y=${coord.y}');
     } catch (e) {
       print('Error sending touch UDP packet: $e');
@@ -2132,36 +1976,100 @@ class _HomePageState extends State<HomePage> {
     _isGStreamerReady = false;
   }
 
+  // Future<void> _switchCamera(int index) async {
+  //   // If a switch is already in progress, do nothing.
+  //   if (_isSwitchingCamera) {
+  //     print("Camera switch already in progress. Ignoring request.");
+  //     return;
+  //   }
+  //   // --- END OF FIX ---
+  //
+  //   if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
+  //   if (index == _currentCameraIndex && !_gstreamerHasError) return;
+  //
+  //   setState(() {
+  //     _isSwitchingCamera = true; // 1. Lock the button
+  //     _isGStreamerLoading = true; // Show loading indicator immediately
+  //   });
+  //
+  //
+  //   if (_gstreamerChannel != null && _isGStreamerReady) {
+  //     try { await _gstreamerChannel!.invokeMethod('stopStream'); } catch (e) {}
+  //   }
+  //   setState(() {
+  //     _currentCameraIndex = index;
+  //     _gstreamerViewKey = UniqueKey();
+  //     _isGStreamerReady = false;
+  //     _isGStreamerLoading = true;
+  //     _gstreamerHasError = false;
+  //     _errorMessage = null;
+  //   });
+  // }
+
   Future<void> _switchCamera(int index) async {
     // If a switch is already in progress, do nothing.
     if (_isSwitchingCamera) {
       print("Camera switch already in progress. Ignoring request.");
       return;
     }
-    // --- END OF FIX ---
-
     if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
     if (index == _currentCameraIndex && !_gstreamerHasError) return;
 
-    setState(() {
-      _isSwitchingCamera = true; // 1. Lock the button
-      _isGStreamerLoading = true; // Show loading indicator immediately
-    });
+    // --- THIS IS THE FIX ---
+    // The logic is now centralized here for both initial load and subsequent switches.
 
-
-    if (_gstreamerChannel != null && _isGStreamerReady) {
-      try { await _gstreamerChannel!.invokeMethod('stopStream'); } catch (e) {}
-    }
+    // 1. Immediately set the loading and switching state.
     setState(() {
-      _currentCameraIndex = index;
-      _gstreamerViewKey = UniqueKey();
-      _isGStreamerReady = false;
+      _isSwitchingCamera = true;
       _isGStreamerLoading = true;
-      _gstreamerHasError = false;
+      _currentCameraIndex = index;
+      _gstreamerHasError = false; // Clear any previous error
       _errorMessage = null;
     });
-  }
 
+    // 2. ALWAYS start the timeout timer. This is our safety net.
+    _streamTimeoutTimer?.cancel(); // Cancel any previous timer
+    _streamTimeoutTimer = Timer(const Duration(seconds: 8), () {
+      // If, after 8 seconds, we are still in a loading state...
+      if (mounted && _isGStreamerLoading) {
+        print("Stream connection timed out.");
+        // ...force the UI into an error state.
+        setState(() {
+          _gstreamerHasError = true;
+          _errorMessage = "Connection timed out.";
+          _isGStreamerLoading = false;
+          _isSwitchingCamera = false; // Unlock the camera switch flag
+        });
+      }
+    });
+
+    // 3. Decide whether to create a new view or change the stream on the existing one.
+    if (_gstreamerChannel != null && _isGStreamerReady) {
+      // PATH A: View already exists, just change the stream.
+      try {
+        final String url = _cameraUrls[index];
+        await _gstreamerChannel!.invokeMethod('changeStream', {'url': url});
+      } catch (e) {
+        _streamTimeoutTimer?.cancel(); // Stop the timer if the call fails instantly
+        if (mounted) {
+          setState(() {
+            _gstreamerHasError = true;
+            _errorMessage = "Failed to switch camera: ${e.toString()}";
+            _isGStreamerLoading = false;
+            _isSwitchingCamera = false;
+          });
+        }
+      }
+    } else {
+      // PATH B: This is the first load, so we need to recreate the widget.
+      setState(() {
+        _gstreamerViewKey = UniqueKey();
+      });
+      // The rest of the logic will be handled by _onGStreamerPlatformViewCreated
+      // and _playCurrentCameraStream, which will start its own stream attempt.
+      // Our timeout timer here serves as a backup for this path as well.
+    }
+  }
 
   void _onGStreamerPlatformViewCreated(int id) {
     _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
@@ -2200,6 +2108,33 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Widget _buildStreamOverlay() {
+  //   if (_isGStreamerLoading) {
+  //     return Container(
+  //       color: Colors.black.withOpacity(0.5),
+  //       child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: Colors.white), SizedBox(height: 20), Text('Connecting to stream...', style: TextStyle(color: Colors.white, fontSize: 18))])),
+  //     );
+  //   }
+  //   if (_gstreamerHasError) {
+  //     return Container(
+  //       color: Colors.black.withOpacity(0.7),
+  //       child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+  //         const Icon(Icons.error_outline, color: Colors.redAccent, size: 70),
+  //         const SizedBox(height: 20),
+  //         Padding(padding: const EdgeInsets.symmetric(horizontal: 40.0), child: Text(_errorMessage ?? 'Stream failed to load.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 20))),
+  //         const SizedBox(height: 30),
+  //         ElevatedButton.icon(
+  //           icon: const Icon(Icons.refresh),
+  //           label: const Text('Retry'),
+  //           onPressed: () { if (_currentCameraIndex != -1) _switchCamera(_currentCameraIndex); },
+  //           style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.blueGrey, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+  //         ),
+  //       ])),
+  //     );
+  //   }
+  //   return const SizedBox.shrink();
+  // }
+
   Widget _buildStreamOverlay() {
     if (_isGStreamerLoading) {
       return Container(
@@ -2211,14 +2146,12 @@ class _HomePageState extends State<HomePage> {
       return Container(
         color: Colors.black.withOpacity(0.7),
         child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 70),
-          const SizedBox(height: 20),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 40.0), child: Text(_errorMessage ?? 'Stream failed to load.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 20))),
+          // ... (icon and text are unchanged)
           const SizedBox(height: 30),
           ElevatedButton.icon(
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
-            onPressed: () { if (_currentCameraIndex != -1) _switchCamera(_currentCameraIndex); },
+            onPressed: _retryStream, // <-- USE THE NEW RETRY FUNCTION
             style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.blueGrey, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ])),
