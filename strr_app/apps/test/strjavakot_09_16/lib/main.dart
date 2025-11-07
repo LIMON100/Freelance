@@ -118,6 +118,14 @@ class _HomePageState extends State<HomePage> {
 
   bool _wasGamepadActive = false;
 
+  // --- ADD THESE LINES ---
+  RawDatagramSocket? _drivingSocket;
+  RawDatagramSocket? _touchSocket;
+  // --- END OF ADD ---
+
+  Socket? _commandSocket;
+
+
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -144,6 +152,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     WakelockPlus.enable();
+    _initializeSockets();
 
     _loadSettingsAndInitialize();
     platform.setMethodCallHandler(_handleGamepadEvent);
@@ -151,15 +160,29 @@ class _HomePageState extends State<HomePage> {
     _startWifiSignalChecker();
   }
 
+  // --- ADD THIS ENTIRE NEW FUNCTION ---
+  Future<void> _initializeSockets() async {
+    try {
+      _drivingSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      _touchSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      print("UDP Sockets initialized successfully.");
+    } catch (e) {
+      print("Error initializing UDP sockets: $e");
+    }
+  }
+// --- END OF NEW FUNCTION ---
+
   @override
   void dispose() {
-    // --- THIS IS THE FIX ---
-    // Use the WakelockPlus class
     WakelockPlus.disable();
-    // --- END OF FIX ---
-
     _commandTimer?.cancel();
-    _wifiSignalTimer?.cancel(); // <-- ADD THIS CALL
+    _wifiSignalTimer?.cancel();
+
+    _drivingSocket?.close(); // <-- ADD THIS
+    _touchSocket?.close();   // <-- ADD THIS
+
+    _commandSocket?.destroy(); // <-- ADD THIS LINE
+
     _stopGStreamer();
     _transformationController.dispose();
     _statusSocketSubscription?.cancel();
@@ -167,6 +190,49 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  Future<void> _connectCommandServer() async {
+    if (_robotIpAddress.isEmpty || _commandSocket != null) return;
+
+    print("Attempting to connect to command server...");
+    try {
+      _commandSocket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(seconds: 3));
+      print("Connected to command server!");
+
+      // Listen for data (optional) and errors/disconnections
+      _commandSocket!.listen(
+            (Uint8List data) {
+          // Server doesn't send data back on this channel, so we can ignore this.
+        },
+        onError: (error) {
+          print("Command socket error: $error");
+          _handleCommandDisconnect();
+        },
+        onDone: () {
+          print("Command server disconnected.");
+          _handleCommandDisconnect();
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      print("Failed to connect to command server: $e");
+      _handleCommandDisconnect();
+    }
+  }
+
+// ADD THIS NEW DISCONNECT HANDLER
+  void _handleCommandDisconnect() {
+    if (!mounted) return;
+
+    _commandSocket?.destroy();
+    _commandSocket = null;
+
+    // Attempt to reconnect after a delay
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        _connectCommandServer();
+      }
+    });
+  }
 
   String _getWifiIconPath() {
     switch (_wifiSignalLevel) {
@@ -829,15 +895,25 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Future<void> _sendDrivingPacket(DrivingCommand command) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     const int DRIVING_PORT = 65434; // The new port for driving
+  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  //     socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
+  //     socket.close();
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
+
   Future<void> _sendDrivingPacket(DrivingCommand command) async {
-    if (_robotIpAddress.isEmpty) return;
+    if (_robotIpAddress.isEmpty || _drivingSocket == null) return;
     try {
-      const int DRIVING_PORT = 65434; // The new port for driving
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
-      socket.close();
+      const int DRIVING_PORT = 65434;
+      _drivingSocket!.send(command.toBytes(), InternetAddress(_robotIpAddress), DRIVING_PORT);
     } catch (e) {
-      print(e);
+      print("Error sending driving packet: $e");
     }
   }
 
@@ -1831,51 +1907,123 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // void _retryStream() {
+  //   if (_currentCameraIndex == -1) {
+  //     print("Retry failed: No camera index selected.");
+  //     return;
+  //   }
+  //   print("Retrying stream for camera index: $_currentCameraIndex");
+  //
+  //   setState(() {
+  //     _gstreamerViewKey = UniqueKey(); // This is the MOST IMPORTANT line. It forces the widget to be destroyed and recreated.
+  //     _isGStreamerReady = false;
+  //     _isGStreamerLoading = true; // Show the loading spinner again
+  //     _gstreamerHasError = false; // Clear the error state
+  //     _errorMessage = null;
+  //   });
+  // }
+
   void _retryStream() {
     if (_currentCameraIndex == -1) {
       print("Retry failed: No camera index selected.");
       return;
     }
-    print("Retrying stream for camera index: $_currentCameraIndex");
+    print("Retrying stream via full native reset for camera index: $_currentCameraIndex");
 
-    setState(() {
-      _gstreamerViewKey = UniqueKey(); // This is the MOST IMPORTANT line. It forces the widget to be destroyed and recreated.
-      _isGStreamerReady = false;
-      _isGStreamerLoading = true; // Show the loading spinner again
-      _gstreamerHasError = false; // Clear the error state
-      _errorMessage = null;
-    });
+    // --- THIS IS THE FIX ---
+    // Instead of calling _switchCamera, we now have a dedicated path for retrying
+    // that calls a new, more powerful native reset method.
+    if (_gstreamerChannel != null && _isGStreamerReady) {
+      setState(() {
+        _isGStreamerLoading = true;
+        _gstreamerHasError = false;
+        _errorMessage = null;
+      });
+
+      // Start the timeout timer for the retry attempt
+      _streamTimeoutTimer?.cancel();
+      _streamTimeoutTimer = Timer(const Duration(seconds: 8), () {
+        if (mounted && _isGStreamerLoading) {
+          setState(() {
+            _gstreamerHasError = true;
+            _errorMessage = "Connection timed out.";
+            _isGStreamerLoading = false;
+          });
+        }
+      });
+
+      try {
+        final String url = _cameraUrls[_currentCameraIndex];
+        // Call the new native method
+        _gstreamerChannel!.invokeMethod('resetAndRestartStream', {'url': url});
+      } catch (e) {
+        _streamTimeoutTimer?.cancel();
+        if (mounted) {
+          setState(() {
+            _gstreamerHasError = true;
+            _errorMessage = "Failed to retry stream: ${e.toString()}";
+            _isGStreamerLoading = false;
+          });
+        }
+      }
+    } else {
+      // Fallback if the channel isn't ready for some reason, do a full widget rebuild
+      _switchCamera(_currentCameraIndex);
+    }
   }
-
 
   Future<void> _loadSettingsAndInitialize() async {
     _robotIpAddress = await _settingsService.loadIpAddress();
     _cameraUrls = await _settingsService.loadCameraUrls();
     if (mounted) {
-      _connectToStatusServer(); // <-- ADD THIS CALL
+      _connectToStatusServer();
+      _connectCommandServer(); // <-- ADD THIS CALL
       _switchCamera(0);
       _startCommandTimer();
       setState(() => _isLoading = false);
     }
   }
 
+  // Future<void> _sendCommandPacket(UserCommand command) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
+  //     socket.add(command.toBytes());
+  //     await socket.flush();
+  //     socket.close();
+  //   } catch (e) {}
+  // }
+
   Future<void> _sendCommandPacket(UserCommand command) async {
-    if (_robotIpAddress.isEmpty) return;
-    try {
-      final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
-      socket.add(command.toBytes());
-      await socket.flush();
-      socket.close();
-    } catch (e) {}
+    if (_commandSocket != null) {
+      try {
+        _commandSocket!.add(command.toBytes());
+        await _commandSocket!.flush();
+      } catch (e) {
+        print("Error sending command packet: $e");
+        // The socket's own error handler will trigger the reconnect logic.
+      }
+    }
   }
 
+  // Future<void> _sendTouchPacket(TouchCoord coord) async {
+  //   if (_robotIpAddress.isEmpty) return;
+  //   try {
+  //     const int TOUCH_PORT = 65433;
+  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  //     socket.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
+  //     socket.close();
+  //     print('Sent Touch Packet (UDP): X=${coord.x}, Y=${coord.y}');
+  //   } catch (e) {
+  //     print('Error sending touch UDP packet: $e');
+  //   }
+  // }
+
   Future<void> _sendTouchPacket(TouchCoord coord) async {
-    if (_robotIpAddress.isEmpty) return;
+    if (_robotIpAddress.isEmpty || _touchSocket == null) return;
     try {
       const int TOUCH_PORT = 65433;
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
-      socket.close();
+      _touchSocket!.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
       print('Sent Touch Packet (UDP): X=${coord.x}, Y=${coord.y}');
     } catch (e) {
       print('Error sending touch UDP packet: $e');
@@ -1889,36 +2037,100 @@ class _HomePageState extends State<HomePage> {
     _isGStreamerReady = false;
   }
 
+  // Future<void> _switchCamera(int index) async {
+  //   // If a switch is already in progress, do nothing.
+  //   if (_isSwitchingCamera) {
+  //     print("Camera switch already in progress. Ignoring request.");
+  //     return;
+  //   }
+  //   // --- END OF FIX ---
+  //
+  //   if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
+  //   if (index == _currentCameraIndex && !_gstreamerHasError) return;
+  //
+  //   setState(() {
+  //     _isSwitchingCamera = true; // 1. Lock the button
+  //     _isGStreamerLoading = true; // Show loading indicator immediately
+  //   });
+  //
+  //
+  //   if (_gstreamerChannel != null && _isGStreamerReady) {
+  //     try { await _gstreamerChannel!.invokeMethod('stopStream'); } catch (e) {}
+  //   }
+  //   setState(() {
+  //     _currentCameraIndex = index;
+  //     _gstreamerViewKey = UniqueKey();
+  //     _isGStreamerReady = false;
+  //     _isGStreamerLoading = true;
+  //     _gstreamerHasError = false;
+  //     _errorMessage = null;
+  //   });
+  // }
+
   Future<void> _switchCamera(int index) async {
     // If a switch is already in progress, do nothing.
     if (_isSwitchingCamera) {
       print("Camera switch already in progress. Ignoring request.");
       return;
     }
-    // --- END OF FIX ---
-
     if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
     if (index == _currentCameraIndex && !_gstreamerHasError) return;
 
-    setState(() {
-      _isSwitchingCamera = true; // 1. Lock the button
-      _isGStreamerLoading = true; // Show loading indicator immediately
-    });
+    // --- THIS IS THE FIX ---
+    // The logic is now centralized here for both initial load and subsequent switches.
 
-
-    if (_gstreamerChannel != null && _isGStreamerReady) {
-      try { await _gstreamerChannel!.invokeMethod('stopStream'); } catch (e) {}
-    }
+    // 1. Immediately set the loading and switching state.
     setState(() {
-      _currentCameraIndex = index;
-      _gstreamerViewKey = UniqueKey();
-      _isGStreamerReady = false;
+      _isSwitchingCamera = true;
       _isGStreamerLoading = true;
-      _gstreamerHasError = false;
+      _currentCameraIndex = index;
+      _gstreamerHasError = false; // Clear any previous error
       _errorMessage = null;
     });
-  }
 
+    // 2. ALWAYS start the timeout timer. This is our safety net.
+    _streamTimeoutTimer?.cancel(); // Cancel any previous timer
+    _streamTimeoutTimer = Timer(const Duration(seconds: 8), () {
+      // If, after 8 seconds, we are still in a loading state...
+      if (mounted && _isGStreamerLoading) {
+        print("Stream connection timed out.");
+        // ...force the UI into an error state.
+        setState(() {
+          _gstreamerHasError = true;
+          _errorMessage = "Connection timed out.";
+          _isGStreamerLoading = false;
+          _isSwitchingCamera = false; // Unlock the camera switch flag
+        });
+      }
+    });
+
+    // 3. Decide whether to create a new view or change the stream on the existing one.
+    if (_gstreamerChannel != null && _isGStreamerReady) {
+      // PATH A: View already exists, just change the stream.
+      try {
+        final String url = _cameraUrls[index];
+        await _gstreamerChannel!.invokeMethod('changeStream', {'url': url});
+      } catch (e) {
+        _streamTimeoutTimer?.cancel(); // Stop the timer if the call fails instantly
+        if (mounted) {
+          setState(() {
+            _gstreamerHasError = true;
+            _errorMessage = "Failed to switch camera: ${e.toString()}";
+            _isGStreamerLoading = false;
+            _isSwitchingCamera = false;
+          });
+        }
+      }
+    } else {
+      // PATH B: This is the first load, so we need to recreate the widget.
+      setState(() {
+        _gstreamerViewKey = UniqueKey();
+      });
+      // The rest of the logic will be handled by _onGStreamerPlatformViewCreated
+      // and _playCurrentCameraStream, which will start its own stream attempt.
+      // Our timeout timer here serves as a backup for this path as well.
+    }
+  }
 
   void _onGStreamerPlatformViewCreated(int id) {
     _gstreamerChannel = MethodChannel('gstreamer_channel_$id');
@@ -1957,6 +2169,33 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Widget _buildStreamOverlay() {
+  //   if (_isGStreamerLoading) {
+  //     return Container(
+  //       color: Colors.black.withOpacity(0.5),
+  //       child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: Colors.white), SizedBox(height: 20), Text('Connecting to stream...', style: TextStyle(color: Colors.white, fontSize: 18))])),
+  //     );
+  //   }
+  //   if (_gstreamerHasError) {
+  //     return Container(
+  //       color: Colors.black.withOpacity(0.7),
+  //       child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+  //         const Icon(Icons.error_outline, color: Colors.redAccent, size: 70),
+  //         const SizedBox(height: 20),
+  //         Padding(padding: const EdgeInsets.symmetric(horizontal: 40.0), child: Text(_errorMessage ?? 'Stream failed to load.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 20))),
+  //         const SizedBox(height: 30),
+  //         ElevatedButton.icon(
+  //           icon: const Icon(Icons.refresh),
+  //           label: const Text('Retry'),
+  //           onPressed: () { if (_currentCameraIndex != -1) _switchCamera(_currentCameraIndex); },
+  //           style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.blueGrey, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+  //         ),
+  //       ])),
+  //     );
+  //   }
+  //   return const SizedBox.shrink();
+  // }
+
   Widget _buildStreamOverlay() {
     if (_isGStreamerLoading) {
       return Container(
@@ -1968,14 +2207,12 @@ class _HomePageState extends State<HomePage> {
       return Container(
         color: Colors.black.withOpacity(0.7),
         child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 70),
-          const SizedBox(height: 20),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 40.0), child: Text(_errorMessage ?? 'Stream failed to load.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 20))),
+          // ... (icon and text are unchanged)
           const SizedBox(height: 30),
           ElevatedButton.icon(
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
-            onPressed: () { if (_currentCameraIndex != -1) _switchCamera(_currentCameraIndex); },
+            onPressed: _retryStream, // <-- USE THE NEW RETRY FUNCTION
             style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.blueGrey, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ])),
