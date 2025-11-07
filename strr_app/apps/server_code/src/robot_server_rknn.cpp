@@ -420,7 +420,7 @@
 
 
 
-//10_30
+//11_07
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>
 #include <iostream>
@@ -486,7 +486,7 @@ std::mutex command_queue_mutex;
 std::atomic<uint8_t> g_rtsp_server_status(0);
 std::atomic<uint8_t> g_active_mode_id(0);
 
-// --- CORRECTED: Shutdown and GStreamer Loop Management ---
+// Shutdown and GStreamer Loop Management ---
 GMainLoop *g_main_loop = nullptr;
 std::atomic<bool> g_shutdown_request(false);
 int g_shutdown_pipe[2]; // Self-pipe for clean signal handling
@@ -504,6 +504,11 @@ void signalHandler(int signum) {
     }
 }
 
+
+// =========================================================================
+//  HELPER FUNCTION FOR ROBUST TCP READ
+// =========================================================================
+
 bool read_full(int socket, void* buffer, size_t size) {
     char* ptr = static_cast<char*>(buffer);
     size_t bytes_left = size;
@@ -516,8 +521,9 @@ bool read_full(int socket, void* buffer, size_t size) {
     return true;
 }
 
-// --- ALL SERVER THREADS ARE NOW NON-BLOCKING ---
-
+// =========================================================================
+//  THREAD 4: STATE COMMAND SERVER (TCP, App -> Server) - CORRECTED
+// =========================================================================
 void commandServerThread() {
     int server_fd;
     struct sockaddr_in address;
@@ -527,36 +533,61 @@ void commandServerThread() {
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
     address.sin_family = AF_INET; address.sin_addr.s_addr = INADDR_ANY; address.sin_port = htons(COMMAND_PORT);
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { perror("Command TCP: bind"); close(server_fd); return; }
-    if (listen(server_fd, 5) < 0) { perror("Command TCP: listen"); close(server_fd); return; }
-    
+    if (listen(server_fd, 1) < 0) { perror("Command TCP: listen"); close(server_fd); return; }
+
     std::cout << "[Command TCP Thread] Listening on port " << COMMAND_PORT << std::endl;
+
     while (!g_shutdown_request.load()) {
-        fd_set read_fds;
-        FD_ZERO(&read_fds);
-        FD_SET(server_fd, &read_fds);
-        FD_SET(g_shutdown_pipe[0], &read_fds); // Monitor shutdown pipe
+        // --- FIX: This outer loop now waits for a new client to connect ---
+        fd_set accept_fds;
+        FD_ZERO(&accept_fds);
+        FD_SET(server_fd, &accept_fds);
+        FD_SET(g_shutdown_pipe[0], &accept_fds);
         int max_fd = std::max(server_fd, g_shutdown_pipe[0]);
         struct timeval timeout = {1, 0}; // 1 second timeout
 
-        if (select(max_fd + 1, &read_fds, NULL, NULL, &timeout) > 0) {
-            if (FD_ISSET(server_fd, &read_fds)) {
-                int new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen);
-                if (new_socket >= 0) {
-                    StateCommand received_state;
-                    if (read_full(new_socket, &received_state, sizeof(StateCommand))) {
-                        GenericCommand cmd = {STATE_CHANGE, {.state = received_state}};
-                        std::lock_guard<std::mutex> lock(command_queue_mutex);
-                        command_queue.push(cmd);
-                    }
-                    close(new_socket);
-                }
+        int activity = select(max_fd + 1, &accept_fds, NULL, NULL, &timeout);
+
+        if (activity <= 0) { // Timeout or error
+            continue;
+        }
+
+        if (FD_ISSET(g_shutdown_pipe[0], &accept_fds)) {
+            // Shutdown signal received
+            break;
+        }
+
+        int client_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen);
+        if (client_socket < 0) {
+            continue; // Error on accept
+        }
+
+        std::cout << "[Command TCP Thread] Client connected." << std::endl;
+
+        // --- FIX: This new inner loop handles the connected client ---
+        while (!g_shutdown_request.load()) {
+            StateCommand received_state;
+            // read_full will return false if the client disconnects or there's an error
+            if (read_full(client_socket, &received_state, sizeof(StateCommand))) {
+                GenericCommand cmd = {STATE_CHANGE, {.state = received_state}};
+                std::lock_guard<std::mutex> lock(command_queue_mutex);
+                command_queue.push(cmd);
+            } else {
+                // Client disconnected, break the inner loop to wait for a new client
+                std::cout << "[Command TCP Thread] Client disconnected." << std::endl;
+                break;
             }
         }
+        close(client_socket);
     }
+
     close(server_fd);
     std::cout << "[Command TCP Thread] Shut down." << std::endl;
 }
 
+// // =========================================================================
+// //  THREAD 1: STATUS SERVER (TCP, Server -> App)
+// // =========================================================================
 void statusServerThread() {
     int server_fd, client_socket = -1;
     struct sockaddr_in address;
@@ -604,6 +635,10 @@ void statusServerThread() {
     std::cout << "[Status TCP Thread] Shut down." << std::endl;
 }
 
+
+// // =========================================================================
+// //  THREAD 2: DRIVING SERVER (UDP, App -> Server)
+// // =========================================================================
 void drivingServerThread() {
     int server_fd;
     if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { perror("Driving UDP: socket"); return; }
@@ -633,6 +668,10 @@ void drivingServerThread() {
     std::cout << "[Driving UDP Thread] Shut down." << std::endl;
 }
 
+
+// // =========================================================================
+// //  THREAD 3: TOUCH SERVER (UDP, App -> Server)
+// // =========================================================================
 void touchServerThread() {
     int server_fd;
     if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { perror("Touch UDP: socket"); return; }
@@ -662,6 +701,10 @@ void touchServerThread() {
     std::cout << "[Touch UDP Thread] Shut down." << std::endl;
 }
 
+
+// // =========================================================================
+// //  THREAD 5: COMMAND PROCESSING WORKER
+// // =========================================================================
 void commandProcessingThread() {
     std::cout << "[Processing Thread] Worker thread started." << std::endl;
     while (!g_shutdown_request.load()) {
@@ -708,6 +751,10 @@ void commandProcessingThread() {
     std::cout << "[Processing Thread] Shut down." << std::endl;
 }
 
+
+// // =========================================================================
+// //  THREAD 6: RTSP SERVER
+// // =========================================================================
 void rtspServerThread() {
     g_main_loop = g_main_loop_new(NULL, FALSE);
     GstRTSPServer *server = gst_rtsp_server_new();
@@ -777,3 +824,4 @@ int main(int argc, char *argv[]) {
     std::cout << "[Main Thread] All threads have been joined. Exiting." << std::endl;
     return 0;
 }
+
