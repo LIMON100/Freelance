@@ -1,4 +1,3 @@
-// lib/CommandIds.dart
 class CommandIds {
   static const int IDLE = 0;
   static const int DRIVING = 1;

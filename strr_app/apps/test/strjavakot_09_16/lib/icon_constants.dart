@@ -75,22 +75,30 @@ const String ICON_PATH_ATTACK_VIEW_INACTIVE = 'assets/new_icons/03_Main_r_attack
 // const String ICON_PATH_ATTACK_VIEW_ACTIVE = 'assets/new_icons/day_view_bu_on.png';
 // const String ICON_PATH_NIGHT_VIEW = 'assets/new_icons/night_view_bu_on.png';
 
-const String ICON_PATH_DAY_VIEW_INACTIVE = 'assets/new_icons/day_view_bu_off.png';
-const String ICON_PATH_DAY_VIEW_ACTIVE = 'assets/new_icons/day_view_bu_on.png';
+// const String ICON_PATH_DAY_VIEW_INACTIVE = 'assets/new_icons/day_view_bu_off.png';
+// const String ICON_PATH_DAY_VIEW_ACTIVE = 'assets/new_icons/day_view_bu_on.png';
+//
+// const String ICON_PATH_NIGHT_VIEW_INACTIVE = 'assets/new_icons/night_view_bu_off.png';
+// const String ICON_PATH_NIGHT_VIEW_ACTIVE = 'assets/new_icons/night_view_bu_on.png';
 
-const String ICON_PATH_NIGHT_VIEW_INACTIVE = 'assets/new_icons/night_view_bu_off.png';
-const String ICON_PATH_NIGHT_VIEW_ACTIVE = 'assets/new_icons/night_view_bu_on.png';
+const String ICON_PATH_DAY_VIEW_INACTIVE = 'assets/new_icons/camview.png';
+const String ICON_PATH_DAY_VIEW_ACTIVE = 'assets/new_icons/camview2.png';
+
+const String ICON_PATH_NIGHT_VIEW_INACTIVE = 'assets/new_icons/IRview.png';
+const String ICON_PATH_NIGHT_VIEW_ACTIVE = 'assets/new_icons/IRview2.png';
 
 
 const String ICON_PATH_SETTINGS = 'assets/icons/03_Main_r_setting_icon_off.png';
 
 // --- Bottom Bar Icons ---
 const String ICON_PATH_PERMISSION_ATTACK = 'assets/new_icons/03_Main_D_Attack_Icon_off.png'; // New name for clarity
-const String ICON_PATH_START = 'assets/new_icons/04_Main_start_bu_icon_on.png';
+// const String ICON_PATH_START = 'assets/new_icons/04_Main_start_bu_icon_on.png';
+const String ICON_PATH_START = 'assets/new_icons/04_Main_start_bu_icon_off.png';
 const String ICON_PATH_STOP = 'assets/new_icons/04_Main_stop_bu_icon_off.png';
 const String ICON_PATH_PLUS = 'assets/new_icons/03_Main_D_Zoom_In_Icon_off.png';
 const String ICON_PATH_MINUS = 'assets/new_icons/03_Main_D_Zoom_Out_Icon_off.png';
 const String ICON_PATH_EXIT = 'assets/new_icons/03_Main_D_Exit_Icon_off.png';
+const String ICON_PATH_EXIT_BACKGROUND = 'assets/new_icons/03_Main_D_Exit_BG_off.png';
 const String ICON_PATH_WIFI = 'assets/new_icons/03_Main_sen4.png';
 
 // --- Directional Arrow Icons ---
@@ -113,3 +121,21 @@ const String ICON_PATH_WIND_SW = 'assets/new_icons/wind_06.png'; // South-West
 const String ICON_PATH_WIND_W  = 'assets/new_icons/wind_07.png'; // West
 const String ICON_PATH_WIND_NW = 'assets/new_icons/wind_08.png'; // North-West
 
+
+// in icon_constants.dart
+const String ICON_PATH_WIFI_0 = 'assets/new_icons/03_Main_sen0.png';
+const String ICON_PATH_WIFI_1 = 'assets/new_icons/03_Main_sen1.png';
+const String ICON_PATH_WIFI_2 = 'assets/new_icons/03_Main_sen2.png';
+const String ICON_PATH_WIFI_3 = 'assets/new_icons/03_Main_sen3.png';
+const String ICON_PATH_WIFI_4 = 'assets/new_icons/03_Main_sen4.png';
+
+
+// NEW: Backgrounds for the Permission Button
+// const String ICON_PATH_PERMISSION_BLUE = 'assets/new_icons/03_Main_D_Exit_BG_off.png';
+// const String ICON_PATH_PERMISSION_RED = 'assets/new_icons/04_Main_permission_to_attack_bu_off.png';
+// const String ICON_PATH_PERMISSION_GREEN = 'assets/new_icons/04_Main_start_bu_off.png';
+
+
+const String ICON_PATH_PERMISSION_BLUE = 'assets/new_icons/newblue.png';
+const String ICON_PATH_PERMISSION_RED = 'assets/new_icons/red3.png';
+const String ICON_PATH_PERMISSION_GREEN = 'assets/new_icons/green.png';

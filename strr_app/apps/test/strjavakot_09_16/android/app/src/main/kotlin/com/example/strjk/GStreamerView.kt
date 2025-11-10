@@ -50,6 +50,36 @@ internal class GStreamerView(
         nativeFinalize()
     }
 
+//    override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+//        when (call.method) {
+//            "startStream" -> {
+//                val url = call.argument<String>("url")
+//                if (url != null) {
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+//                    Log.d(TAG, "Initializing native with pipeline: $gstDesc")
+//                    nativeInit(gstDesc)
+//                    is_playing_desired = true
+//                    result.success(null)
+//                } else {
+//                    result.error("INVALID_ARGS", "URL is null", null)
+//                }
+//            }
+//            "stopStream" -> {
+//                Log.d(TAG, "Stopping stream.")
+//                is_playing_desired = false
+//                nativePause()
+//                nativeFinalize() // Finalize to clean up the old pipeline
+//                nativeControllerInit() // Re-initialize for the next stream
+//                result.success(null)
+//            }
+//            "isStreamActive" -> {
+//                result.success(is_playing_desired)
+//            }
+//            else -> result.notImplemented()
+//        }
+//    }
+
+    // In your GStreamerView.kt file
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "startStream" -> {
@@ -61,20 +91,78 @@ internal class GStreamerView(
                     is_playing_desired = true
                     result.success(null)
                 } else {
-                    result.error("INVALID_ARGS", "URL is null", null)
+                    result.error("INVALID_ARGS", "URL is null for startStream", null)
                 }
             }
+
             "stopStream" -> {
                 Log.d(TAG, "Stopping stream.")
                 is_playing_desired = false
                 nativePause()
-                nativeFinalize() // Finalize to clean up the old pipeline
-                nativeControllerInit() // Re-initialize for the next stream
+                nativeFinalize()
+                nativeControllerInit()
                 result.success(null)
             }
+
+            "changeStream" -> {
+                val url = call.argument<String>("url")
+                if (url != null) {
+                    Log.d(TAG, "Changing stream to new URL: $url")
+
+                    // This sequence performs a full internal reset of the GStreamer pipeline
+                    // without destroying the Android View itself. This is the fix for the resource leak.
+                    is_playing_desired = false
+                    nativePause()
+                    nativeFinalize()       // 1. Fully clean up the old C-level pipeline resources.
+                    nativeControllerInit() // 2. Reset the Java-side native controller.
+
+                    // 3. Initialize a completely new pipeline with the new URL.
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+                    nativeInit(gstDesc)
+                    is_playing_desired = true
+
+                    // 4. Re-apply the surface to the new pipeline. This is crucial.
+                    if (surfaceView.holder.surface.isValid) {
+                        nativeSurfaceInit(surfaceView.holder.surface)
+                    }
+
+                    result.success(null)
+                } else {
+                    result.error("INVALID_ARGS", "URL is null for changeStream", null)
+                }
+            }
+
+            // THIS IS THE NEW METHOD FOR THE "RETRY" BUTTON
+            "resetAndRestartStream" -> {
+                val url = call.argument<String>("url")
+                if (url != null) {
+                    Log.d(TAG, "Performing FULL RESET and restarting stream with URL: $url")
+
+                    // The logic is identical to changeStream, as it's the most robust way to
+                    // recover from an error state. It ensures a completely clean slate.
+                    is_playing_desired = false
+                    nativePause()
+                    nativeFinalize()
+                    nativeControllerInit()
+
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+                    nativeInit(gstDesc)
+                    is_playing_desired = true
+
+                    if (surfaceView.holder.surface.isValid) {
+                        nativeSurfaceInit(surfaceView.holder.surface)
+                    }
+
+                    result.success(null)
+                } else {
+                    result.error("INVALID_ARGS", "URL is null for resetAndRestartStream", null)
+                }
+            }
+
             "isStreamActive" -> {
                 result.success(is_playing_desired)
             }
+
             else -> result.notImplemented()
         }
     }
