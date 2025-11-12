@@ -42,6 +42,9 @@ private:
     std::vector<cv::Point2f> transformIrToEo(const std::vector<cv::Point2f>& ir_points,
                                            double zoom, double focus);
 
+    cv::Point2f transformEoToIr(const cv::Point2f& eo_point, 
+                               double zoom, double focus);
+
     PipelineConfig m_config;
     std::atomic<bool> m_stop_flag;
 
