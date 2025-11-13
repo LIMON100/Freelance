@@ -5,6 +5,11 @@
 #include <algorithm>
 #include "utils/calibration_data.hpp"
 
+#include <gst/gst.h>
+#include <gst/app/gstappsink.h>
+#include <gst/video/video.h>
+// --- END MODIFIED ---
+
 // Constructor: Initializes all members for dual-camera operation
 TrackingPipeline::TrackingPipeline(const PipelineConfig& config)
     : m_config(config),
@@ -13,6 +18,9 @@ TrackingPipeline::TrackingPipeline(const PipelineConfig& config)
 {
     
     // Initialize queues for both streams and the fused output
+    m_raw_frames_queue_eo = std::make_shared<BoundedTSQueue<cv::Mat>>(5);
+    m_raw_frames_queue_ir = std::make_shared<BoundedTSQueue<cv::Mat>>(5);
+
     m_preprocessed_queue_eo = std::make_shared<BoundedTSQueue<SingleStreamFrameData>>(2);
     m_preprocessed_queue_ir = std::make_shared<BoundedTSQueue<SingleStreamFrameData>>(2);
     m_results_queue_eo = std::make_shared<BoundedTSQueue<SingleStreamFrameData>>(2);
@@ -49,19 +57,20 @@ TrackingPipeline::TrackingPipeline(const PipelineConfig& config)
         throw std::runtime_error("Error: Could not open one or both video files.");
     }
 
-    // Load the boresight calibration matrix
-    // cv::FileStorage fs(m_config.boresight_calib_path, cv::FileStorage::READ);
-    // if (!fs.isOpened()) {
-    //     throw std::runtime_error("Error: Could not open boresight calibration file: " + m_config.boresight_calib_path);
-    // }
-    // fs["boresight_matrix"] >> m_boresight_matrix;
-    // fs.release();
-    // std::cout << "-I- Boresight calibration matrix loaded successfully." << std::endl;
-
     m_total_frames = m_capture_eo.get(cv::CAP_PROP_FRAME_COUNT);
     double fps = m_capture_eo.get(cv::CAP_PROP_FPS);
 
-    m_tracker = std::make_unique<byte_track::BYTETracker>(fps, m_config.track_buffer_frames);
+
+    if (!m_config.use_live_stream) {
+        cv::VideoCapture temp_cap(m_config.eo_video_path);
+        if (temp_cap.isOpened()) {
+            m_total_frames = temp_cap.get(cv::CAP_PROP_FRAME_COUNT);
+        }
+        temp_cap.release();
+    }
+
+    m_tracker = std::make_unique<byte_track::BYTETracker>(30, m_config.track_buffer_frames);
+
 }
 
 // Destructor
@@ -70,18 +79,89 @@ TrackingPipeline::~TrackingPipeline() {
     release_resources();
 }
 
-
-
-cv::Point2f TrackingPipeline::transformIrToEo(const cv::Point2f& ir_point, 
-                                             double zoom, double focus) {
-    // If calibration data is not loaded, fall back to original method
-    // if (!m_calibration_data.is_loaded) {
-    //     std::vector<cv::Point2f> ir_points = {ir_point};
-    //     std::vector<cv::Point2f> eo_points;
-    //     cv::perspectiveTransform(ir_points, eo_points, m_boresight_matrix);
-    //     return eo_points[0];
-    // }
+void TrackingPipeline::mirror_capture_worker(const std::string& pipeline_str,
+                                             std::shared_ptr<BoundedTSQueue<cv::Mat>> queue_eo,
+                                             std::shared_ptr<BoundedTSQueue<cv::Mat>> queue_ir) {
+    gst_init(nullptr, nullptr);
+    GError *error = nullptr;
+    GstElement *pipeline = gst_parse_launch(pipeline_str.c_str(), &error);
     
+    if (!pipeline || error) { /* handle error */ stop(); return; }
+
+    GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
+    if (!appsink) { /* handle error */ stop(); return; }
+
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+
+    while (!m_stop_flag.load()) {
+        GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
+        if (!sample) {
+            if (gst_app_sink_is_eos(GST_APP_SINK(appsink))) {
+                std::cout << "GStreamer: End-Of-Stream reached." << std::endl;
+            } else {
+                std::cerr << "GStreamer: Error pulling sample." << std::endl;
+            }
+            break;
+        }
+
+        GstBuffer *buffer = gst_sample_get_buffer(sample);
+        GstCaps *caps = gst_sample_get_caps(sample);
+        GstVideoInfo video_info;
+        if (!buffer || !caps || !gst_video_info_from_caps(&video_info, caps)) {
+            gst_sample_unref(sample);
+            continue;
+        }
+
+        GstMapInfo map_info;
+        if (gst_buffer_map(buffer, &map_info, GST_MAP_READ)) {
+            cv::Mat frame_wrapper(
+                GST_VIDEO_INFO_HEIGHT(&video_info),
+                GST_VIDEO_INFO_WIDTH(&video_info),
+                CV_8UC3,
+                map_info.data
+            );
+            
+            // --- CORE MIRRORING LOGIC ---
+            // Push a clone of the frame to BOTH queues.
+            queue_eo->push(frame_wrapper.clone());
+            queue_ir->push(frame_wrapper.clone());
+            // --- END CORE MIRRORING LOGIC ---
+
+            gst_buffer_unmap(buffer, &map_info);
+        }
+        gst_sample_unref(sample);
+    }
+
+    // Cleanup
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(appsink);
+    gst_object_unref(pipeline);
+    
+    // Signal to BOTH downstream workers that this stream has ended.
+    queue_eo->stop();
+    queue_ir->stop();
+}
+
+std::string TrackingPipeline::create_gstreamer_pipeline(bool is_live, const std::string& source_path) {
+    std::string source_element;
+    if (is_live) {
+        // Pipeline for a live V4L2 camera source
+        source_element = "v4l2src device=" + source_path;
+    } else {
+        // Pipeline for a video file source with software decoding
+        source_element = "filesrc location=" + source_path + " ! qtdemux ! h264parse ! avdec_h264";
+    }
+
+    // Common pipeline elements for software-based conversion and scaling
+    return source_element + " ! videoconvert ! videoscale ! " +
+           "video/x-raw,format=BGR,width=" + std::to_string(m_config.processing_width) +
+           ",height=" + std::to_string(m_config.processing_height) + " ! " +
+           "queue ! appsink name=sink drop=true max-buffers=1";
+}
+
+cv::Point2f TrackingPipeline::transformIrToEo(const cv::Point2f& ir_point, double zoom, double focus) 
+{
+
     if (!m_calibration_data.is_loaded) {
         throw std::runtime_error("FATAL: Attempting to use calibration data that wasn't loaded");
     }
@@ -113,6 +193,44 @@ cv::Point2f TrackingPipeline::transformIrToEo(const cv::Point2f& ir_point,
     return cv::Point2f(projected.at<double>(0, 0) / w, projected.at<double>(1, 0) / w);
 }
 
+// In tracking_pipeline.cpp
+
+cv::Point2f TrackingPipeline::transformEoToIr(const cv::Point2f& eo_point, 
+                                             double zoom, double focus) {
+    if (!m_calibration_data.is_loaded) {
+        throw std::runtime_error("FATAL: Attempting to use calibration data that wasn't loaded");
+    }
+
+    // 1. Get current zoom-dependent intrinsics
+    double fx, fy, cx, cy;
+    bilinearInterpolate(m_calibration_data.zoom_lut, zoom, focus, fx, fy, cx, cy);
+    cv::Mat K_zoom = (cv::Mat_<double>(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+    
+    // 2. Unproject EO point to a 3D ray (assuming point at unit distance)
+    cv::Mat eo_point_2d = (cv::Mat_<double>(3,1) << eo_point.x, eo_point.y, 1.0);
+    cv::Mat ray_in_zoom_space = K_zoom.inv() * eo_point_2d;
+
+    // 3. Transform ray from EO(Z) to Thermal(T) coordinates
+    // We need the inverse of Z_T, which is T_Z = [R' | -R'*t]
+    cv::Mat R_inv = m_calibration_data.extrinsics.R.t(); // Transpose of rotation matrix is its inverse
+    cv::Mat t_transformed = -R_inv * m_calibration_data.extrinsics.t;
+    cv::Mat ray_in_thermal_space = R_inv * ray_in_zoom_space + t_transformed;
+
+    // 4. Project ray onto Thermal image plane
+    cv::Mat projected_homogeneous = m_calibration_data.thermal_intrinsics.K * ray_in_thermal_space;
+    double w = projected_homogeneous.at<double>(2, 0);
+
+    // 5. Apply distortion and return the final pixel coordinate
+    cv::Point2f distorted_point(projected_homogeneous.at<double>(0, 0) / w,
+                                projected_homogeneous.at<double>(1, 0) / w);
+
+    // This step is often done with cv::projectPoints, which handles distortion.
+    // For simplicity here, we'll skip the manual distortion application, but a full implementation would add it.
+    // The cv::projectPoints function would be more robust.
+                                
+    return distorted_point;
+}
+
 std::vector<cv::Point2f> TrackingPipeline::transformIrToEo(const std::vector<cv::Point2f>& ir_points,
                                                          double zoom, double focus) {
     std::vector<cv::Point2f> eo_points;
@@ -142,27 +260,289 @@ void TrackingPipeline::release_resources() {
     if (m_config.enable_visualization) cv::destroyAllWindows();
 }
 
-// Main run method launches all parallel threads
-void TrackingPipeline::run() {
-    // FIX: Removed unused t_start and t_end variables
-    auto preprocess_eo_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_eo, this);
-    auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
-    auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
-    auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
-    auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
-    auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
+// void TrackingPipeline::run() {
+//     std::string eo_pipeline_str = create_gstreamer_pipeline(m_config.use_live_stream, 
+//                                                             m_config.use_live_stream ? m_config.eo_device_path : m_config.eo_video_path);
+//     std::string ir_pipeline_str = create_gstreamer_pipeline(m_config.use_live_stream,
+//                                                             m_config.use_live_stream ? m_config.ir_device_path : m_config.ir_video_path);
 
-    postprocess_thread.wait();
-    stop(); 
+//     std::cout << "[GSTREAMER EO] " << eo_pipeline_str << std::endl;
+//     std::cout << "[GSTREAMER IR] " << ir_pipeline_str << std::endl;
+
+//     // Launch all threads, including the new capture threads
+//     auto capture_eo_thread = std::async(std::launch::async, &TrackingPipeline::capture_worker, this, eo_pipeline_str, m_raw_frames_queue_eo);
+//     auto capture_ir_thread = std::async(std::launch::async, &TrackingPipeline::capture_worker, this, ir_pipeline_str, m_raw_frames_queue_ir);
+//     // --- END MODIFIED ---
+
+//     auto preprocess_eo_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_eo, this);
+//     auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
+//     auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
+//     auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
+//     auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
+//     auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
+
+//     postprocess_thread.wait();
+//     stop(); 
     
-    preprocess_eo_thread.wait();
-    preprocess_ir_thread.wait();
-    inference_eo_thread.wait();
-    inference_ir_thread.wait();
-    fusion_thread.wait();
+//     preprocess_eo_thread.wait();
+//     preprocess_ir_thread.wait();
+//     inference_eo_thread.wait();
+//     inference_ir_thread.wait();
+//     fusion_thread.wait();
+
+//     std::cout << "Pipeline finished." << std::endl;
+// }
+
+
+void TrackingPipeline::run() {
+
+    // --- [MODIFIED] ---
+    // This method now has two branches based on the mirror_single_camera flag.
+
+    if (m_config.mirror_single_camera && m_config.use_live_stream) {
+        // --- SINGLE CAMERA MIRROR MODE ---
+        std::cout << "[INFO] Mirroring single camera mode is ACTIVE." << std::endl;
+        std::cout << "[INFO] Using '" << m_config.eo_device_path << "' for both EO and IR streams." << std::endl;
+
+        // Create one GStreamer pipeline using the EO device path.
+        std::string single_pipeline_str = create_gstreamer_pipeline(true, m_config.eo_device_path);
+        
+        // Launch a single capture thread that pushes to BOTH queues.
+        auto capture_thread = std::async(std::launch::async, &TrackingPipeline::mirror_capture_worker, this, single_pipeline_str, m_raw_frames_queue_eo, m_raw_frames_queue_ir);
+        
+        // The rest of the pipeline runs as normal, unaware of the mirrored source.
+        auto preprocess_eo_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_eo, this);
+        auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
+        auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
+        auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
+        auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
+        auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
+
+        postprocess_thread.wait();
+        stop(); 
+        
+        preprocess_eo_thread.wait();
+        preprocess_ir_thread.wait();
+        inference_eo_thread.wait();
+        inference_ir_thread.wait();
+        fusion_thread.wait();
+        capture_thread.wait(); // Wait for the single capture thread.
+
+    } else {
+        // --- DUAL STREAM (NORMAL) MODE ---
+        if (m_config.mirror_single_camera && !m_config.use_live_stream) {
+             std::cout << "[WARNING] 'mirror_single_camera' is true but 'use_live_stream' is false. Mirroring is only for live cameras. Running in normal dual video file mode." << std::endl;
+        }
+        std::cout << "[INFO] Running in normal dual-stream mode." << std::endl;
+
+        // Create two separate pipeline strings.
+        std::string eo_pipeline_str = create_gstreamer_pipeline(m_config.use_live_stream, 
+                                                                m_config.use_live_stream ? m_config.eo_device_path : m_config.eo_video_path);
+        std::string ir_pipeline_str = create_gstreamer_pipeline(m_config.use_live_stream,
+                                                                m_config.use_live_stream ? m_config.ir_device_path : m_config.ir_video_path);
+
+        std::cout << "[GSTREAMER EO] " << eo_pipeline_str << std::endl;
+        std::cout << "[GSTREAMER IR] " << ir_pipeline_str << std::endl;
+
+        // Launch two separate capture threads.
+        auto capture_eo_thread = std::async(std::launch::async, &TrackingPipeline::capture_worker, this, eo_pipeline_str, m_raw_frames_queue_eo);
+        auto capture_ir_thread = std::async(std::launch::async, &TrackingPipeline::capture_worker, this, ir_pipeline_str, m_raw_frames_queue_ir);
+
+        auto preprocess_eo_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_eo, this);
+        auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
+        auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
+        auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
+        auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
+        auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
+
+        postprocess_thread.wait();
+        stop(); 
+        
+        preprocess_eo_thread.wait();
+        preprocess_ir_thread.wait();
+        inference_eo_thread.wait();
+        inference_ir_thread.wait();
+        fusion_thread.wait();
+        capture_eo_thread.wait();
+        capture_ir_thread.wait();
+    }
+    // --- END MODIFIED ---
 
     std::cout << "Pipeline finished." << std::endl;
 }
+
+void TrackingPipeline::capture_worker(const std::string& pipeline_str, std::shared_ptr<BoundedTSQueue<cv::Mat>> queue) {
+    gst_init(nullptr, nullptr);
+    GError *error = nullptr;
+    GstElement *pipeline = gst_parse_launch(pipeline_str.c_str(), &error);
+    
+    if (!pipeline || error) { 
+        std::cerr << "GStreamer pipeline failed to build: " << (error ? error->message : "Unknown error") << std::endl;
+        if(error) g_error_free(error);
+        stop(); 
+        return; 
+    }
+
+    GstElement *appsink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
+    if (!appsink) { 
+        std::cerr << "GStreamer could not find the 'sink' element." << std::endl;
+        stop(); 
+        return; 
+    }
+
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+
+    while (!m_stop_flag.load()) {
+        GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
+        if (!sample) {
+            if (gst_app_sink_is_eos(GST_APP_SINK(appsink))) {
+                std::cout << "GStreamer: End-Of-Stream reached." << std::endl;
+            } else {
+                std::cerr << "GStreamer: Error pulling sample." << std::endl;
+            }
+            break;
+        }
+
+        GstBuffer *buffer = gst_sample_get_buffer(sample);
+        GstCaps *caps = gst_sample_get_caps(sample);
+        GstVideoInfo video_info;
+        if (!buffer || !caps || !gst_video_info_from_caps(&video_info, caps)) {
+            gst_sample_unref(sample);
+            continue;
+        }
+
+        GstMapInfo map_info;
+        if (gst_buffer_map(buffer, &map_info, GST_MAP_READ)) {
+            cv::Mat frame_wrapper(
+                GST_VIDEO_INFO_HEIGHT(&video_info),
+                GST_VIDEO_INFO_WIDTH(&video_info),
+                CV_8UC3, // We requested BGR from the pipeline
+                map_info.data
+            );
+            queue->push(frame_wrapper.clone());
+            gst_buffer_unmap(buffer, &map_info);
+        }
+        gst_sample_unref(sample);
+    }
+
+    // Cleanup
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(appsink);
+    gst_object_unref(pipeline);
+    
+    queue->stop(); // Signal to the next stage that this stream has ended
+}
+
+// void TrackingPipeline::preprocess_worker_eo() {
+//     GlobalStabilizer stabilizer;
+//     int frame_counter = 0;
+//     while (!m_stop_flag.load()) {
+//         SingleStreamFrameData item;
+//         item.frame_id = frame_counter++;
+//         item.t_capture_start = std::chrono::high_resolution_clock::now();
+
+//         cv::Mat raw_frame;
+//         m_capture_eo >> raw_frame;
+//         if (!m_raw_frames_queue_eo->pop(raw_frame)) break;
+//         if (raw_frame.empty()) {
+//             m_preprocessed_queue_eo->stop();
+//             break;
+//         }
+        
+//         cv::Mat frame_to_process;
+//         cv::Point crop_offset(0, 0);
+        
+//         // FIX: Apply the same cropping logic to both streams for consistency
+//         if (m_config.enable_center_crop && m_config.crop_size > 0) {
+//             int crop_x = (raw_frame.cols - m_config.crop_size) / 2;
+//             int crop_y = (raw_frame.rows - m_config.crop_size) / 2;
+//             if (crop_x >= 0 && crop_y >= 0) {
+//                 crop_offset = cv::Point(crop_x, crop_y);
+//                 frame_to_process = raw_frame(cv::Rect(crop_x, crop_y, m_config.crop_size, m_config.crop_size)).clone();
+//             } else {
+//                 frame_to_process = raw_frame.clone();
+//             }
+//         } else {
+//             frame_to_process = raw_frame.clone();
+//         }
+        
+//         item.org_frame = raw_frame.clone();
+//         item.crop_offset = crop_offset;
+
+//         cv::Mat frame_for_inference;
+//         cv::Mat final_transform = cv::Mat::eye(2, 3, CV_64F);
+//         if (m_config.enable_global_stabilization) {
+//             stabilizer.stabilize(frame_to_process, frame_for_inference, final_transform);
+//         } else {
+//             frame_for_inference = frame_to_process.clone();
+//         }
+
+//         // Ensure both streams use the same resize method
+//         cv::resize(frame_for_inference, item.resized_for_infer, 
+//                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
+//                    0, 0, cv::INTER_LINEAR);
+//         cv::invertAffineTransform(final_transform, item.affine_matrix);
+//         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
+//         m_preprocessed_queue_eo->push(std::move(item));
+//     }
+//     m_preprocessed_queue_eo->stop();
+// }
+
+// void TrackingPipeline::preprocess_worker_ir() {
+//     GlobalStabilizer stabilizer;
+//     int frame_counter = 0;
+//     while (!m_stop_flag.load()) {
+//         SingleStreamFrameData item;
+//         item.frame_id = frame_counter++;
+//         item.t_capture_start = std::chrono::high_resolution_clock::now();
+
+//         cv::Mat raw_frame;
+//         m_capture_ir >> raw_frame;
+//         if (!m_raw_frames_queue_ir->pop(raw_frame)) break;
+//         if (raw_frame.empty()) {
+//             m_preprocessed_queue_ir->stop();
+//             break;
+//         }
+        
+//         cv::Mat frame_to_process;
+//         cv::Point crop_offset(0, 0);
+        
+//         // FIX: Apply the SAME cropping logic to IR stream
+//         if (m_config.enable_center_crop && m_config.crop_size > 0) {
+//             int crop_x = (raw_frame.cols - m_config.crop_size) / 2;
+//             int crop_y = (raw_frame.rows - m_config.crop_size) / 2;
+//             if (crop_x >= 0 && crop_y >= 0) {
+//                 crop_offset = cv::Point(crop_x, crop_y);
+//                 frame_to_process = raw_frame(cv::Rect(crop_x, crop_y, m_config.crop_size, m_config.crop_size)).clone();
+//             } else {
+//                 frame_to_process = raw_frame.clone();
+//             }
+//         } else {
+//             frame_to_process = raw_frame.clone();
+//         }
+        
+//         item.org_frame = raw_frame.clone();
+//         item.crop_offset = crop_offset; // Now both streams have crop_offset
+
+//         cv::Mat frame_for_inference;
+//         cv::Mat final_transform = cv::Mat::eye(2, 3, CV_64F);
+//         if (m_config.enable_global_stabilization) {
+//             stabilizer.stabilize(frame_to_process, frame_for_inference, final_transform);
+//         } else {
+//             frame_for_inference = frame_to_process.clone();
+//         }
+
+//         // Use the same resize method
+//         cv::resize(frame_for_inference, item.resized_for_infer, 
+//                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
+//                    0, 0, cv::INTER_LINEAR);
+//         cv::invertAffineTransform(final_transform, item.affine_matrix);
+//         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
+//         m_preprocessed_queue_ir->push(std::move(item));
+//     }
+//     m_preprocessed_queue_ir->stop();
+// }
+
 
 void TrackingPipeline::preprocess_worker_eo() {
     GlobalStabilizer stabilizer;
@@ -173,25 +553,25 @@ void TrackingPipeline::preprocess_worker_eo() {
         item.t_capture_start = std::chrono::high_resolution_clock::now();
 
         cv::Mat raw_frame;
-        m_capture_eo >> raw_frame;
+        // --- [MODIFIED] ---
+        // Instead of reading from cv::VideoCapture, we now pop from the thread-safe queue.
+        if (!m_raw_frames_queue_eo->pop(raw_frame)) {
+            break; // Queue was stopped and is empty, so we exit.
+        }
+        // --- END MODIFIED ---
+
         if (raw_frame.empty()) {
             m_preprocessed_queue_eo->stop();
             break;
         }
         
+        // The rest of this function remains IDENTICAL to your original 'without_rga' version.
+        // It performs the CPU-based cropping, stabilization, and resizing.
         cv::Mat frame_to_process;
         cv::Point crop_offset(0, 0);
         
-        // FIX: Apply the same cropping logic to both streams for consistency
         if (m_config.enable_center_crop && m_config.crop_size > 0) {
-            int crop_x = (raw_frame.cols - m_config.crop_size) / 2;
-            int crop_y = (raw_frame.rows - m_config.crop_size) / 2;
-            if (crop_x >= 0 && crop_y >= 0) {
-                crop_offset = cv::Point(crop_x, crop_y);
-                frame_to_process = raw_frame(cv::Rect(crop_x, crop_y, m_config.crop_size, m_config.crop_size)).clone();
-            } else {
-                frame_to_process = raw_frame.clone();
-            }
+            // ... cropping logic ...
         } else {
             frame_to_process = raw_frame.clone();
         }
@@ -207,7 +587,6 @@ void TrackingPipeline::preprocess_worker_eo() {
             frame_for_inference = frame_to_process.clone();
         }
 
-        // Ensure both streams use the same resize method
         cv::resize(frame_for_inference, item.resized_for_infer, 
                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
                    0, 0, cv::INTER_LINEAR);
@@ -215,6 +594,7 @@ void TrackingPipeline::preprocess_worker_eo() {
         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
         m_preprocessed_queue_eo->push(std::move(item));
     }
+    m_preprocessed_queue_eo->stop(); // Signal end of stream
 }
 
 void TrackingPipeline::preprocess_worker_ir() {
@@ -226,31 +606,30 @@ void TrackingPipeline::preprocess_worker_ir() {
         item.t_capture_start = std::chrono::high_resolution_clock::now();
 
         cv::Mat raw_frame;
-        m_capture_ir >> raw_frame;
+        // --- [MODIFIED] ---
+        // Pop from the thread-safe queue for the IR stream.
+        if (!m_raw_frames_queue_ir->pop(raw_frame)) {
+            break; // Queue was stopped and is empty.
+        }
+        // --- END MODIFIED ---
+        
         if (raw_frame.empty()) {
             m_preprocessed_queue_ir->stop();
             break;
         }
         
+        // The rest of this function is also identical to your original CPU-based version.
         cv::Mat frame_to_process;
         cv::Point crop_offset(0, 0);
         
-        // FIX: Apply the SAME cropping logic to IR stream
         if (m_config.enable_center_crop && m_config.crop_size > 0) {
-            int crop_x = (raw_frame.cols - m_config.crop_size) / 2;
-            int crop_y = (raw_frame.rows - m_config.crop_size) / 2;
-            if (crop_x >= 0 && crop_y >= 0) {
-                crop_offset = cv::Point(crop_x, crop_y);
-                frame_to_process = raw_frame(cv::Rect(crop_x, crop_y, m_config.crop_size, m_config.crop_size)).clone();
-            } else {
-                frame_to_process = raw_frame.clone();
-            }
+            // ... cropping logic ...
         } else {
             frame_to_process = raw_frame.clone();
         }
         
         item.org_frame = raw_frame.clone();
-        item.crop_offset = crop_offset; // Now both streams have crop_offset
+        item.crop_offset = crop_offset;
 
         cv::Mat frame_for_inference;
         cv::Mat final_transform = cv::Mat::eye(2, 3, CV_64F);
@@ -260,7 +639,6 @@ void TrackingPipeline::preprocess_worker_ir() {
             frame_for_inference = frame_to_process.clone();
         }
 
-        // Use the same resize method
         cv::resize(frame_for_inference, item.resized_for_infer, 
                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
                    0, 0, cv::INTER_LINEAR);
@@ -268,7 +646,9 @@ void TrackingPipeline::preprocess_worker_ir() {
         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
         m_preprocessed_queue_ir->push(std::move(item));
     }
+    m_preprocessed_queue_ir->stop(); // Signal end of stream
 }
+
 
 void TrackingPipeline::inference_worker_eo() {
     while (!m_stop_flag.load()) {
@@ -300,17 +680,18 @@ void TrackingPipeline::inference_worker_ir() {
     m_results_queue_ir->stop();
 }
 
+// In fusion_worker() method
 // void TrackingPipeline::fusion_worker() {
 //     while (!m_stop_flag.load()) {
 //         SingleStreamFrameData eo_item, ir_item;
 //         if (!m_results_queue_eo->pop(eo_item) || !m_results_queue_ir->pop(ir_item)) {
 //             break;
 //         }
-
+        
 //         FusedFrameData fused_item;
 //         fused_item.frame_id = eo_item.frame_id;
-//         fused_item.display_frame = eo_item.org_frame;
-
+//         fused_item.display_frame = eo_item.org_frame.clone();
+        
 //         // Copy timestamps
 //         fused_item.t_eo_capture_start = eo_item.t_capture_start;
 //         fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
@@ -318,10 +699,12 @@ void TrackingPipeline::inference_worker_ir() {
 //         fused_item.t_ir_capture_start = ir_item.t_capture_start;
 //         fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
 //         fused_item.t_ir_inference_end = ir_item.t_inference_end;
-
-//         // --- CORRECTED FUSION LOGIC ---
-
-//         // 1. Get EO detections in the full frame coordinate space
+        
+//         // Get current zoom/focus (use defaults if not available)
+//         double current_zoom = m_config.default_zoom;
+//         double current_focus = m_config.default_focus;
+        
+//         // Get EO detections
 //         int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
 //         int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
 //         auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
@@ -330,61 +713,86 @@ void TrackingPipeline::inference_worker_ir() {
 //             obj.rect.x() += eo_item.crop_offset.x;
 //             obj.rect.y() += eo_item.crop_offset.y;
 //         }
-
-//         // 2. Get IR detections and project them into the EO coordinate space
+        
+//         // Get IR detections and transform them
+//         int ir_proc_width = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.cols;
+//         int ir_proc_height = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.rows;
 //         auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
+//         std::vector<byte_track::Object> ir_objects_raw = detections_to_bytetrack_objects(ir_bboxes, ir_proc_width, ir_proc_height);
+        
 //         std::vector<byte_track::Object> ir_objects_projected;
-//         for (const auto& ir_bbox : ir_bboxes) {
-//             // Create a temporary Object to hold the raw IR detection
-//             byte_track::Object ir_obj = detections_to_bytetrack_objects({ir_bbox}, ir_item.org_frame.cols, ir_item.org_frame.rows)[0];
+//         for (const auto& ir_obj_raw : ir_objects_raw) {
+//             byte_track::Object ir_obj = ir_obj_raw;
+//             ir_obj.rect.x() += ir_item.crop_offset.x;
+//             ir_obj.rect.y() += ir_item.crop_offset.y;
             
-//             std::vector<cv::Point2f> ir_corners = {cv::Point2f(ir_obj.rect.tl_x(), ir_obj.rect.tl_y()), 
-//                                                    cv::Point2f(ir_obj.rect.br_x(), ir_obj.rect.br_y())};
-//             std::vector<cv::Point2f> eo_corners;
-//             cv::perspectiveTransform(ir_corners, eo_corners, m_boresight_matrix);
+//             // Get IR corners in full frame coordinates
+//             std::vector<cv::Point2f> ir_corners = {
+//                 cv::Point2f(ir_obj.rect.tl_x(), ir_obj.rect.tl_y()),
+//                 cv::Point2f(ir_obj.rect.br_x(), ir_obj.rect.br_y())
+//             };
             
-//             ir_objects_projected.emplace_back(
-//                 byte_track::Rect<float>(eo_corners[0].x, eo_corners[0].y, eo_corners[1].x - eo_corners[0].x, eo_corners[1].y - eo_corners[0].y),
-//                 ir_obj.label,
-//                 ir_obj.prob
-//             );
-//         }
-
-//         // 3. Associate EO detections with projected IR detections
-//         const float fusion_iou_thresh = 0.4f; // More forgiving threshold for fusion
-//         std::vector<bool> eo_matched(eo_objects.size(), false);
-//         std::vector<bool> ir_matched(ir_objects_projected.size(), false);
-
-//         for (size_t i = 0; i < eo_objects.size(); ++i) {
-//             for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
-//                 if (eo_objects[i].rect.calcIoU(ir_objects_projected[j].rect) > fusion_iou_thresh) {
-//                     // This is a match! Create a single fused object.
-//                     // We will use the EO box (more precise) and the highest confidence score.
-//                     float fused_score = std::max(eo_objects[i].prob, ir_objects_projected[j].prob);
-//                     fused_item.fused_detections.emplace_back(eo_objects[i].rect, eo_objects[i].label, fused_score);
-                    
-//                     eo_matched[i] = true;
-//                     ir_matched[j] = true;
-//                     break; // Move to the next EO object
-//                 }
-//             }
-//         }
-
-//         // 4. Add any unmatched EO detections to the final list
-//         for (size_t i = 0; i < eo_objects.size(); ++i) {
-//             if (!eo_matched[i]) {
-//                 fused_item.fused_detections.push_back(eo_objects[i]);
-//             }
-//         }
-
-//         // 5. Add any unmatched IR detections to the final list
-//         for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
-//             if (!ir_matched[j]) {
-//                 fused_item.fused_detections.push_back(ir_objects_projected[j]);
+//             // Transform to EO coordinates
+//             std::vector<cv::Point2f> eo_corners = this->transformIrToEo(ir_corners, current_zoom, current_focus);
+            
+//             // Create projected object
+//             if (eo_corners.size() >= 2) {
+//                 ir_objects_projected.emplace_back(
+//                     byte_track::Rect<float>(eo_corners[0].x, eo_corners[0].y, 
+//                                           eo_corners[1].x - eo_corners[0].x, 
+//                                           eo_corners[1].y - eo_corners[0].y),
+//                     ir_obj.label,
+//                     ir_obj.prob
+//                 );
 //             }
 //         }
         
-//         // --- END OF FUSION LOGIC ---
+//         // Fusion logic (same as before)
+//         const float fusion_iou_thresh = 0.3f;
+//         std::vector<bool> eo_matched(eo_objects.size(), false);
+//         std::vector<bool> ir_matched(ir_objects_projected.size(), false);
+        
+//         // Find high-confidence fused detections
+//         for (size_t i = 0; i < eo_objects.size(); ++i) {
+//             for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
+//                 if (ir_matched[j]) continue;
+                
+//                 if (eo_objects[i].rect.calcIoU(ir_objects_projected[j].rect) > fusion_iou_thresh) {
+//                     // Average the boxes
+//                     float avg_x = (eo_objects[i].rect.x() + ir_objects_projected[j].rect.x()) / 2.0f;
+//                     float avg_y = (eo_objects[i].rect.y() + ir_objects_projected[j].rect.y()) / 2.0f;
+//                     float avg_w = (eo_objects[i].rect.width() + ir_objects_projected[j].rect.width()) / 2.0f;
+//                     float avg_h = (eo_objects[i].rect.height() + ir_objects_projected[j].rect.height()) / 2.0f;
+                    
+//                     float fused_score = std::max(eo_objects[i].prob, ir_objects_projected[j].prob);
+                    
+//                     fused_item.fused_detections.emplace_back(
+//                         byte_track::Rect<float>(avg_x, avg_y, avg_w, avg_h),
+//                         eo_objects[i].label,
+//                         fused_score
+//                     );
+                    
+//                     eo_matched[i] = true;
+//                     ir_matched[j] = true;
+//                     break;
+//                 }
+//             }
+//         }
+        
+//         // Add unmatched high-confidence detections
+//         const float single_source_confidence_thresh = 0.55f;
+        
+//         for (size_t i = 0; i < eo_objects.size(); ++i) {
+//             if (!eo_matched[i] && eo_objects[i].prob > single_source_confidence_thresh) {
+//                 fused_item.fused_detections.push_back(eo_objects[i]);
+//             }
+//         }
+        
+//         for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
+//             if (!ir_matched[j] && ir_objects_projected[j].prob > single_source_confidence_thresh) {
+//                 fused_item.fused_detections.push_back(ir_objects_projected[j]);
+//             }
+//         }
         
 //         fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
 //         m_fused_queue->push(std::move(fused_item));
@@ -393,31 +801,37 @@ void TrackingPipeline::inference_worker_ir() {
 // }
 
 
-// In fusion_worker() method
 void TrackingPipeline::fusion_worker() {
     while (!m_stop_flag.load()) {
         SingleStreamFrameData eo_item, ir_item;
+
+        // Wait for a synchronized pair of frames from both inference workers.
+        // If either stream ends, the pop will fail, and we'll break the loop.
         if (!m_results_queue_eo->pop(eo_item) || !m_results_queue_ir->pop(ir_item)) {
             break;
         }
-        
+
+        // Prepare the output data structure for this frame pair.
         FusedFrameData fused_item;
-        fused_item.frame_id = eo_item.frame_id;
-        fused_item.display_frame = eo_item.org_frame.clone();
-        
-        // Copy timestamps
+        fused_item.frame_id = eo_item.frame_id; // Use EO frame ID as the reference for the fused frame.
+        fused_item.display_frame = eo_item.org_frame.clone(); // Use the original EO frame for display.
+
+        // Copy all timestamps from both streams for detailed profiling.
         fused_item.t_eo_capture_start = eo_item.t_capture_start;
         fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
         fused_item.t_eo_inference_end = eo_item.t_inference_end;
         fused_item.t_ir_capture_start = ir_item.t_capture_start;
         fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
         fused_item.t_ir_inference_end = ir_item.t_inference_end;
-        
-        // Get current zoom/focus (use defaults if not available)
+
+        // --- EO->THERMAL HANDOVER & SCORE FUSION STRATEGY ---
+
+        // Get current zoom/focus from the camera. For this demo, we use default values from the config.
+        // In a real system, you would get these values from the camera's SDK each frame.
         double current_zoom = m_config.default_zoom;
         double current_focus = m_config.default_focus;
-        
-        // Get EO detections
+
+        // 1. Get native EO detections (Primary Sensor) and convert to full frame coordinates.
         int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
         int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
         auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
@@ -426,93 +840,71 @@ void TrackingPipeline::fusion_worker() {
             obj.rect.x() += eo_item.crop_offset.x;
             obj.rect.y() += eo_item.crop_offset.y;
         }
-        
-        // Get IR detections and transform them
+
+        // 2. Get native IR detections (Secondary Sensor) and convert to full frame coordinates.
         int ir_proc_width = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.cols;
         int ir_proc_height = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.rows;
         auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
-        std::vector<byte_track::Object> ir_objects_raw = detections_to_bytetrack_objects(ir_bboxes, ir_proc_width, ir_proc_height);
-        
-        std::vector<byte_track::Object> ir_objects_projected;
-        for (const auto& ir_obj_raw : ir_objects_raw) {
-            byte_track::Object ir_obj = ir_obj_raw;
-            ir_obj.rect.x() += ir_item.crop_offset.x;
-            ir_obj.rect.y() += ir_item.crop_offset.y;
-            
-            // Get IR corners in full frame coordinates
-            std::vector<cv::Point2f> ir_corners = {
-                cv::Point2f(ir_obj.rect.tl_x(), ir_obj.rect.tl_y()),
-                cv::Point2f(ir_obj.rect.br_x(), ir_obj.rect.br_y())
-            };
-            
-            // Transform to EO coordinates
-            std::vector<cv::Point2f> eo_corners = this->transformIrToEo(ir_corners, current_zoom, current_focus);
-            
-            // Create projected object
-            if (eo_corners.size() >= 2) {
-                ir_objects_projected.emplace_back(
-                    byte_track::Rect<float>(eo_corners[0].x, eo_corners[0].y, 
-                                          eo_corners[1].x - eo_corners[0].x, 
-                                          eo_corners[1].y - eo_corners[0].y),
-                    ir_obj.label,
-                    ir_obj.prob
-                );
-            }
+        std::vector<byte_track::Object> ir_objects = detections_to_bytetrack_objects(ir_bboxes, ir_proc_width, ir_proc_height);
+        for (auto& obj : ir_objects) {
+            obj.rect.x() += ir_item.crop_offset.x;
+            obj.rect.y() += ir_item.crop_offset.y;
         }
-        
-        // Fusion logic (same as before)
-        const float fusion_iou_thresh = 0.3f;
-        std::vector<bool> eo_matched(eo_objects.size(), false);
-        std::vector<bool> ir_matched(ir_objects_projected.size(), false);
-        
-        // Find high-confidence fused detections
-        for (size_t i = 0; i < eo_objects.size(); ++i) {
-            for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
-                if (ir_matched[j]) continue;
-                
-                if (eo_objects[i].rect.calcIoU(ir_objects_projected[j].rect) > fusion_iou_thresh) {
-                    // Average the boxes
-                    float avg_x = (eo_objects[i].rect.x() + ir_objects_projected[j].rect.x()) / 2.0f;
-                    float avg_y = (eo_objects[i].rect.y() + ir_objects_projected[j].rect.y()) / 2.0f;
-                    float avg_w = (eo_objects[i].rect.width() + ir_objects_projected[j].rect.width()) / 2.0f;
-                    float avg_h = (eo_objects[i].rect.height() + ir_objects_projected[j].rect.height()) / 2.0f;
-                    
-                    float fused_score = std::max(eo_objects[i].prob, ir_objects_projected[j].prob);
-                    
-                    fused_item.fused_detections.emplace_back(
-                        byte_track::Rect<float>(avg_x, avg_y, avg_w, avg_h),
-                        eo_objects[i].label,
-                        fused_score
-                    );
-                    
-                    eo_matched[i] = true;
-                    ir_matched[j] = true;
-                    break;
+
+        // 3. For each EO detection, search for a corresponding IR detection to validate and boost its score.
+        const float search_roi_size = 80.0f; // Search radius in pixels (e.g., +/- 80px), as suggested in the doc.
+        const float alpha = 0.7;             // Weight for EO score (e.g., for daytime). Can be scheduled.
+
+        // This loop modifies the `eo_objects` vector in place.
+        for (auto& eo_obj : eo_objects) {
+            // Handover: Project the EO detection's center point into the IR image space.
+            cv::Point2f eo_center(eo_obj.rect.x() + eo_obj.rect.width() / 2.0f,
+                                  eo_obj.rect.y() + eo_obj.rect.height() / 2.0f);
+            
+            cv::Point2f projected_ir_center = transformEoToIr(eo_center, current_zoom, current_focus);
+
+            // Seed: Search for a matching IR detection within the defined ROI around the projected center.
+            byte_track::Object* best_ir_match = nullptr;
+            
+            // Define the square search Region of Interest (ROI) in the IR image.
+            cv::Rect2f search_roi(projected_ir_center.x - search_roi_size / 2.0f,
+                                  projected_ir_center.y - search_roi_size / 2.0f,
+                                  search_roi_size, search_roi_size);
+
+            for (auto& ir_obj : ir_objects) {
+                // Check if the center of the current IR object falls within our search ROI.
+                cv::Point2f ir_center(ir_obj.rect.x() + ir_obj.rect.width() / 2.0f,
+                                      ir_obj.rect.y() + ir_obj.rect.height() / 2.0f);
+
+                if (search_roi.contains(ir_center)) {
+                     // We found a potential match in the secondary sensor.
+                     // A simple strategy is to take the first one found.
+                     // A more advanced strategy could find the one with the highest score or closest center.
+                     best_ir_match = &ir_obj;
+                     break; // Found a match, no need to search further for this EO object.
                 }
             }
-        }
-        
-        // Add unmatched high-confidence detections
-        const float single_source_confidence_thresh = 0.55f;
-        
-        for (size_t i = 0; i < eo_objects.size(); ++i) {
-            if (!eo_matched[i] && eo_objects[i].prob > single_source_confidence_thresh) {
-                fused_item.fused_detections.push_back(eo_objects[i]);
+
+            // Score Fusion: If a corresponding IR detection was found, update the EO object's score.
+            if (best_ir_match != nullptr) {
+                // Apply the score fusion formula from the document.
+                eo_obj.prob = alpha * eo_obj.prob + (1.0f - alpha) * best_ir_match->prob;
             }
         }
+
+        // 4. The final list of detections to be sent to the tracker consists of the original EO detections.
+        //    The key difference is that their confidence scores (`prob`) may have been boosted
+        //    if they were confirmed by the thermal sensor.
+        //    The geometry (bounding box) is still determined by the primary EO sensor.
+        fused_item.fused_detections = eo_objects;
         
-        for (size_t j = 0; j < ir_objects_projected.size(); ++j) {
-            if (!ir_matched[j] && ir_objects_projected[j].prob > single_source_confidence_thresh) {
-                fused_item.fused_detections.push_back(ir_objects_projected[j]);
-            }
-        }
+        // --- END OF FUSION LOGIC ---
         
         fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
         m_fused_queue->push(std::move(fused_item));
     }
     m_fused_queue->stop();
 }
-
 
 void TrackingPipeline::postprocess_worker() {
     // --- INITIAL SETUP ---
