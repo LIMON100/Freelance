@@ -20,6 +20,13 @@ public:
     void stop();
 
 private:
+
+    void capture_worker(const std::string& pipeline_str, std::shared_ptr<BoundedTSQueue<cv::Mat>> queue);
+    void mirror_capture_worker(const std::string& pipeline_str,
+                               std::shared_ptr<BoundedTSQueue<cv::Mat>> queue_eo,
+                               std::shared_ptr<BoundedTSQueue<cv::Mat>> queue_ir);
+    std::string create_gstreamer_pipeline(bool is_live, const std::string& source_path);
+
     void preprocess_worker_eo();
     void preprocess_worker_ir();
     void inference_worker_eo();
@@ -36,6 +43,9 @@ private:
                                double zoom, double focus);
     std::vector<cv::Point2f> transformIrToEo(const std::vector<cv::Point2f>& ir_points,
                                            double zoom, double focus);
+    
+    cv::Point2f transformEoToIr(const cv::Point2f& eo_point, 
+                               double zoom, double focus);
 
     PipelineConfig m_config;
     std::atomic<bool> m_stop_flag;
@@ -48,6 +58,9 @@ private:
     std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_results_queue_eo;
     std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_results_queue_ir;
     std::shared_ptr<BoundedTSQueue<FusedFrameData>> m_fused_queue;
+
+    std::shared_ptr<BoundedTSQueue<cv::Mat>> m_raw_frames_queue_eo;
+    std::shared_ptr<BoundedTSQueue<cv::Mat>> m_raw_frames_queue_ir;
 
     cv::VideoCapture m_capture_eo;
     cv::VideoCapture m_capture_ir;

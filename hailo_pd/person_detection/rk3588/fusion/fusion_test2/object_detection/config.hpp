@@ -5,11 +5,16 @@
 #include <string>
 
 struct PipelineConfig {
+    bool use_live_stream = true;
+    bool mirror_single_camera = true; 
+
     // --- SOURCE CONFIGURATION ---
     std::string eo_video_path = "./30eo.mp4"; // Example path for EO video
     std::string ir_video_path = "./30ir.mp4"; // Example path for IR video
     
-    // std::string boresight_calib_path = "./boresight_matrix.xml";
+    // Camera device paths (used if use_live_stream is true)
+    std::string eo_device_path = "/dev/video1";
+    std::string ir_device_path = "/dev/video0";
 
     // --- MODEL & PROCESSING CONFIGURATION ---
     // Using one model for both streams as requested
@@ -21,7 +26,6 @@ struct PipelineConfig {
     size_t class_count = 2;
 
     // --- FEATURE FLAGS ---
-    bool use_live_stream = false;
     bool enable_profiling_log = true;
     bool enable_global_stabilization = false; 
     bool enable_visualization = false;
