@@ -9,29 +9,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(OpenCV REQUIRED)
 message(STATUS "Found OpenCV for bytetrack library: ${OpenCV_VERSION}")
 
-# --- THIS IS THE FIX ---
-# Find Eigen3. This will set Eigen3_FOUND and Eigen3_INCLUDE_DIRS if it exists.
+# --- Find or Fetch Eigen ---
 find_package(Eigen3 3.3 QUIET)
 
 # If Eigen3 was not found on the system, then download it.
 if(NOT Eigen3_FOUND)
   message(STATUS "System Eigen not found. Downloading...")
   include(FetchContent)
-  FetchContent_Declare(eigen
-    GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
-    GIT_TAG         3.4.0
-    GIT_SHALLOW     ON
+  FetchContent_Declare(
+    eigen
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG        3.4.0
+    GIT_SHALLOW    ON
   )
   FetchContent_MakeAvailable(eigen)
-  # FetchContent sets the variable 'eigen_SOURCE_DIR'
+  
+  # For FetchContent, the include directory is the source directory
   set(EIGEN_INCLUDE_DIRS ${eigen_SOURCE_DIR})
-  message(STATUS "Eigen was downloaded and configured.")
+
 else()
-  # If it was found, use the variable set by find_package.
-  set(EIGEN_INCLUDE_DIRS ${Eigen3_INCLUDE_DIRS})
   message(STATUS "Found system-installed Eigen version: ${EIGEN3_VERSION_STRING}")
+  get_target_property(EIGEN_INCLUDE_DIRS Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+
 endif()
-# --- END OF FIX ---
+message(STATUS "Using Eigen include directories: ${EIGEN_INCLUDE_DIRS}")
 
 # --- Define the Library Target ---
 add_library(${PROJECT_NAME} SHARED
@@ -44,8 +45,6 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 # --- Include Directories ---
-# PUBLIC means that any target linking against this library will
-# automatically inherit these include paths.
 target_include_directories(${PROJECT_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   ${EIGEN_INCLUDE_DIRS}   # <-- Use our new, unified variable
