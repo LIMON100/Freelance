@@ -10,7 +10,6 @@ find_package(HailoRT REQUIRED)
 find_package(OpenCV REQUIRED)
 message(STATUS "Found OpenCV version: ${OpenCV_VERSION}")
 
-# --- NEW: Add nlohmann/json for parsing calibration files ---
 # This uses FetchContent to download the header-only library if it's not found.
 include(FetchContent)
 FetchContent_Declare(

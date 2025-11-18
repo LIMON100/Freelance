@@ -22,12 +22,16 @@ public:
 private:
 
     void capture_worker(const std::string& pipeline_str, std::shared_ptr<BoundedTSQueue<cv::Mat>> queue);
+    void mirror_capture_worker(const std::string& pipeline_str,
+                               std::shared_ptr<BoundedTSQueue<cv::Mat>> queue_eo,
+                               std::shared_ptr<BoundedTSQueue<cv::Mat>> queue_ir);
 
     void preprocess_worker_eo();
     void preprocess_worker_ir();
     void inference_worker_eo();
     void inference_worker_ir();
     void fusion_worker();
+    void fusion_and_inference_worker();
     void postprocess_worker();
 
     std::string create_gstreamer_pipeline(bool is_live, const std::string& source_path); // <<< ADD THIS LINE
@@ -48,8 +52,10 @@ private:
     PipelineConfig m_config;
     std::atomic<bool> m_stop_flag;
 
-    std::unique_ptr<AsyncModelInfer> m_model_eo;
-    std::unique_ptr<AsyncModelInfer> m_model_ir;
+    std::unique_ptr<AsyncModelInfer> m_model;
+
+    // std::unique_ptr<AsyncModelInfer> m_model_eo;
+    // std::unique_ptr<AsyncModelInfer> m_model_ir;
     
     std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_preprocessed_queue_eo;
     std::shared_ptr<BoundedTSQueue<SingleStreamFrameData>> m_preprocessed_queue_ir;
@@ -72,6 +78,9 @@ private:
     size_t m_total_frames;
 
     CalibrationData m_calibration_data;
+
+    std::chrono::high_resolution_clock::time_point m_pipeline_start_time;
+    std::atomic<size_t> m_processed_frames_count{0}; // Use std::atomic for thread-safety
 };
 
 #endif // TRACKING_PIPELINE_HPP
