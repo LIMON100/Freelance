@@ -14,7 +14,7 @@
 
 using namespace hailort;
 
-// --- THIS IS THE FIX: Restore the complete and correct BoundedTSQueue ---
+// Restore the complete and correct BoundedTSQueue ---
 template<typename T>
 class BoundedTSQueue {
 private:
@@ -52,6 +52,15 @@ public:
         return true;
     }
 
+    bool try_peek(T &out_item) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_queue.empty()) {
+            return false;
+        }
+        out_item = m_queue.front(); // This makes a copy for inspection
+        return true;
+    }
+    
     void stop() {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -60,8 +69,11 @@ public:
         m_cond_not_empty.notify_all();
         m_cond_not_full.notify_all();
     }
+    
+    bool is_stopped() {
+        return m_stopped.load();
+    }
 };
-// --- END FIX ---
 
 class AsyncModelInfer {
 private:

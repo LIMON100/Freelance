@@ -36,7 +36,7 @@ private:
 
     float calculate_adaptive_alpha(const cv::Mat& eo_frame);
 
-    std::string create_gstreamer_pipeline(bool is_live, const std::string& source_path); // <<< ADD THIS LINE
+    std::string create_gstreamer_pipeline(bool is_live, const std::string& source_path);
     
     void release_resources();
     std::vector<byte_track::Object> detections_to_bytetrack_objects(

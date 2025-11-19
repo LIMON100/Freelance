@@ -850,7 +850,7 @@ TrackingPipeline::TrackingPipeline(const PipelineConfig& config)
 }
 
 
-// Destructor
+// Destructor  
 TrackingPipeline::~TrackingPipeline() {
     stop();
     release_resources();
@@ -869,7 +869,6 @@ std::string TrackingPipeline::create_gstreamer_pipeline(bool is_live, const std:
            ",height=" + std::to_string(m_config.processing_height) + " ! " +
            "queue ! appsink name=sink drop=true max-buffers=1";
 }
-
 
 cv::Point2f TrackingPipeline::transformIrToEo(const cv::Point2f& ir_point, double zoom, double focus) 
 {
@@ -1021,10 +1020,6 @@ void TrackingPipeline::run() {
         auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
         
         auto fusion_inference_thread = std::async(std::launch::async, &TrackingPipeline::fusion_and_inference_worker, this);
-
-        // auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
-        // auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
-        // auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
         
         auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
 
@@ -1033,9 +1028,7 @@ void TrackingPipeline::run() {
         
         preprocess_eo_thread.wait();
         preprocess_ir_thread.wait();
-        // inference_eo_thread.wait();
-        // inference_ir_thread.wait();
-        // fusion_thread.wait();
+
         fusion_inference_thread.wait();
         capture_thread.wait(); // Wait for the single capture thread.
 
@@ -1066,10 +1059,6 @@ void TrackingPipeline::run() {
         auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
         
         auto fusion_inference_thread = std::async(std::launch::async, &TrackingPipeline::fusion_and_inference_worker, this);
-
-        // auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
-        // auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
-        // auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
         
         auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
 
@@ -1078,9 +1067,7 @@ void TrackingPipeline::run() {
         
         preprocess_eo_thread.wait();
         preprocess_ir_thread.wait();
-        // inference_eo_thread.wait();
-        // inference_ir_thread.wait();
-        // fusion_thread.wait();
+   
         fusion_inference_thread.wait();
         capture_eo_thread.wait();
         capture_ir_thread.wait();
@@ -1235,12 +1222,53 @@ float TrackingPipeline::calculate_adaptive_alpha(const cv::Mat& eo_frame) {
 
 
 void TrackingPipeline::fusion_and_inference_worker() {
+    const auto max_sync_delta = std::chrono::milliseconds(15);
     while (!m_stop_flag.load()) {
         // Step 1: Pop a synchronized pair of preprocessed frames.
         SingleStreamFrameData eo_item, ir_item;
-        if (!m_preprocessed_queue_eo->pop(eo_item) || !m_preprocessed_queue_ir->pop(ir_item)) {
-            break; // A stream has ended, so we can't form any more pairs.
+        // if (!m_preprocessed_queue_eo->pop(eo_item) || !m_preprocessed_queue_ir->pop(ir_item)) {
+        //     break; // A stream has ended, so we can't form any more pairs.
+        // }
+
+
+        // --- [CORRECTED SYNCHRONIZATION LOGIC] ---
+        
+        // Step 1: Peek at the heads of both queues without removing the items.
+        bool has_eo = m_preprocessed_queue_eo->try_peek(eo_item);
+        bool has_ir = m_preprocessed_queue_ir->try_peek(ir_item);
+
+        // Step 2: Handle cases where one or both queues are empty.
+        if (!has_eo || !has_ir) {
+            // If either stream has permanently ended (stopped and empty), we can't make any more pairs, so exit.
+            if ((m_preprocessed_queue_eo->is_stopped() && !has_eo) || 
+                (m_preprocessed_queue_ir->is_stopped() && !has_ir)) {
+                break;
+            }
+            // One queue is temporarily empty. Wait briefly to avoid a busy-loop consuming 100% CPU.
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue; // Go back to the start of the while loop and check again.
         }
+
+        // Step 3: We have a frame from each queue. Compare their timestamps.
+        auto time_diff = eo_item.t_capture_start - ir_item.t_capture_start;
+
+        if (time_diff > max_sync_delta) {
+            // EO is too far ahead of IR. Discard the older IR frame to let it catch up.
+            m_preprocessed_queue_ir->pop(ir_item); // Pop and discard the old frame.
+            continue; // Loop immediately to compare the new IR frame against the same EO frame.
+        } 
+        else if (time_diff < -max_sync_delta) {
+            // IR is too far ahead of EO. Discard the older EO frame to let it catch up.
+            m_preprocessed_queue_eo->pop(eo_item); // Pop and discard the old frame.
+            continue; // Loop immediately to compare the new EO frame against the same IR frame.
+        }
+        else {
+            // The frames are a good match! Now we can officially pop them from the queues.
+            m_preprocessed_queue_eo->pop(eo_item);
+            m_preprocessed_queue_ir->pop(ir_item);
+        }
+        
+        // --- [END OF CORRECTION] ---
 
         // Step 2: Use std::promise and std::future for synchronization.
         std::promise<void> eo_promise, ir_promise;
@@ -1549,6 +1577,30 @@ void TrackingPipeline::preprocess_worker_eo() {
     m_preprocessed_queue_eo->stop();
 }
 
+// void TrackingPipeline::preprocess_worker_ir() {
+//     int frame_counter = 0;
+//     while (!m_stop_flag.load()) {
+//         cv::Mat processed_frame;
+//         if (!m_raw_frames_queue_ir->pop(processed_frame)) break;
+
+//         SingleStreamFrameData item;
+//         item.frame_id = frame_counter++;
+//         item.t_capture_start = std::chrono::high_resolution_clock::now();
+
+//         item.org_frame = processed_frame.clone();
+//         cv::resize(processed_frame, item.resized_for_infer, 
+//                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
+//                    0, 0, cv::INTER_LINEAR);
+
+//         item.affine_matrix = cv::Mat::eye(2, 3, CV_64F);
+//         item.crop_offset = cv::Point(0, 0);
+
+//         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
+//         m_preprocessed_queue_ir->push(std::move(item));
+//     }
+//     m_preprocessed_queue_ir->stop();
+// }
+
 void TrackingPipeline::preprocess_worker_ir() {
     int frame_counter = 0;
     while (!m_stop_flag.load()) {
@@ -1559,11 +1611,16 @@ void TrackingPipeline::preprocess_worker_ir() {
         item.frame_id = frame_counter++;
         item.t_capture_start = std::chrono::high_resolution_clock::now();
 
+        // --- [REVERTED] ---
+        // The frame from the new GStreamer pipeline is already clean BGR.
+        // No extra copy or conversion is needed.
         item.org_frame = processed_frame.clone();
+        // --- END REVERTED ---
+
         cv::resize(processed_frame, item.resized_for_infer, 
                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
                    0, 0, cv::INTER_LINEAR);
-
+        
         item.affine_matrix = cv::Mat::eye(2, 3, CV_64F);
         item.crop_offset = cv::Point(0, 0);
 
@@ -1791,9 +1848,6 @@ void TrackingPipeline::postprocess_worker() {
                       << " | Total E2E: " << dur_total << "ms"
                       << std::endl;
         }
-        
-        // --- THIS IS THE FIX: Perform all drawing operations unconditionally ---
-        // --- before checking if visualization is enabled. ---
 
         // PTZ Guidance and Target Crosshair Drawing
         if (!tracked_objects.empty()) {
