@@ -1213,43 +1213,57 @@ void TrackingPipeline::capture_worker(const std::string& pipeline_str, std::shar
 }
 
 
-// In tracking_pipeline.cpp
+float TrackingPipeline::calculate_adaptive_alpha(const cv::Mat& eo_frame) {
+    constexpr float low_contrast_threshold = 20.0f;
+    constexpr float high_contrast_threshold = 60.0f;
+    constexpr float min_alpha = 0.4f;
+    constexpr float max_alpha = 0.8f;
+
+    cv::Mat gray_frame;
+    cv::cvtColor(eo_frame, gray_frame, cv::COLOR_BGR2GRAY);
+
+    cv::Scalar mean, stddev;
+    cv::meanStdDev(gray_frame, mean, stddev);
+    float current_contrast = static_cast<float>(stddev[0]);
+
+    float alpha = min_alpha + (current_contrast - low_contrast_threshold) * 
+                               (max_alpha - min_alpha) / 
+                               (high_contrast_threshold - low_contrast_threshold);
+
+    return std::clamp(alpha, min_alpha, max_alpha);
+}
+
 
 void TrackingPipeline::fusion_and_inference_worker() {
     while (!m_stop_flag.load()) {
         // Step 1: Pop a synchronized pair of preprocessed frames.
-        // This will block until both an EO and an IR frame are ready.
         SingleStreamFrameData eo_item, ir_item;
         if (!m_preprocessed_queue_eo->pop(eo_item) || !m_preprocessed_queue_ir->pop(ir_item)) {
             break; // A stream has ended, so we can't form any more pairs.
         }
 
-        // Step 2: Use std::promise and std::future to manage the completion of the two parallel inference jobs.
+        // Step 2: Use std::promise and std::future for synchronization.
         std::promise<void> eo_promise, ir_promise;
         std::future<void> eo_future = eo_promise.get_future();
         std::future<void> ir_future = ir_promise.get_future();
 
-        // Step 3: Submit the EO inference job to the single, shared model instance.
+        // Step 3: Submit EO inference job.
         m_model->infer(
             std::make_shared<cv::Mat>(eo_item.resized_for_infer),
-            // The lambda callback will execute when the EO inference is complete.
             [&eo_item, &eo_promise](const auto& info, const auto& outs, const auto& guards) mutable {
                 if (info.status == HAILO_SUCCESS) {
-                    // Populate the item with the results.
                     eo_item.t_inference_end = std::chrono::high_resolution_clock::now();
                     eo_item.output_data_and_infos = outs;
                     eo_item.output_guards = guards;
                 } else {
                     std::cerr << "[ERROR] EO Inference failed with status: " << info.status << std::endl;
                 }
-                // Notify the future that this job is done (successfully or not).
                 eo_promise.set_value();
             });
 
-        // Step 4: Submit the IR inference job to the same shared model instance.
+        // Step 4: Submit IR inference job.
         m_model->infer(
             std::make_shared<cv::Mat>(ir_item.resized_for_infer),
-            // The lambda callback will execute when the IR inference is complete.
             [&ir_item, &ir_promise](const auto& info, const auto& outs, const auto& guards) mutable {
                 if (info.status == HAILO_SUCCESS) {
                     ir_item.t_inference_end = std::chrono::high_resolution_clock::now();
@@ -1258,17 +1272,14 @@ void TrackingPipeline::fusion_and_inference_worker() {
                 } else {
                     std::cerr << "[ERROR] IR Inference failed with status: " << info.status << std::endl;
                 }
-                // Notify the future that this job is done.
                 ir_promise.set_value();
             });
 
-        // Step 5: Wait here until BOTH inference jobs for this frame pair are complete.
-        // This is the key synchronization point that provides backpressure to the pipeline.
+        // Step 5: Wait for both inference jobs to complete.
         eo_future.wait();
         ir_future.wait();
 
-        // Step 6: Now that both inferences are done, proceed with the fusion logic.
-        
+        // Step 6: Proceed with fusion logic.
         FusedFrameData fused_item;
         fused_item.frame_id = eo_item.frame_id;
         fused_item.display_frame = eo_item.org_frame.clone();
@@ -1285,6 +1296,7 @@ void TrackingPipeline::fusion_and_inference_worker() {
         if (eo_item.output_data_and_infos.empty() || ir_item.output_data_and_infos.empty()) {
             std::cerr << "[WARNING] Missing inference results for frame " << eo_item.frame_id << ". Skipping fusion for this frame." << std::endl;
             fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
+            fused_item.alpha_calculation_duration = std::chrono::milliseconds(0); // Set duration to zero
             m_fused_queue->push(std::move(fused_item)); // Push an item with empty detections
             continue;
         }
@@ -1315,7 +1327,23 @@ void TrackingPipeline::fusion_and_inference_worker() {
         }
 
         const float search_roi_size = 80.0f;
-        const float alpha = 0.7f;
+        
+        // <<< NEW >>>
+        // This block handles the adaptive alpha logic based on the feature flag.
+        float alpha;
+        auto t_alpha_start = std::chrono::high_resolution_clock::now();
+
+        if (m_config.enable_adaptive_alpha) {
+            // Calculate alpha dynamically based on EO frame contrast
+            alpha = calculate_adaptive_alpha(eo_item.org_frame);
+        } else {
+            // Use a fixed, default alpha when the feature is disabled
+            alpha = 0.7f;
+        }
+
+        auto t_alpha_end = std::chrono::high_resolution_clock::now();
+        fused_item.alpha_calculation_duration = std::chrono::duration<double, std::milli>(t_alpha_end - t_alpha_start);
+        // <<< END NEW >>>
 
         for (auto& eo_obj : eo_objects) {
             cv::Point2f eo_center(eo_obj.rect.x() + eo_obj.rect.width() / 2.0f,
@@ -1339,6 +1367,7 @@ void TrackingPipeline::fusion_and_inference_worker() {
             }
 
             if (best_ir_match != nullptr) {
+                // The formula now uses our new 'alpha' variable, which is either fixed or dynamic.
                 eo_obj.prob = alpha * eo_obj.prob + (1.0f - alpha) * best_ir_match->prob;
             }
         }
@@ -1352,6 +1381,144 @@ void TrackingPipeline::fusion_and_inference_worker() {
     }
     m_fused_queue->stop();
 }
+
+// void TrackingPipeline::fusion_and_inference_worker() {
+//     while (!m_stop_flag.load()) {
+//         // Step 1: Pop a synchronized pair of preprocessed frames.
+//         // This will block until both an EO and an IR frame are ready.
+//         SingleStreamFrameData eo_item, ir_item;
+//         if (!m_preprocessed_queue_eo->pop(eo_item) || !m_preprocessed_queue_ir->pop(ir_item)) {
+//             break; // A stream has ended, so we can't form any more pairs.
+//         }
+
+//         // Step 2: Use std::promise and std::future to manage the completion of the two parallel inference jobs.
+//         std::promise<void> eo_promise, ir_promise;
+//         std::future<void> eo_future = eo_promise.get_future();
+//         std::future<void> ir_future = ir_promise.get_future();
+
+//         // Step 3: Submit the EO inference job to the single, shared model instance.
+//         m_model->infer(
+//             std::make_shared<cv::Mat>(eo_item.resized_for_infer),
+//             // The lambda callback will execute when the EO inference is complete.
+//             [&eo_item, &eo_promise](const auto& info, const auto& outs, const auto& guards) mutable {
+//                 if (info.status == HAILO_SUCCESS) {
+//                     // Populate the item with the results.
+//                     eo_item.t_inference_end = std::chrono::high_resolution_clock::now();
+//                     eo_item.output_data_and_infos = outs;
+//                     eo_item.output_guards = guards;
+//                 } else {
+//                     std::cerr << "[ERROR] EO Inference failed with status: " << info.status << std::endl;
+//                 }
+//                 // Notify the future that this job is done (successfully or not).
+//                 eo_promise.set_value();
+//             });
+
+//         // Step 4: Submit the IR inference job to the same shared model instance.
+//         m_model->infer(
+//             std::make_shared<cv::Mat>(ir_item.resized_for_infer),
+//             // The lambda callback will execute when the IR inference is complete.
+//             [&ir_item, &ir_promise](const auto& info, const auto& outs, const auto& guards) mutable {
+//                 if (info.status == HAILO_SUCCESS) {
+//                     ir_item.t_inference_end = std::chrono::high_resolution_clock::now();
+//                     ir_item.output_data_and_infos = outs;
+//                     ir_item.output_guards = guards;
+//                 } else {
+//                     std::cerr << "[ERROR] IR Inference failed with status: " << info.status << std::endl;
+//                 }
+//                 // Notify the future that this job is done.
+//                 ir_promise.set_value();
+//             });
+
+//         // Step 5: Wait here until BOTH inference jobs for this frame pair are complete.
+//         // This is the key synchronization point that provides backpressure to the pipeline.
+//         eo_future.wait();
+//         ir_future.wait();
+
+//         // Step 6: Now that both inferences are done, proceed with the fusion logic.
+        
+//         FusedFrameData fused_item;
+//         fused_item.frame_id = eo_item.frame_id;
+//         fused_item.display_frame = eo_item.org_frame.clone();
+
+//         // Copy all timestamps from both completed items.
+//         fused_item.t_eo_capture_start = eo_item.t_capture_start;
+//         fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
+//         fused_item.t_eo_inference_end = eo_item.t_inference_end;
+//         fused_item.t_ir_capture_start = ir_item.t_capture_start;
+//         fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
+//         fused_item.t_ir_inference_end = ir_item.t_inference_end;
+
+//         // Check if inference results are valid before parsing
+//         if (eo_item.output_data_and_infos.empty() || ir_item.output_data_and_infos.empty()) {
+//             std::cerr << "[WARNING] Missing inference results for frame " << eo_item.frame_id << ". Skipping fusion for this frame." << std::endl;
+//             fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
+//             m_fused_queue->push(std::move(fused_item)); // Push an item with empty detections
+//             continue;
+//         }
+        
+//         // --- EO->THERMAL HANDOVER & SCORE FUSION LOGIC ---
+
+//         double current_zoom = m_config.default_zoom;
+//         double current_focus = m_config.default_focus;
+
+//         // Get native EO detections
+//         int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
+//         int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
+//         auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
+//         std::vector<byte_track::Object> eo_objects = detections_to_bytetrack_objects(eo_bboxes, eo_proc_width, eo_proc_height);
+//         for (auto& obj : eo_objects) {
+//             obj.rect.x() += eo_item.crop_offset.x;
+//             obj.rect.y() += eo_item.crop_offset.y;
+//         }
+
+//         // Get native IR detections
+//         int ir_proc_width = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.cols;
+//         int ir_proc_height = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.rows;
+//         auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
+//         std::vector<byte_track::Object> ir_objects = detections_to_bytetrack_objects(ir_bboxes, ir_proc_width, ir_proc_height);
+//         for (auto& obj : ir_objects) {
+//             obj.rect.x() += ir_item.crop_offset.x;
+//             obj.rect.y() += ir_item.crop_offset.y;
+//         }
+
+//         const float search_roi_size = 80.0f;
+//         const float alpha = 0.7f;
+
+//         for (auto& eo_obj : eo_objects) {
+//             cv::Point2f eo_center(eo_obj.rect.x() + eo_obj.rect.width() / 2.0f,
+//                                   eo_obj.rect.y() + eo_obj.rect.height() / 2.0f);
+            
+//             cv::Point2f projected_ir_center = transformEoToIr(eo_center, current_zoom, current_focus);
+
+//             byte_track::Object* best_ir_match = nullptr;
+//             cv::Rect2f search_roi(projected_ir_center.x - search_roi_size / 2.0f,
+//                                   projected_ir_center.y - search_roi_size / 2.0f,
+//                                   search_roi_size, search_roi_size);
+
+//             for (auto& ir_obj : ir_objects) {
+//                 cv::Point2f ir_center(ir_obj.rect.x() + ir_obj.rect.width() / 2.0f,
+//                                       ir_obj.rect.y() + ir_obj.rect.height() / 2.0f);
+
+//                 if (search_roi.contains(ir_center)) {
+//                      best_ir_match = &ir_obj;
+//                      break;
+//                 }
+//             }
+
+//             if (best_ir_match != nullptr) {
+//                 eo_obj.prob = alpha * eo_obj.prob + (1.0f - alpha) * best_ir_match->prob;
+//             }
+//         }
+
+//         fused_item.fused_detections = eo_objects;
+        
+//         // --- END OF FUSION LOGIC ---
+        
+//         fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
+//         m_fused_queue->push(std::move(fused_item));
+//     }
+//     m_fused_queue->stop();
+// }
 
 void TrackingPipeline::preprocess_worker_eo() {
     int frame_counter = 0;
@@ -1439,112 +1606,112 @@ void TrackingPipeline::inference_worker_ir() {
     m_results_queue_ir->stop();
 }
 
-void TrackingPipeline::fusion_worker() {
-    while (!m_stop_flag.load()) {
-        SingleStreamFrameData eo_item, ir_item;
+// void TrackingPipeline::fusion_worker() {
+//     while (!m_stop_flag.load()) {
+//         SingleStreamFrameData eo_item, ir_item;
 
 
-        if (!m_results_queue_eo->pop(eo_item)) {
-            break; // EO stream ended, break the loop.
-        }
-        if (!m_results_queue_ir->pop(ir_item)) {
-            break; // IR stream ended, break the loop.
-        }
+//         if (!m_results_queue_eo->pop(eo_item)) {
+//             break; // EO stream ended, break the loop.
+//         }
+//         if (!m_results_queue_ir->pop(ir_item)) {
+//             break; // IR stream ended, break the loop.
+//         }
 
-        // Prepare the output data structure for this frame pair.
-        FusedFrameData fused_item;
-        fused_item.frame_id = eo_item.frame_id; // Use EO frame ID as the reference for the fused frame.
-        fused_item.display_frame = eo_item.org_frame.clone(); // Use the original EO frame for display.
+//         // Prepare the output data structure for this frame pair.
+//         FusedFrameData fused_item;
+//         fused_item.frame_id = eo_item.frame_id; // Use EO frame ID as the reference for the fused frame.
+//         fused_item.display_frame = eo_item.org_frame.clone(); // Use the original EO frame for display.
 
-        // Copy all timestamps from both streams for detailed profiling.
-        fused_item.t_eo_capture_start = eo_item.t_capture_start;
-        fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
-        fused_item.t_eo_inference_end = eo_item.t_inference_end;
-        fused_item.t_ir_capture_start = ir_item.t_capture_start;
-        fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
-        fused_item.t_ir_inference_end = ir_item.t_inference_end;
+//         // Copy all timestamps from both streams for detailed profiling.
+//         fused_item.t_eo_capture_start = eo_item.t_capture_start;
+//         fused_item.t_eo_preprocess_end = eo_item.t_preprocess_end;
+//         fused_item.t_eo_inference_end = eo_item.t_inference_end;
+//         fused_item.t_ir_capture_start = ir_item.t_capture_start;
+//         fused_item.t_ir_preprocess_end = ir_item.t_preprocess_end;
+//         fused_item.t_ir_inference_end = ir_item.t_inference_end;
 
-        // --- EO->THERMAL HANDOVER & SCORE FUSION STRATEGY ---
+//         // --- EO->THERMAL HANDOVER & SCORE FUSION STRATEGY ---
 
-        // Get current zoom/focus from the camera. For this demo, we use default values from the config.
-        // In a real system, you would get these values from the camera's SDK each frame.
-        double current_zoom = m_config.default_zoom;
-        double current_focus = m_config.default_focus;
+//         // Get current zoom/focus from the camera. For this demo, we use default values from the config.
+//         // In a real system, you would get these values from the camera's SDK each frame.
+//         double current_zoom = m_config.default_zoom;
+//         double current_focus = m_config.default_focus;
 
-        // 1. Get native EO detections (Primary Sensor) and convert to full frame coordinates.
-        int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
-        int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
-        auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
-        std::vector<byte_track::Object> eo_objects = detections_to_bytetrack_objects(eo_bboxes, eo_proc_width, eo_proc_height);
-        for (auto& obj : eo_objects) {
-            obj.rect.x() += eo_item.crop_offset.x;
-            obj.rect.y() += eo_item.crop_offset.y;
-        }
+//         // 1. Get native EO detections (Primary Sensor) and convert to full frame coordinates.
+//         int eo_proc_width = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.cols;
+//         int eo_proc_height = m_config.enable_center_crop ? m_config.crop_size : eo_item.org_frame.rows;
+//         auto eo_bboxes = parse_nms_data(eo_item.output_data_and_infos[0].first, m_config.class_count);
+//         std::vector<byte_track::Object> eo_objects = detections_to_bytetrack_objects(eo_bboxes, eo_proc_width, eo_proc_height);
+//         for (auto& obj : eo_objects) {
+//             obj.rect.x() += eo_item.crop_offset.x;
+//             obj.rect.y() += eo_item.crop_offset.y;
+//         }
 
-        // 2. Get native IR detections (Secondary Sensor) and convert to full frame coordinates.
-        int ir_proc_width = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.cols;
-        int ir_proc_height = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.rows;
-        auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
-        std::vector<byte_track::Object> ir_objects = detections_to_bytetrack_objects(ir_bboxes, ir_proc_width, ir_proc_height);
-        for (auto& obj : ir_objects) {
-            obj.rect.x() += ir_item.crop_offset.x;
-            obj.rect.y() += ir_item.crop_offset.y;
-        }
+//         // 2. Get native IR detections (Secondary Sensor) and convert to full frame coordinates.
+//         int ir_proc_width = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.cols;
+//         int ir_proc_height = m_config.enable_center_crop ? m_config.crop_size : ir_item.org_frame.rows;
+//         auto ir_bboxes = parse_nms_data(ir_item.output_data_and_infos[0].first, m_config.class_count);
+//         std::vector<byte_track::Object> ir_objects = detections_to_bytetrack_objects(ir_bboxes, ir_proc_width, ir_proc_height);
+//         for (auto& obj : ir_objects) {
+//             obj.rect.x() += ir_item.crop_offset.x;
+//             obj.rect.y() += ir_item.crop_offset.y;
+//         }
 
-        // 3. For each EO detection, search for a corresponding IR detection to validate and boost its score.
-        const float search_roi_size = 80.0f; // Search radius in pixels (e.g., +/- 80px), as suggested in the doc.
-        const float alpha = 0.7;             // Weight for EO score (e.g., for daytime). Can be scheduled.
+//         // 3. For each EO detection, search for a corresponding IR detection to validate and boost its score.
+//         const float search_roi_size = 80.0f; // Search radius in pixels (e.g., +/- 80px), as suggested in the doc.
+//         const float alpha = 0.7;             // Weight for EO score (e.g., for daytime). Can be scheduled.
 
-        // This loop modifies the `eo_objects` vector in place.
-        for (auto& eo_obj : eo_objects) {
-            // Handover: Project the EO detection's center point into the IR image space.
-            cv::Point2f eo_center(eo_obj.rect.x() + eo_obj.rect.width() / 2.0f,
-                                  eo_obj.rect.y() + eo_obj.rect.height() / 2.0f);
+//         // This loop modifies the `eo_objects` vector in place.
+//         for (auto& eo_obj : eo_objects) {
+//             // Handover: Project the EO detection's center point into the IR image space.
+//             cv::Point2f eo_center(eo_obj.rect.x() + eo_obj.rect.width() / 2.0f,
+//                                   eo_obj.rect.y() + eo_obj.rect.height() / 2.0f);
             
-            cv::Point2f projected_ir_center = transformEoToIr(eo_center, current_zoom, current_focus);
+//             cv::Point2f projected_ir_center = transformEoToIr(eo_center, current_zoom, current_focus);
 
-            // Seed: Search for a matching IR detection within the defined ROI around the projected center.
-            byte_track::Object* best_ir_match = nullptr;
+//             // Seed: Search for a matching IR detection within the defined ROI around the projected center.
+//             byte_track::Object* best_ir_match = nullptr;
             
-            // Define the square search Region of Interest (ROI) in the IR image.
-            cv::Rect2f search_roi(projected_ir_center.x - search_roi_size / 2.0f,
-                                  projected_ir_center.y - search_roi_size / 2.0f,
-                                  search_roi_size, search_roi_size);
+//             // Define the square search Region of Interest (ROI) in the IR image.
+//             cv::Rect2f search_roi(projected_ir_center.x - search_roi_size / 2.0f,
+//                                   projected_ir_center.y - search_roi_size / 2.0f,
+//                                   search_roi_size, search_roi_size);
 
-            for (auto& ir_obj : ir_objects) {
-                // Check if the center of the current IR object falls within our search ROI.
-                cv::Point2f ir_center(ir_obj.rect.x() + ir_obj.rect.width() / 2.0f,
-                                      ir_obj.rect.y() + ir_obj.rect.height() / 2.0f);
+//             for (auto& ir_obj : ir_objects) {
+//                 // Check if the center of the current IR object falls within our search ROI.
+//                 cv::Point2f ir_center(ir_obj.rect.x() + ir_obj.rect.width() / 2.0f,
+//                                       ir_obj.rect.y() + ir_obj.rect.height() / 2.0f);
 
-                if (search_roi.contains(ir_center)) {
-                     // We found a potential match in the secondary sensor.
-                     // A simple strategy is to take the first one found.
-                     // A more advanced strategy could find the one with the highest score or closest center.
-                     best_ir_match = &ir_obj;
-                     break; // Found a match, no need to search further for this EO object.
-                }
-            }
+//                 if (search_roi.contains(ir_center)) {
+//                      // We found a potential match in the secondary sensor.
+//                      // A simple strategy is to take the first one found.
+//                      // A more advanced strategy could find the one with the highest score or closest center.
+//                      best_ir_match = &ir_obj;
+//                      break; // Found a match, no need to search further for this EO object.
+//                 }
+//             }
 
-            // Score Fusion: If a corresponding IR detection was found, update the EO object's score.
-            if (best_ir_match != nullptr) {
-                // Apply the score fusion formula from the document.
-                eo_obj.prob = alpha * eo_obj.prob + (1.0f - alpha) * best_ir_match->prob;
-            }
-        }
+//             // Score Fusion: If a corresponding IR detection was found, update the EO object's score.
+//             if (best_ir_match != nullptr) {
+//                 // Apply the score fusion formula from the document.
+//                 eo_obj.prob = alpha * eo_obj.prob + (1.0f - alpha) * best_ir_match->prob;
+//             }
+//         }
 
-        // 4. The final list of detections to be sent to the tracker consists of the original EO detections.
-        //    The key difference is that their confidence scores (`prob`) may have been boosted
-        //    if they were confirmed by the thermal sensor.
-        //    The geometry (bounding box) is still determined by the primary EO sensor.
-        fused_item.fused_detections = eo_objects;
+//         // 4. The final list of detections to be sent to the tracker consists of the original EO detections.
+//         //    The key difference is that their confidence scores (`prob`) may have been boosted
+//         //    if they were confirmed by the thermal sensor.
+//         //    The geometry (bounding box) is still determined by the primary EO sensor.
+//         fused_item.fused_detections = eo_objects;
         
-        // --- END OF FUSION LOGIC ---
+//         // --- END OF FUSION LOGIC ---
         
-        fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
-        m_fused_queue->push(std::move(fused_item));
-    }
-    m_fused_queue->stop();
-}
+//         fused_item.t_fusion_end = std::chrono::high_resolution_clock::now();
+//         m_fused_queue->push(std::move(fused_item));
+//     }
+//     m_fused_queue->stop();
+// }
 
 void TrackingPipeline::postprocess_worker() {
     // --- INITIAL SETUP ---

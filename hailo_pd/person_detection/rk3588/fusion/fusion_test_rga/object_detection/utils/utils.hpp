@@ -72,6 +72,8 @@ struct FusedFrameData {
     std::chrono::high_resolution_clock::time_point t_ir_inference_end;
 
     std::chrono::high_resolution_clock::time_point t_fusion_end;
+    
+    std::chrono::duration<double, std::milli> alpha_calculation_duration;
 };
 
 struct CommandLineArgs {

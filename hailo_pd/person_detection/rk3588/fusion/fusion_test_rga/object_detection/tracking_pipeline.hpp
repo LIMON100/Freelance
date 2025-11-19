@@ -34,6 +34,8 @@ private:
     void fusion_and_inference_worker();
     void postprocess_worker();
 
+    float calculate_adaptive_alpha(const cv::Mat& eo_frame);
+
     std::string create_gstreamer_pipeline(bool is_live, const std::string& source_path); // <<< ADD THIS LINE
     
     void release_resources();
