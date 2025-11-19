@@ -7,11 +7,10 @@
 struct PipelineConfig {
 
     bool use_live_stream = true;
-    bool mirror_single_camera = false; 
     
     // --- SOURCE CONFIGURATION ---
     std::string eo_video_path = "./30eo.mp4"; // Example path for EO video
-    std::string ir_video_path = "./30eo.mp4"; // Example path for IR video
+    std::string ir_video_path = "./30ir.mp4"; // Example path for IR video
     
     // Camera device paths (used if use_live_stream is true)
     std::string eo_device_path = "/dev/video1";
@@ -27,9 +26,11 @@ struct PipelineConfig {
     size_t class_count = 2;
 
     // --- FEATURE FLAGS ---
+    bool enable_adaptive_alpha = false;
+    bool mirror_single_camera = false; 
     bool enable_profiling_log = true;
     bool enable_global_stabilization = false; 
-    bool enable_visualization = false;
+    bool enable_visualization = true;
     bool save_output_video = false; 
     bool enable_center_crop = false; 
     int crop_size = 500;
