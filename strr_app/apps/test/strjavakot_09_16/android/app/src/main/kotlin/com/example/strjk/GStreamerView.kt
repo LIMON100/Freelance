@@ -85,7 +85,8 @@ internal class GStreamerView(
             "startStream" -> {
                 val url = call.argument<String>("url")
                 if (url != null) {
-                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
                     Log.d(TAG, "Initializing native with pipeline: $gstDesc")
                     nativeInit(gstDesc)
                     is_playing_desired = true
@@ -117,7 +118,8 @@ internal class GStreamerView(
                     nativeControllerInit() // 2. Reset the Java-side native controller.
 
                     // 3. Initialize a completely new pipeline with the new URL.
-                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
                     nativeInit(gstDesc)
                     is_playing_desired = true
 
@@ -145,7 +147,8 @@ internal class GStreamerView(
                     nativeFinalize()
                     nativeControllerInit()
 
-                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
                     nativeInit(gstDesc)
                     is_playing_desired = true
 
