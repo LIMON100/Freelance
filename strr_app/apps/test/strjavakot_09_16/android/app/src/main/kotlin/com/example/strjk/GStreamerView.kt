@@ -86,7 +86,8 @@ internal class GStreamerView(
                 val url = call.argument<String>("url")
                 if (url != null) {
 //                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
-                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=150 drop-on-latency=true buffer-mode=none ! decodebin ! videoconvert ! autovideosink sync=false"
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=100 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
                     Log.d(TAG, "Initializing native with pipeline: $gstDesc")
                     nativeInit(gstDesc)
                     is_playing_desired = true
@@ -119,7 +120,8 @@ internal class GStreamerView(
 
                     // 3. Initialize a completely new pipeline with the new URL.
 //                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
-                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=150 drop-on-latency=true buffer-mode=none ! decodebin ! videoconvert ! autovideosink sync=false"
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=100 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
                     nativeInit(gstDesc)
                     is_playing_desired = true
 
@@ -148,7 +150,8 @@ internal class GStreamerView(
                     nativeControllerInit()
 
 //                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
-                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
+                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=1 drop-on-latency=true buffer-mode=none ! decodebin ! videoconvert ! autovideosink sync=false"
+//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=100 drop-on-latency=true buffer-mode=none ! rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false"
                     nativeInit(gstDesc)
                     is_playing_desired = true
 

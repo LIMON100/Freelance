@@ -14,7 +14,6 @@ class SettingsService {
     await prefs.setString(_ipAddressKey, ipAddress);
     await prefs.setString(_dayCameraUrlKey, dayCameraUrl);
     await prefs.setString(_nightCameraUrlKey, nightCameraUrl);
-    print("Settings saved!");
   }
 
   Future<String> loadIpAddress() async {

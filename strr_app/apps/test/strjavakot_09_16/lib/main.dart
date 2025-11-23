@@ -49,7 +49,8 @@ class HomePage extends StatefulWidget {
 }
 
 
-class _HomePageState extends State<HomePage> {
+// class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // --- STATE MANAGEMENT ---
   UserCommand _currentCommand = UserCommand();
   bool _isLoading = true;
@@ -125,6 +126,10 @@ class _HomePageState extends State<HomePage> {
 
   Socket? _commandSocket;
 
+  bool _isNavigatingAway = false; // <-- ADD THIS NEW STATE VARIABLE
+  bool _isReinitializing = false; // <-- ADD THIS LINE
+
+
 
 
   final Map<int, int> _buttonIndexToCommandId = {
@@ -150,7 +155,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-
+    WidgetsBinding.instance.addObserver(this); // Register to listen for events
     WakelockPlus.enable();
     _initializeSockets();
 
@@ -187,7 +192,41 @@ class _HomePageState extends State<HomePage> {
     _transformationController.dispose();
     _statusSocketSubscription?.cancel();
     _statusSocket?.destroy();
+    WidgetsBinding.instance.removeObserver(this); // Unregister the listener
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    print("App lifecycle state changed to: $state");
+
+    // Check if the GStreamer channel is even available to talk to.
+    if (_gstreamerChannel == null || !_isGStreamerReady) {
+      return;
+    }
+
+    if (state == AppLifecycleState.paused) {
+      // App is going to the background. Pause the stream.
+      print("App paused, pausing GStreamer stream.");
+      try {
+        _gstreamerChannel!.invokeMethod('pause'); // Assuming you add a 'pause' method in native
+      } catch (e) {
+        print("Error pausing stream: $e");
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      // App is returning to the foreground.
+      // The solution with the `_isNavigatingAway` flag already handles
+      // recreating the view, which will automatically start the stream.
+      // But if the view wasn't destroyed (e.g., returning from a phone call),
+      // you might want to explicitly play it.
+      print("App resumed, ensuring GStreamer stream is playing.");
+      try {
+        _gstreamerChannel!.invokeMethod('play'); // Assuming you add a 'play' method
+      } catch (e) {
+        print("Error playing stream on resume: $e");
+      }
+    }
   }
 
   Future<void> _connectCommandServer() async {
@@ -1243,7 +1282,16 @@ class _HomePageState extends State<HomePage> {
               minScale: 1.0,
               maxScale: 5.0,
               panEnabled: false,
-              child: KeyedSubtree(
+              // child: KeyedSubtree(
+              //   key: _gstreamerViewKey,
+              //   child: AndroidView(
+              //     viewType: 'gstreamer_view',
+              //     onPlatformViewCreated: _onGStreamerPlatformViewCreated,
+              //   ),
+              // ),
+              child: _isNavigatingAway
+                  ? Container(color: Colors.black) // Show a black placeholder while away
+                  : KeyedSubtree( // Re-create the view when returning
                 key: _gstreamerViewKey,
                 child: AndroidView(
                   viewType: 'gstreamer_view',
@@ -1322,7 +1370,30 @@ class _HomePageState extends State<HomePage> {
               child: _buildBottomBar(),
             ),
           ),
+
+          if (_isReinitializing) _buildReinitializingOverlay(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReinitializingOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.6),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 20),
+              Text(
+                'Applying new settings...',
+                style: TextStyle(color: Colors.white, fontSize: 18, decoration: TextDecoration.none),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -2221,11 +2292,70 @@ class _HomePageState extends State<HomePage> {
     return const SizedBox.shrink();
   }
 
+  // Future<void> _navigateToSettings() async {
+  //   final bool? settingsChanged = await Navigator.push<bool>(context, MaterialPageRoute(builder: (context) => const SettingsMenuPage()));
+  //   if (settingsChanged == true && mounted) {
+  //     _commandTimer?.cancel();
+  //     await _loadSettingsAndInitialize();
+  //   }
+  // }
   Future<void> _navigateToSettings() async {
-    final bool? settingsChanged = await Navigator.push<bool>(context, MaterialPageRoute(builder: (context) => const SettingsMenuPage()));
+    _commandTimer?.cancel();
+
+    setState(() {
+      _isNavigatingAway = true;
+    });
+
+    final bool? settingsChanged = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsMenuPage()),
+    );
+
+    // Set this flag back to false immediately so the view starts rebuilding
+    setState(() {
+      _isNavigatingAway = false;
+    });
+
     if (settingsChanged == true && mounted) {
-      _commandTimer?.cancel();
-      await _loadSettingsAndInitialize();
+      // --- THIS IS THE KEY CHANGE ---
+      // 1. Show the loading overlay
+      setState(() {
+        _isReinitializing = true;
+      });
+
+      // 2. Await for the entire reconnection process to finish
+      await _reloadSettingsAndReconnect();
+
+      // 3. Hide the loading overlay
+      if (mounted) {
+        setState(() {
+          _isReinitializing = false;
+        });
+      }
+      // --- END OF KEY CHANGE ---
+    } else {
+      // If no changes, just restart the timer
+      _startCommandTimer();
     }
+  }
+
+  Future<void> _reloadSettingsAndReconnect() async {
+    // Load the potentially new IP and URLs
+    _robotIpAddress = await _settingsService.loadIpAddress();
+    _cameraUrls = await _settingsService.loadCameraUrls();
+
+    // Re-establish connections to the (potentially new) IP address
+    _connectToStatusServer();
+    _connectCommandServer();
+
+    // Now, tell the GStreamer view to switch to the new stream URL.
+    // The existing `_switchCamera` function is perfect for this, as it handles
+    // the native recreation logic correctly via the "changeStream" method.
+    if (mounted) {
+      _switchCamera(_currentCameraIndex);
+    }
+
+    // Finally, restart the command timer.
+    _startCommandTimer();
   }
 }

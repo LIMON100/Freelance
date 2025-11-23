@@ -21,6 +21,7 @@ dependencies:
   shared_preferences: ^2.2.3
   flutter_joystick: ^0.2.2
   wakelock_plus:
+  logger:
 
 dev_dependencies:
   flutter_test:
