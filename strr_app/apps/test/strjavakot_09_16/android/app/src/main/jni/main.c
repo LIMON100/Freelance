@@ -455,7 +455,7 @@
 //    return JNI_VERSION_1_6;
 //}
 
-
+//11_07 fully workable no crash
 #include <string.h>
 #include <stdint.h>
 #include <jni.h>
@@ -486,11 +486,11 @@ typedef struct _CustomData {
     GstElement *video_sink;
     ANativeWindow *native_window;
     gchar *gst_desc;
-    // --- FIX: Add a flag to signal the thread to exit ---
     gboolean main_loop_quit;
+    pthread_t gst_app_thread; // <-- MOVE THE THREAD HANDLE HERE
 } CustomData;
 
-static pthread_t gst_app_thread;
+//static pthread_t gst_app_thread;
 static pthread_key_t current_jni_env;
 static JavaVM *java_vm;
 static jfieldID custom_data_field_id;
@@ -663,36 +663,92 @@ static void gst_controller_init(JNIEnv *env, jobject thiz) {
     GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
 }
 
-static void gst_native_init(JNIEnv *env, jobject thiz, jstring gst_desc) {
+//static void gst_native_init(JNIEnv *env, jobject thiz, jstring gst_desc) {
+//    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+//    if (!data) return;
+//    if (gst_app_thread != 0) {
+//        GST_WARNING("A GStreamer thread is already running. Finalize it first.");
+//        return;
+//    }
+//    const gchar *char_gst_desc = (*env)->GetStringUTFChars(env, gst_desc, NULL);
+//    data->gst_desc = g_strdup(char_gst_desc);
+//    GST_DEBUG ("Setting pipeline description to %s", char_gst_desc);
+//    (*env)->ReleaseStringUTFChars(env, gst_desc, char_gst_desc);
+//    pthread_create(&gst_app_thread, NULL, &app_function, data);
+//}
+
+static void
+gst_native_init(JNIEnv *env, jobject thiz, jstring gst_desc) {
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
     if (!data) return;
-    if (gst_app_thread != 0) {
-        GST_WARNING("A GStreamer thread is already running. Finalize it first.");
+
+    // FIX: Check the instance-specific thread handle, not the global one.
+    if (data->gst_app_thread != 0) {
+        GST_WARNING("This instance already has a GStreamer thread running. Finalize it first.");
         return;
     }
+
     const gchar *char_gst_desc = (*env)->GetStringUTFChars(env, gst_desc, NULL);
     data->gst_desc = g_strdup(char_gst_desc);
     GST_DEBUG ("Setting pipeline description to %s", char_gst_desc);
     (*env)->ReleaseStringUTFChars(env, gst_desc, char_gst_desc);
-    pthread_create(&gst_app_thread, NULL, &app_function, data);
+
+    // FIX: Create the thread and store its handle in the instance-specific struct.
+    pthread_create(&data->gst_app_thread, NULL, &app_function, data);
 }
 
-static void gst_native_finalize(JNIEnv *env, jobject thiz) {
+//static void gst_native_finalize(JNIEnv *env, jobject thiz) {
+//    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+//    if (!data) return;
+//
+//    GST_DEBUG ("Quitting main loop...");
+//    if (data->main_loop && g_main_loop_is_running(data->main_loop)) {
+//        g_main_loop_quit(data->main_loop);
+//    }
+//
+//    if (gst_app_thread != 0) {
+//        GST_DEBUG ("Waiting for thread to finish...");
+//        pthread_join(gst_app_thread, NULL);
+//        GST_DEBUG ("Thread finished.");
+//        gst_app_thread = 0;
+//    } else {
+//        GST_DEBUG("No active thread to join.");
+//    }
+//
+//    if (data->gst_desc) {
+//        g_free(data->gst_desc);
+//        data->gst_desc = NULL;
+//    }
+//    if (data->app) {
+//        GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
+//        (*env)->DeleteGlobalRef(env, data->app);
+//        data->app = NULL;
+//    }
+//    GST_DEBUG ("Freeing CustomData at %p", data);
+//    g_free(data);
+//    SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
+//    GST_DEBUG ("Done finalizing");
+//}
+
+static void
+gst_native_finalize(JNIEnv *env, jobject thiz) {
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
     if (!data) return;
 
-    GST_DEBUG ("Quitting main loop...");
+    GST_DEBUG ("Quitting main loop for instance %p...", data);
     if (data->main_loop && g_main_loop_is_running(data->main_loop)) {
         g_main_loop_quit(data->main_loop);
     }
 
-    if (gst_app_thread != 0) {
-        GST_DEBUG ("Waiting for thread to finish...");
-        pthread_join(gst_app_thread, NULL);
-        GST_DEBUG ("Thread finished.");
-        gst_app_thread = 0;
+    // FIX: Check and join the instance-specific thread.
+    if (data->gst_app_thread != 0) {
+        GST_DEBUG ("Waiting for instance thread %lu to finish...", data->gst_app_thread);
+        pthread_join(data->gst_app_thread, NULL);
+        GST_DEBUG ("Instance thread %lu finished.", data->gst_app_thread);
+        // FIX: Reset the handle for THIS INSTANCE to 0.
+        data->gst_app_thread = 0;
     } else {
-        GST_DEBUG("No active thread to join.");
+        GST_DEBUG("No active thread to join for this instance.");
     }
 
     if (data->gst_desc) {
@@ -707,7 +763,7 @@ static void gst_native_finalize(JNIEnv *env, jobject thiz) {
     GST_DEBUG ("Freeing CustomData at %p", data);
     g_free(data);
     SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
-    GST_DEBUG ("Done finalizing");
+    GST_DEBUG ("Done finalizing instance.");
 }
 
 static void gst_native_play(JNIEnv *env, jobject thiz) {
@@ -805,3 +861,4 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     pthread_key_create(&current_jni_env, detach_current_thread);
     return JNI_VERSION_1_6;
 }
+
