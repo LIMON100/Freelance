@@ -860,8 +860,10 @@ struct StateCommand {
     int8_t  tilt_speed;
     int8_t  zoom_command;
     float   lateral_wind_speed;
-    // --- NEW: Add a field for resolution setting ---
+
     uint8_t resolution_setting; // 0 for 640x360, 1 for 1280x720
+    uint8_t bitrate_mode;       // 0=CBR, 1=VBR
+    uint32_t target_bitrate;    // Bitrate in bps (e.g., 2000000)
 };
 struct DrivingCommand {
     int8_t move_speed;
@@ -883,6 +885,8 @@ struct StatusPacket {
 // --- Global State Management ---
 std::atomic<float> g_crosshair_x(-1.0f);
 std::atomic<float> g_crosshair_y(-1.0f);
+std::atomic<uint8_t> g_bitrate_mode(0); // 0=Auto, 1=CBR, 2=VBR
+std::atomic<uint32_t> g_target_bitrate(2000000); // Default 2 Mbps
 
 enum CommandType { STATE_CHANGE, TOUCH_INPUT, DRIVING_INPUT };
 struct GenericCommand {
@@ -912,22 +916,55 @@ struct _DynamicMediaFactory {
 
 G_DEFINE_TYPE(DynamicMediaFactory, dynamic_media_factory, GST_TYPE_RTSP_MEDIA_FACTORY);
 
+// static gchar *dynamic_media_factory_create_launch_string(DynamicMediaFactory *factory) {
+//     int width, height;
+//     if (g_resolution_setting.load() == 1) {
+//         width = 1280;
+//         height = 720;
+//     } else {
+//         width = 640;
+//         height = 360;
+//     }
+
+//     std::cout << "[RTSP Factory] Client connecting. Building pipeline for " << width << "x" << height << " on " << factory->device_path << std::endl;
+
+//     return g_strdup_printf(
+//         "( v4l2src device=%s ! video/x-raw,width=%d,height=%d ! videoconvert ! queue ! "
+//         "mpph264enc bps=2000000 ! h264parse config-interval=-1 ! rtph264pay name=pay0 pt=96 )",
+//         factory->device_path, width, height);
+// }
+
 static gchar *dynamic_media_factory_create_launch_string(DynamicMediaFactory *factory) {
     int width, height;
     if (g_resolution_setting.load() == 1) {
-        width = 1280;
-        height = 720;
+        width = 1280; height = 720;
     } else {
-        width = 640;
-        height = 360;
+        width = 640; height = 360;
     }
 
-    std::cout << "[RTSP Factory] Client connecting. Building pipeline for " << width << "x" << height << " on " << factory->device_path << std::endl;
+    // --- NEW: Get bitrate settings from global variables ---
+    uint32_t bitrate = g_target_bitrate.load();
+    uint8_t mode = g_bitrate_mode.load();
+    
+    std::string encoder_params = ""; // Start with an empty string
+
+    // IMPORTANT: Check the documentation for your specific `mpph264enc`
+    // to confirm the property names. 'rc-mode' and 'bps' are common.
+    if (mode == 1) { // CBR
+        encoder_params = "rc-mode=cbr bps=" + std::to_string(bitrate);
+    } else if (mode == 2) { // VBR
+        encoder_params = "rc-mode=vbr bps=" + std::to_string(bitrate);
+    }
+    // If mode is 0 (Auto), encoder_params remains empty, and GStreamer uses the encoder's defaults.
+
+    std::cout << "[RTSP Factory] Building pipeline: " << width << "x" << height 
+              << " | Mode: " << (mode == 1 ? "CBR" : (mode == 2 ? "VBR" : "Auto")) 
+              << " | Bitrate: " << bitrate << "bps" << std::endl;
 
     return g_strdup_printf(
         "( v4l2src device=%s ! video/x-raw,width=%d,height=%d ! videoconvert ! queue ! "
-        "mpph264enc bps=2000000 ! h264parse config-interval=-1 ! rtph264pay name=pay0 pt=96 )",
-        factory->device_path, width, height);
+        "mpph264enc %s ! h264parse config-interval=-1 ! rtph264pay name=pay0 pt=96 )",
+        factory->device_path, width, height, encoder_params.c_str());
 }
 
 static GstElement *dynamic_media_factory_create_element(GstRTSPMediaFactory *factory, const GstRTSPUrl *url) {
@@ -1177,6 +1214,19 @@ void commandProcessingThread() {
             switch (command.type) {
                 case STATE_CHANGE:
                     g_active_mode_id.store(command.data.state.command_id);
+                    
+                    g_resolution_setting.store(command.data.state.resolution_setting);
+                    g_bitrate_mode.store(command.data.state.bitrate_mode);
+                    g_target_bitrate.store(command.data.state.target_bitrate);
+
+                    // --- THIS IS THE CLEANER, CORRECTED LOGGING ---
+                    const char* mode_str;
+                    switch(command.data.state.bitrate_mode) {
+                        case 1: mode_str = "CBR"; break;
+                        case 2: mode_str = "VBR"; break;
+                        default: mode_str = "Auto"; break;
+                    }
+
                     std::cout << "--- Processing State Command Packet (TCP) ---\n"
                               << "  Command ID:       " << (int)command.data.state.command_id << "\n"
                               << "  Attack Permission:" << (int)command.data.state.attack_permission << "\n"
@@ -1184,6 +1234,10 @@ void commandProcessingThread() {
                               << "  Tilt Speed:       " << (int)command.data.state.tilt_speed << "\n"
                               << "  Zoom Command:     " << (int)command.data.state.zoom_command << "\n"
                               << "  Lateral Wind:     " << command.data.state.lateral_wind_speed << "\n"
+                              << "  Resolution Set:    " << (int)command.data.state.resolution_setting 
+                              << ((command.data.state.resolution_setting == 1) ? " (HD 1280x720)" : " (SD 640x360)")<< "\n"
+                              << "  Bitrate Mode:      " << (int)command.data.state.bitrate_mode << " (" << mode_str << ")\n"
+                              << "  Target Bitrate:    " << (int)command.data.state.target_bitrate << " bps\n"
                               << "---------------------------------------------" << std::endl;
                     break;
                 case TOUCH_INPUT:
@@ -1208,26 +1262,26 @@ void commandProcessingThread() {
 
 
 // =========================================================================
-//  THREAD 6: RTSP SERVER (REPLACE THIS FUNCTION ONLY)
+//  THREAD 6: RTSP SERVER
 // =========================================================================
 
 void rtspServerThread() {
     g_main_loop = g_main_loop_new(NULL, FALSE);
     GstRTSPServer *server = gst_rtsp_server_new();
-    gst_rtsp_server_set_service(server, "8555");
+    gst_rtsp_server_set_service(server, "8554");
     GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(server);
 
     // --- Create a dynamic factory for cam0 (/dev/video1) ---
     DynamicMediaFactory *factory_cam0 = dynamic_media_factory_new("/dev/video1");
     gst_rtsp_media_factory_set_shared(GST_RTSP_MEDIA_FACTORY(factory_cam0), TRUE);
     gst_rtsp_mount_points_add_factory(mounts, "/cam0", GST_RTSP_MEDIA_FACTORY(factory_cam0));
-    std::cout << "[RTSP Thread] Dynamic stream ready at rtsp://<your_ip>:8555/cam0" << std::endl;
+    std::cout << "[RTSP Thread] Dynamic stream ready at rtsp://<your_ip>:8554/cam0" << std::endl;
 
     // --- Create a dynamic factory for cam1 (/dev/video0) ---
     DynamicMediaFactory *factory_cam1 = dynamic_media_factory_new("/dev/video0");
     gst_rtsp_media_factory_set_shared(GST_RTSP_MEDIA_FACTORY(factory_cam1), TRUE);
     gst_rtsp_mount_points_add_factory(mounts, "/cam1", GST_RTSP_MEDIA_FACTORY(factory_cam1));
-    std::cout << "[RTSP Thread] Dynamic stream ready at rtsp://<your_ip>:8555/cam1" << std::endl;
+    std::cout << "[RTSP Thread] Dynamic stream ready at rtsp://<your_ip>:8554/cam1" << std::endl;
 
     g_object_unref(mounts);
     gst_rtsp_server_attach(server, NULL);
