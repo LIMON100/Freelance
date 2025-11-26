@@ -126,11 +126,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Socket? _commandSocket;
 
-  bool _isNavigatingAway = false; // <-- ADD THIS NEW STATE VARIABLE
-  bool _isReinitializing = false; // <-- ADD THIS LINE
+  bool _isNavigatingAway = false;
+  bool _isReinitializing = false;
 
+  String _videoQuality = 'sd';
 
-
+  String _bitrateMode = 'cbr';
+  int _targetBitrate = 2000000;
 
   final Map<int, int> _buttonIndexToCommandId = {
     0: CommandIds.DRIVING,
@@ -851,74 +853,157 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // }
 
 
-  // TEST of all physical n virtual joystick
+  // 11/25
+  // void _startCommandTimer() {
+  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+  //     // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
+  //     int final_move_speed = 0;
+  //     int final_turn_angle = 0;
+  //     int final_pan_speed = 0;
+  //     int final_tilt_speed = 0;
+  //
+  //     bool isGamepadDriving = false;
+  //     bool isGamepadAiming = false;
+  //
+  //     if (_gamepadConnected) {
+  //       // --- THIS IS THE FIX: Check for multiple common axis mappings ---
+  //
+  //       // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
+  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+  //
+  //       // Aiming Stick (Right Stick) - Check for Z/RZ first, then fall back to RX/RY
+  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
+  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
+  //       // --- END OF FIX ---
+  //
+  //       // Check if driving stick is active (outside deadzone)
+  //       if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
+  //         isGamepadDriving = true;
+  //         final_move_speed = rawMove.round();
+  //         final_turn_angle = rawTurn.round();
+  //       }
+  //
+  //       // Check if aiming stick is active (outside deadzone)
+  //       if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
+  //         isGamepadAiming = true;
+  //         final_tilt_speed = rawTilt.round();
+  //         final_pan_speed = rawPan.round();
+  //       }
+  //     }
+  //
+  //     // If physical gamepad is NOT driving, fall back to virtual joystick values.
+  //     if (!isGamepadDriving) {
+  //       final_move_speed = _currentCommand.move_speed;
+  //       final_turn_angle = _currentCommand.turn_angle;
+  //     }
+  //
+  //     // If physical gamepad is NOT aiming, fall back to virtual joystick values.
+  //     if (!isGamepadAiming) {
+  //       final_pan_speed = _currentCommand.pan_speed;
+  //       final_tilt_speed = _currentCommand.tilt_speed;
+  //     }
+  //
+  //     // Assemble DrivingCommand with final values
+  //     DrivingCommand drivingCommand = DrivingCommand(
+  //       move_speed: final_move_speed,
+  //       turn_angle: final_turn_angle,
+  //     );
+  //
+  //     // Update main UserCommand with final values
+  //     _currentCommand.pan_speed = final_pan_speed;
+  //     _currentCommand.tilt_speed = final_tilt_speed;
+  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+  //
+  //     // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
+  //     _currentCommand.zoom_command = 0;
+  //     if (_isZoomInPressed || _isUiZoomInPressed) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //     else if (_isZoomOutPressed ||
+  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+  //         _isUiZoomOutPressed) {
+  //       _currentCommand.zoom_command = -1;
+  //     }
+  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //
+  //     _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
+  //
+  //
+  //     if (_bitrateMode == 'vbr') {
+  //       _currentCommand.bitrate_mode = 1;
+  //     } else if (_bitrateMode == 'cbr') {
+  //       _currentCommand.bitrate_mode = 2;
+  //     } else { // 'auto'
+  //       _currentCommand.bitrate_mode = 0;
+  //     }
+  //     _currentCommand.target_bitrate = _targetBitrate;
+  //
+  //     // Send both packets
+  //     _sendCommandPacket(_currentCommand);
+  //     _sendDrivingPacket(drivingCommand);
+  //   });
+  // }
+
+
+  // In _HomePageState class
+
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
-      int final_move_speed = 0;
-      int final_turn_angle = 0;
-      int final_pan_speed = 0;
-      int final_tilt_speed = 0;
+      // --- THIS IS THE NEW, CORRECTED LOGIC ---
 
-      bool isGamepadDriving = false;
-      bool isGamepadAiming = false;
-
+      // Step 1: Prioritize Gamepad Input if it's active
       if (_gamepadConnected) {
-        // --- THIS IS THE FIX: Check for multiple common axis mappings ---
-
-        // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
+        // Check for driving input (Left Stick)
         double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
         double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+        if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
+          // If the physical stick is being used, its value is king.
+          // Update the central state directly.
+          _currentCommand.move_speed = rawMove.round();
+          _currentCommand.turn_angle = rawTurn.round();
+        }
+        // If the physical stick is in the deadzone, the virtual joystick's value
+        // (which is 0 if not being touched) will be used automatically.
 
-        // Aiming Stick (Right Stick) - Check for Z/RZ first, then fall back to RX/RY
+        // Check for aiming input (Right Stick)
         double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
         double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
-        // --- END OF FIX ---
-
-        // Check if driving stick is active (outside deadzone)
-        if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
-          isGamepadDriving = true;
-          final_move_speed = rawMove.round();
-          final_turn_angle = rawTurn.round();
-        }
-
-        // Check if aiming stick is active (outside deadzone)
         if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
-          isGamepadAiming = true;
-          final_tilt_speed = rawTilt.round();
-          final_pan_speed = rawPan.round();
+          // If the physical stick is being used, update the central state.
+          _currentCommand.pan_speed = rawPan.round();
+          _currentCommand.tilt_speed = rawTilt.round();
         }
       }
+      // If the gamepad is not connected, the virtual joystick listeners
+      // are already updating _currentCommand directly, so no 'else' is needed.
 
-      // If physical gamepad is NOT driving, fall back to virtual joystick values.
-      if (!isGamepadDriving) {
-        final_move_speed = _currentCommand.move_speed;
-        final_turn_angle = _currentCommand.turn_angle;
-      }
-
-      // If physical gamepad is NOT aiming, fall back to virtual joystick values.
-      if (!isGamepadAiming) {
-        final_pan_speed = _currentCommand.pan_speed;
-        final_tilt_speed = _currentCommand.tilt_speed;
-      }
-
-      // Assemble DrivingCommand with final values
+      // Step 2: Assemble packets from the single, unified state
       DrivingCommand drivingCommand = DrivingCommand(
-        move_speed: final_move_speed,
-        turn_angle: final_turn_angle,
+        move_speed: _currentCommand.move_speed,
+        turn_angle: _currentCommand.turn_angle,
       );
 
-      // Update main UserCommand with final values
-      _currentCommand.pan_speed = final_pan_speed;
-      _currentCommand.tilt_speed = final_tilt_speed;
+      // The rest of the UserCommand is already up-to-date
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+      _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
+      if (_bitrateMode == 'cbr') {
+        _currentCommand.bitrate_mode = 1;
+      } else if (_bitrateMode == 'vbr') {
+        _currentCommand.bitrate_mode = 2;
+      } else { // 'auto'
+        _currentCommand.bitrate_mode = 0;
+      }
+      _currentCommand.target_bitrate = _targetBitrate;
 
-      // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
+      // Zoom logic is also fine as it is
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
-      }
-      else if (_isZoomOutPressed ||
+      } else if (_isZoomOutPressed ||
           (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
           (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
           _isUiZoomOutPressed) {
@@ -928,7 +1013,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _currentCommand.zoom_command = 1;
       }
 
-      // Send both packets
+      // Step 3: Send the packets
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
     });
@@ -2046,6 +2131,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _loadSettingsAndInitialize() async {
     _robotIpAddress = await _settingsService.loadIpAddress();
     _cameraUrls = await _settingsService.loadCameraUrls();
+    _videoQuality = await _settingsService.loadVideoQuality(); // <-- ADD THIS LINE
+    _bitrateMode = await _settingsService.loadBitrateMode();
+    _targetBitrate = await _settingsService.loadVideoBitrate();
+
     if (mounted) {
       _connectToStatusServer();
       _connectCommandServer(); // <-- ADD THIS CALL
@@ -2343,6 +2432,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Load the potentially new IP and URLs
     _robotIpAddress = await _settingsService.loadIpAddress();
     _cameraUrls = await _settingsService.loadCameraUrls();
+
+    _videoQuality = await _settingsService.loadVideoQuality();
+
+    _bitrateMode = await _settingsService.loadBitrateMode();
+    _targetBitrate = await _settingsService.loadVideoBitrate();
+
+    _handleDisconnect();
+    _handleCommandDisconnect();
 
     // Re-establish connections to the (potentially new) IP address
     _connectToStatusServer();
