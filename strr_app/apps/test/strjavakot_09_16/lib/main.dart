@@ -801,9 +801,104 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
 
   // 11/25
+  // void _startCommandTimer() {
+  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+  //     // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
+  //     int final_move_speed = 0;
+  //     int final_turn_angle = 0;
+  //     int final_pan_speed = 0;
+  //     int final_tilt_speed = 0;
+  //
+  //     bool isGamepadDriving = false;
+  //     bool isGamepadAiming = false;
+  //
+  //     if (_gamepadConnected) {
+  //       // --- THIS IS THE FIX: Check for multiple common axis mappings ---
+  //
+  //       // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
+  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+  //
+  //       // Aiming Stick (Right Stick) - Check for Z/RZ first, then fall back to RX/RY
+  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
+  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
+  //       // --- END OF FIX ---
+  //
+  //       // Check if driving stick is active (outside deadzone)
+  //       if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
+  //         isGamepadDriving = true;
+  //         final_move_speed = rawMove.round();
+  //         final_turn_angle = rawTurn.round();
+  //       }
+  //
+  //       // Check if aiming stick is active (outside deadzone)
+  //       if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
+  //         isGamepadAiming = true;
+  //         final_tilt_speed = rawTilt.round();
+  //         final_pan_speed = rawPan.round();
+  //       }
+  //     }
+  //
+  //     // If physical gamepad is NOT driving, fall back to virtual joystick values.
+  //     if (!isGamepadDriving) {
+  //       final_move_speed = _currentCommand.move_speed;
+  //       final_turn_angle = _currentCommand.turn_angle;
+  //     }
+  //
+  //     // If physical gamepad is NOT aiming, fall back to virtual joystick values.
+  //     if (!isGamepadAiming) {
+  //       final_pan_speed = _currentCommand.pan_speed;
+  //       final_tilt_speed = _currentCommand.tilt_speed;
+  //     }
+  //
+  //     // Assemble DrivingCommand with final values
+  //     DrivingCommand drivingCommand = DrivingCommand(
+  //       move_speed: final_move_speed,
+  //       turn_angle: final_turn_angle,
+  //     );
+  //
+  //     // Update main UserCommand with final values
+  //     _currentCommand.pan_speed = final_pan_speed;
+  //     _currentCommand.tilt_speed = final_tilt_speed;
+  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+  //
+  //     // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
+  //     _currentCommand.zoom_command = 0;
+  //     if (_isZoomInPressed || _isUiZoomInPressed) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //     else if (_isZoomOutPressed ||
+  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+  //         _isUiZoomOutPressed) {
+  //       _currentCommand.zoom_command = -1;
+  //     }
+  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+  //       _currentCommand.zoom_command = 1;
+  //     }
+  //
+  //     _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
+  //
+  //
+  //     if (_bitrateMode == 'vbr') {
+  //       _currentCommand.bitrate_mode = 1;
+  //     } else if (_bitrateMode == 'cbr') {
+  //       _currentCommand.bitrate_mode = 2;
+  //     } else { // 'auto'
+  //       _currentCommand.bitrate_mode = 0;
+  //     }
+  //     _currentCommand.target_bitrate = _targetBitrate;
+  //
+  //     // Send both packets
+  //     _sendCommandPacket(_currentCommand);
+  //     _sendDrivingPacket(drivingCommand);
+  //   });
+  // }
+
+
   void _startCommandTimer() {
     _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
+      // --- UNIFIED INPUT LOGIC (WITH ROBUST FALLBACKS) ---
       int final_move_speed = 0;
       int final_turn_angle = 0;
       int final_pan_speed = 0;
@@ -813,7 +908,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       bool isGamepadAiming = false;
 
       if (_gamepadConnected) {
-        // --- THIS IS THE FIX: Check for multiple common axis mappings ---
 
         // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
         double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
@@ -824,14 +918,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
         // --- END OF FIX ---
 
-        // Check if driving stick is active (outside deadzone)
+        // Apply a deadzone to prevent "stick drift" and check if the stick is active
         if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
           isGamepadDriving = true;
           final_move_speed = rawMove.round();
           final_turn_angle = rawTurn.round();
         }
 
-        // Check if aiming stick is active (outside deadzone)
         if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
           isGamepadAiming = true;
           final_tilt_speed = rawTilt.round();
@@ -839,62 +932,49 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         }
       }
 
-      // If physical gamepad is NOT driving, fall back to virtual joystick values.
+      // If the physical gamepad's driving stick is not being used,
+      // fall back to the on-screen virtual joystick's values.
       if (!isGamepadDriving) {
         final_move_speed = _currentCommand.move_speed;
         final_turn_angle = _currentCommand.turn_angle;
       }
 
-      // If physical gamepad is NOT aiming, fall back to virtual joystick values.
+      // If the physical gamepad's aiming stick is not being used,
+      // fall back to the on-screen virtual joystick's values.
       if (!isGamepadAiming) {
         final_pan_speed = _currentCommand.pan_speed;
         final_tilt_speed = _currentCommand.tilt_speed;
       }
 
-      // Assemble DrivingCommand with final values
+      // --- Assemble the final packets ---
+
+      // DrivingCommand (UDP)
       DrivingCommand drivingCommand = DrivingCommand(
         move_speed: final_move_speed,
         turn_angle: final_turn_angle,
       );
 
-      // Update main UserCommand with final values
+      // UserCommand (TCP)
       _currentCommand.pan_speed = final_pan_speed;
       _currentCommand.tilt_speed = final_tilt_speed;
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
+      _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
+      _currentCommand.bitrate_mode = (_bitrateMode == 'vbr') ? 2 : (_bitrateMode == 'cbr' ? 1 : 0);
+      _currentCommand.target_bitrate = _targetBitrate;
 
-      // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
+      // UNIFIED ZOOM LOGIC
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
-      }
-      else if (_isZoomOutPressed ||
-          (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
-          (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
-          _isUiZoomOutPressed) {
+      } else if (_isZoomOutPressed || _isUiZoomOutPressed) {
         _currentCommand.zoom_command = -1;
       }
-      if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
-        _currentCommand.zoom_command = 1;
-      }
-
-      _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
-
-
-      if (_bitrateMode == 'vbr') {
-        _currentCommand.bitrate_mode = 1;
-      } else if (_bitrateMode == 'cbr') {
-        _currentCommand.bitrate_mode = 2;
-      } else { // 'auto'
-        _currentCommand.bitrate_mode = 0;
-      }
-      _currentCommand.target_bitrate = _targetBitrate;
 
       // Send both packets
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
     });
   }
-  
 
   Future<void> _sendDrivingPacket(DrivingCommand command) async {
     if (_robotIpAddress.isEmpty || _drivingSocket == null) return;
