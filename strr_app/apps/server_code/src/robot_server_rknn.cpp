@@ -916,24 +916,6 @@ struct _DynamicMediaFactory {
 
 G_DEFINE_TYPE(DynamicMediaFactory, dynamic_media_factory, GST_TYPE_RTSP_MEDIA_FACTORY);
 
-// static gchar *dynamic_media_factory_create_launch_string(DynamicMediaFactory *factory) {
-//     int width, height;
-//     if (g_resolution_setting.load() == 1) {
-//         width = 1280;
-//         height = 720;
-//     } else {
-//         width = 640;
-//         height = 360;
-//     }
-
-//     std::cout << "[RTSP Factory] Client connecting. Building pipeline for " << width << "x" << height << " on " << factory->device_path << std::endl;
-
-//     return g_strdup_printf(
-//         "( v4l2src device=%s ! video/x-raw,width=%d,height=%d ! videoconvert ! queue ! "
-//         "mpph264enc bps=2000000 ! h264parse config-interval=-1 ! rtph264pay name=pay0 pt=96 )",
-//         factory->device_path, width, height);
-// }
-
 static gchar *dynamic_media_factory_create_launch_string(DynamicMediaFactory *factory) {
     int width, height;
     if (g_resolution_setting.load() == 1) {
@@ -1199,6 +1181,8 @@ void touchServerThread() {
 // // =========================================================================
 void commandProcessingThread() {
     std::cout << "[Processing Thread] Worker thread started." << std::endl;
+    uint8_t last_resolution_setting = g_resolution_setting.load();
+    
     while (!g_shutdown_request.load()) {
         GenericCommand command;
         bool command_found = false;
@@ -1212,18 +1196,30 @@ void commandProcessingThread() {
         }
         if (command_found) {
             switch (command.type) {
-                case STATE_CHANGE:
-                    g_active_mode_id.store(command.data.state.command_id);
+                case STATE_CHANGE: {
+                    uint8_t new_resolution_setting = command.data.state.resolution_setting;
                     
-                    g_resolution_setting.store(command.data.state.resolution_setting);
+                    g_active_mode_id.store(command.data.state.command_id);
+                    g_resolution_setting.store(new_resolution_setting);
                     g_bitrate_mode.store(command.data.state.bitrate_mode);
                     g_target_bitrate.store(command.data.state.target_bitrate);
 
-                    // --- THIS IS THE CLEANER, CORRECTED LOGGING ---
+                    // if (new_resolution_setting == 1 && last_resolution_setting != 1) {
+                    //     std::cout << "[Resource Manager] Switching to HD. Cleaning up system logs..." << std::endl;
+                    //     int result = system("journalctl --vacuum-size=100M");
+                    //     if (result == 0) {
+                    //         std::cout << "[Resource Manager] System logs cleaned successfully." << std::endl;
+                    //     } else {
+                    //         std::cerr << "[Resource Manager] WARNING: Failed to clean system logs. Run the server with 'sudo'." << std::endl;
+                    //     }
+                    // }
+                    last_resolution_setting = new_resolution_setting;
+
+
                     const char* mode_str;
                     switch(command.data.state.bitrate_mode) {
-                        case 1: mode_str = "CBR"; break;
-                        case 2: mode_str = "VBR"; break;
+                        case 1: mode_str = "VBR"; break;
+                        case 2: mode_str = "CBR"; break;
                         default: mode_str = "Auto"; break;
                     }
 
@@ -1240,6 +1236,7 @@ void commandProcessingThread() {
                               << "  Target Bitrate:    " << (int)command.data.state.target_bitrate << " bps\n"
                               << "---------------------------------------------" << std::endl;
                     break;
+                }
                 case TOUCH_INPUT:
                     std::cout << "--- Processing Touch Coordinate Packet (UDP) ---\n"
                               << "  Touch X: " << command.data.touch.x << "\n"
