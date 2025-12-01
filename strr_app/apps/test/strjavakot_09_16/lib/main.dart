@@ -119,10 +119,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   bool _wasGamepadActive = false;
 
-  // --- ADD THESE LINES ---
   RawDatagramSocket? _drivingSocket;
   RawDatagramSocket? _touchSocket;
-  // --- END OF ADD ---
 
   Socket? _commandSocket;
 
@@ -167,7 +165,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _startWifiSignalChecker();
   }
 
-  // --- ADD THIS ENTIRE NEW FUNCTION ---
   Future<void> _initializeSockets() async {
     try {
       _drivingSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
@@ -177,7 +174,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       print("Error initializing UDP sockets: $e");
     }
   }
-// --- END OF NEW FUNCTION ---
 
   @override
   void dispose() {
@@ -185,10 +181,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _commandTimer?.cancel();
     _wifiSignalTimer?.cancel();
 
-    _drivingSocket?.close(); // <-- ADD THIS
-    _touchSocket?.close();   // <-- ADD THIS
+    _drivingSocket?.close();
+    _touchSocket?.close();  
 
-    _commandSocket?.destroy(); // <-- ADD THIS LINE
+    _commandSocket?.destroy(); 
 
     _stopGStreamer();
     _transformationController.dispose();
@@ -212,19 +208,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       // App is going to the background. Pause the stream.
       print("App paused, pausing GStreamer stream.");
       try {
-        _gstreamerChannel!.invokeMethod('pause'); // Assuming you add a 'pause' method in native
+        _gstreamerChannel!.invokeMethod('pause'); 
       } catch (e) {
         print("Error pausing stream: $e");
       }
     } else if (state == AppLifecycleState.resumed) {
-      // App is returning to the foreground.
-      // The solution with the `_isNavigatingAway` flag already handles
-      // recreating the view, which will automatically start the stream.
-      // But if the view wasn't destroyed (e.g., returning from a phone call),
-      // you might want to explicitly play it.
       print("App resumed, ensuring GStreamer stream is playing.");
       try {
-        _gstreamerChannel!.invokeMethod('play'); // Assuming you add a 'play' method
+        _gstreamerChannel!.invokeMethod('play'); 
       } catch (e) {
         print("Error playing stream on resume: $e");
       }
@@ -242,7 +233,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       // Listen for data (optional) and errors/disconnections
       _commandSocket!.listen(
             (Uint8List data) {
-          // Server doesn't send data back on this channel, so we can ignore this.
         },
         onError: (error) {
           print("Command socket error: $error");
@@ -260,7 +250,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-// ADD THIS NEW DISCONNECT HANDLER
   void _handleCommandDisconnect() {
     if (!mounted) return;
 
@@ -292,11 +281,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  // --- CORRECTED: Function to periodically check Wi-Fi signal ---
+  //  Function to periodically check Wi-Fi signal ---
   void _startWifiSignalChecker() {
     _wifiSignalTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       try {
-        // --- THIS IS THE FIX ---
         // 1. First, check if the Wi-Fi is enabled on the device at all.
         bool? isWifiEnabled = await WiFiForIoTPlugin.isEnabled();
 
@@ -307,7 +295,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           }
           return; // Stop further processing
         }
-        // --- END OF FIX ---
 
         // 2. Only if Wi-Fi is enabled, proceed to get the signal strength.
         int? rssi = await WiFiForIoTPlugin.getCurrentSignalStrength();
@@ -341,77 +328,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     });
   }
-
-  // Future<void> _connectToStatusServer() async {
-  //   if (_robotIpAddress.isEmpty) return;
-  //
-  //   // Disconnect if already connected
-  //   await _statusSocketSubscription?.cancel();
-  //   _statusSocket?.destroy();
-  //
-  //   try {
-  //     const int STATUS_PORT = 65435;
-  //     _statusSocket = await Socket.connect(_robotIpAddress, STATUS_PORT, timeout: const Duration(seconds: 5));
-  //     setState(() {
-  //       _isServerConnected = true;
-  //     });
-  //     print("Connected to status server!");
-  //
-  //     _statusSocketSubscription = _statusSocket!.listen(
-  //             (Uint8List data) {
-  //           try {
-  //
-  //             if (_isStoppingMode) {
-  //               return;
-  //             }
-  //
-  //             final status = StatusPacket.fromBytes(data);
-  //             if (mounted) {
-  //               setState(() {
-  //                 // _lateralWindSpeed = status.lateralWindSpeed;
-  //                 // _windDirectionIndex = status.windDirectionIndex;
-  //                 _confirmedServerModeId = status.currentModeId;
-  //
-  //                 // --- NEW: Update permission state from server ---
-  //                 bool serverRequest = status.permissionRequestActive == 1;
-  //
-  //                 _crosshairX = status.crosshairX;
-  //                 _crosshairY = status.crosshairY;
-  //
-  //                 // If the server stops requesting, reset everything
-  //                 if (!serverRequest) {
-  //                   _permissionRequestIsActive = false;
-  //                   _permissionHasBeenGranted = false;
-  //                 } else {
-  //                   // If the server is requesting, update our state, but DON'T reset
-  //                   // the _permissionHasBeenGranted flag. This allows the "Permitted"
-  //                   // state to persist.
-  //                   _permissionRequestIsActive = true;
-  //                 }
-  //               });
-  //             }
-  //           } catch (e) {
-  //             print("Error parsing status packet: $e");
-  //           }
-  //         },
-  //       onError: (error) {
-  //         print("Status socket error: $error");
-  //         setState(() => _isServerConnected = false);
-  //         _reconnectStatusServer();
-  //       },
-  //       onDone: () {
-  //         print("Status server disconnected.");
-  //         setState(() => _isServerConnected = false);
-  //         _reconnectStatusServer();
-  //       },
-  //       cancelOnError: true,
-  //     );
-  //   } catch (e) {
-  //     print("Failed to connect to status server: $e");
-  //     setState(() => _isServerConnected = false);
-  //     _reconnectStatusServer();
-  //   }
-  // }
 
   Future<void> _connectToStatusServer() async {
     // If we are already connected or have no IP, do nothing.
@@ -474,7 +390,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  // NEW: Centralized disconnect and cleanup handler
   void _handleDisconnect() {
     if (!mounted) return;
 
@@ -510,7 +425,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  // --- LOGIC METHODS ---
 
   void _onModeSelected(int index) {
     setState(() {
@@ -550,8 +464,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _isBackPressed = false;
     _isLeftPressed = false;
     _isRightPressed = false;
-
-    // --- NEW: Reset all permission states on STOP ---
     _isPermissionToAttackOn = false;
     _currentCommand.attack_permission = false;
     _permissionRequestIsActive = false;
@@ -567,7 +479,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _onPermissionPressed() {
-    // This button should only be tappable when a request is active
     if (_permissionRequestIsActive && !_permissionHasBeenGranted) {
       setState(() {
         _isPermissionToAttackOn = true; // Send the "ON" command
@@ -577,89 +488,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  // Future<void> _handleGamepadEvent(MethodCall call) async {
-  //   if (!mounted) return;
-  //   if (!_gamepadConnected) {
-  //     setState(() {
-  //       _gamepadConnected = true;
-  //       _pendingLateralWindSpeed = _lateralWindSpeed; // Initialize pending value
-  //     });
-  //   }
-  //
-  //   if (call.method == "onMotionEvent") {
-  //     final newAxisValues = Map<String, double>.from(call.arguments);
-  //
-  //     // ---: Handle D-Pad for Wind Speed Adjustment ---
-  //     final double hatX = newAxisValues['AXIS_HAT_X'] ?? 0.0;
-  //     final double prevHatX = _gamepadAxisValues['AXIS_HAT_X'] ?? 0.0;
-  //
-  //     // Detect a press (transition from 0 to -1 or 1)
-  //     if (hatX != 0 && prevHatX == 0) {
-  //       setState(() {
-  //         if (hatX > 0.5) { // D-Pad Right
-  //           _pendingLateralWindSpeed += 0.1;
-  //         } else if (hatX < -0.5) { // D-Pad Left
-  //           _pendingLateralWindSpeed -= 0.1;
-  //         }
-  //       });
-  //     }
-  //
-  //     setState(() => _gamepadAxisValues = newAxisValues);
-  //
-  //   } else if (call.method == "onButtonDown") {
-  //     final String button = call.arguments['button'];
-  //     setState(() {
-  //       switch (button) {
-  //         case 'KEYCODE_BUTTON_B': // Start
-  //           _onStartStopPressed();
-  //           break;
-  //         case 'KEYCODE_BUTTON_A': // Stop
-  //           if (_isModeActive) _onStartStopPressed();
-  //           break;
-  //         case 'KEYCODE_BUTTON_X': // Dual purpose: Permission AND Confirm Wind
-  //         // --- NEW: Confirm Wind Speed Logic ---
-  //         // If the pending value is different, this press confirms the wind speed.
-  //           if ((_pendingLateralWindSpeed - _lateralWindSpeed).abs() > 0.01) {
-  //             _lateralWindSpeed = _pendingLateralWindSpeed;
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               SnackBar(
-  //                 content: Text('Wind speed set to ${_lateralWindSpeed.toStringAsFixed(1)}'),
-  //                 duration: const Duration(seconds: 2),
-  //               ),
-  //             );
-  //           } else {
-  //             _onPermissionPressed();
-  //           }
-  //           break;
-  //         case 'KEYCODE_BUTTON_L1':
-  //           _isZoomInPressed = true;
-  //           break;
-  //         case 'KEYCODE_BUTTON_L2':
-  //           _isZoomOutPressed = true;
-  //           break;
-  //       }
-  //     });
-  //   } else if (call.method == "onButtonUp") {
-  //     final String button = call.arguments['button'];
-  //     setState(() {
-  //       switch (button) {
-  //         case 'KEYCODE_BUTTON_L1':
-  //           _isZoomInPressed = false;
-  //           break;
-  //         case 'KEYCODE_BUTTON_L2':
-  //           _isZoomOutPressed = false;
-  //           break;
-  //       }
-  //     });
-  //   }
-  // }
-
-
-  // 11/25
   Future<void> _handleGamepadEvent(MethodCall call) async {
     if (!mounted) return;
 
-    // --- NEW: Handle disconnection robustly ---
+    //  Handle disconnection robustly ---
     if (call.method == "onGamepadDisconnected") {
       setState(() {
         _gamepadConnected = false;
@@ -721,256 +553,120 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-
-  // FUlly WORKABLE . only other brand joystick not works.
-  // void _startCommandTimer() {
-  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-  //     // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
-  //     int final_move_speed = 0;
-  //     int final_turn_angle = 0;
-  //     int final_pan_speed = 0;
-  //     int final_tilt_speed = 0;
-  //
-  //     bool isGamepadDriving = false;
-  //     bool isGamepadAiming = false;
-  //
-  //     if (_gamepadConnected) {
-  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
-  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
-  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
-  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
-  //
-  //       // Check if driving stick is active (outside deadzone)
-  //       if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
-  //         isGamepadDriving = true;
-  //         final_move_speed = rawMove.round();
-  //         final_turn_angle = rawTurn.round();
-  //       }
-  //
-  //       // Check if aiming stick is active (outside deadzone)
-  //       if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
-  //         isGamepadAiming = true;
-  //         final_tilt_speed = rawTilt.round();
-  //         final_pan_speed = rawPan.round();
-  //       }
-  //     }
-  //
-  //     // If physical gamepad is NOT driving, fall back to virtual joystick values.
-  //     if (!isGamepadDriving) {
-  //       final_move_speed = _currentCommand.move_speed;
-  //       final_turn_angle = _currentCommand.turn_angle;
-  //     }
-  //
-  //     // If physical gamepad is NOT aiming, fall back to virtual joystick values.
-  //     if (!isGamepadAiming) {
-  //       final_pan_speed = _currentCommand.pan_speed;
-  //       final_tilt_speed = _currentCommand.tilt_speed;
-  //     }
-  //
-  //     // Assemble DrivingCommand with final values
-  //     DrivingCommand drivingCommand = DrivingCommand(
-  //       move_speed: final_move_speed,
-  //       turn_angle: final_turn_angle,
-  //     );
-  //
-  //     // Update main UserCommand with final values
-  //     _currentCommand.pan_speed = final_pan_speed;
-  //     _currentCommand.tilt_speed = final_tilt_speed;
-  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
-  //
-  //     // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
-  //     _currentCommand.zoom_command = 0;
-  //     if (_isZoomInPressed || _isUiZoomInPressed) {
-  //       _currentCommand.zoom_command = 1;
-  //     }
-  //     else if (_isZoomOutPressed ||
-  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
-  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
-  //         _isUiZoomOutPressed) {
-  //       _currentCommand.zoom_command = -1;
-  //     }
-  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
-  //       _currentCommand.zoom_command = 1;
-  //     }
-  //
-  //     // Send both packets
-  //     _sendCommandPacket(_currentCommand);
-  //     _sendDrivingPacket(drivingCommand);
-  //   });
-  // }
-
-
-  // 11/25
-  // void _startCommandTimer() {
-  //   _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-  //     // --- UNIFIED INPUT LOGIC (Efficient & Stateless) ---
-  //     int final_move_speed = 0;
-  //     int final_turn_angle = 0;
-  //     int final_pan_speed = 0;
-  //     int final_tilt_speed = 0;
-  //
-  //     bool isGamepadDriving = false;
-  //     bool isGamepadAiming = false;
-  //
-  //     if (_gamepadConnected) {
-  //       // --- THIS IS THE FIX: Check for multiple common axis mappings ---
-  //
-  //       // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
-  //       double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
-  //       double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
-  //
-  //       // Aiming Stick (Right Stick) - Check for Z/RZ first, then fall back to RX/RY
-  //       double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
-  //       double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
-  //       // --- END OF FIX ---
-  //
-  //       // Check if driving stick is active (outside deadzone)
-  //       if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
-  //         isGamepadDriving = true;
-  //         final_move_speed = rawMove.round();
-  //         final_turn_angle = rawTurn.round();
-  //       }
-  //
-  //       // Check if aiming stick is active (outside deadzone)
-  //       if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
-  //         isGamepadAiming = true;
-  //         final_tilt_speed = rawTilt.round();
-  //         final_pan_speed = rawPan.round();
-  //       }
-  //     }
-  //
-  //     // If physical gamepad is NOT driving, fall back to virtual joystick values.
-  //     if (!isGamepadDriving) {
-  //       final_move_speed = _currentCommand.move_speed;
-  //       final_turn_angle = _currentCommand.turn_angle;
-  //     }
-  //
-  //     // If physical gamepad is NOT aiming, fall back to virtual joystick values.
-  //     if (!isGamepadAiming) {
-  //       final_pan_speed = _currentCommand.pan_speed;
-  //       final_tilt_speed = _currentCommand.tilt_speed;
-  //     }
-  //
-  //     // Assemble DrivingCommand with final values
-  //     DrivingCommand drivingCommand = DrivingCommand(
-  //       move_speed: final_move_speed,
-  //       turn_angle: final_turn_angle,
-  //     );
-  //
-  //     // Update main UserCommand with final values
-  //     _currentCommand.pan_speed = final_pan_speed;
-  //     _currentCommand.tilt_speed = final_tilt_speed;
-  //     _currentCommand.lateral_wind_speed = _lateralWindSpeed;
-  //
-  //     // UNIFIED ZOOM LOGIC (no changes needed here, it's already good)
-  //     _currentCommand.zoom_command = 0;
-  //     if (_isZoomInPressed || _isUiZoomInPressed) {
-  //       _currentCommand.zoom_command = 1;
-  //     }
-  //     else if (_isZoomOutPressed ||
-  //         (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
-  //         (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
-  //         _isUiZoomOutPressed) {
-  //       _currentCommand.zoom_command = -1;
-  //     }
-  //     if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
-  //       _currentCommand.zoom_command = 1;
-  //     }
-  //
-  //     _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
-  //
-  //
-  //     if (_bitrateMode == 'vbr') {
-  //       _currentCommand.bitrate_mode = 1;
-  //     } else if (_bitrateMode == 'cbr') {
-  //       _currentCommand.bitrate_mode = 2;
-  //     } else { // 'auto'
-  //       _currentCommand.bitrate_mode = 0;
-  //     }
-  //     _currentCommand.target_bitrate = _targetBitrate;
-  //
-  //     // Send both packets
-  //     _sendCommandPacket(_currentCommand);
-  //     _sendDrivingPacket(drivingCommand);
-  //   });
-  // }
-
-
   void _startCommandTimer() {
-    _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      // --- UNIFIED INPUT LOGIC (WITH ROBUST FALLBACKS) ---
-      int final_move_speed = 0;
-      int final_turn_angle = 0;
-      int final_pan_speed = 0;
-      int final_tilt_speed = 0;
+    bool wasGamepadDriving = false;
+    bool wasGamepadAiming = false;
 
-      bool isGamepadDriving = false;
-      bool isGamepadAiming = false;
+    _commandTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      // 1. Calculate Raw Inputs from Gamepad
+      int gpMove = 0;
+      int gpTurn = 0;
+      int gpPan = 0;
+      int gpTilt = 0;
 
       if (_gamepadConnected) {
+        // --- LEFT STICK (Hybrid Analog + Hat) ---
+        double analogMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
+        double analogTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+        double hatMove    = (_gamepadAxisValues['AXIS_HAT_Y'] ?? 0.0) * -100;
+        double hatTurn    = (_gamepadAxisValues['AXIS_HAT_X'] ?? 0.0) * 100;
 
-        // Driving Stick (Left Stick) - Usually AXIS_X and AXIS_Y
-        double rawMove = (_gamepadAxisValues['AXIS_Y'] ?? 0.0) * -100;
-        double rawTurn = (_gamepadAxisValues['AXIS_X'] ?? 0.0) * 100;
+        // Use whichever is stronger
+        double rawMove = analogMove.abs() > hatMove.abs() ? analogMove : hatMove;
+        double rawTurn = analogTurn.abs() > hatTurn.abs() ? analogTurn : hatTurn;
 
-        // Aiming Stick (Right Stick) - Check for Z/RZ first, then fall back to RX/RY
-        double rawTilt = (_gamepadAxisValues['AXIS_RZ'] ?? _gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
-        double rawPan = (_gamepadAxisValues['AXIS_Z'] ?? _gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
-        // --- END OF FIX ---
+        // --- RIGHT STICK (Hybrid Z/RZ + RX/RY) ---
+        double axisZ  = (_gamepadAxisValues['AXIS_Z'] ?? 0.0) * 100;
+        double axisRZ = (_gamepadAxisValues['AXIS_RZ'] ?? 0.0) * -100;
+        double axisRX = (_gamepadAxisValues['AXIS_RX'] ?? 0.0) * 100;
+        double axisRY = (_gamepadAxisValues['AXIS_RY'] ?? 0.0) * -100;
 
-        // Apply a deadzone to prevent "stick drift" and check if the stick is active
-        if (rawMove.abs() >= 15 || rawTurn.abs() >= 15) {
-          isGamepadDriving = true;
-          final_move_speed = rawMove.round();
-          final_turn_angle = rawTurn.round();
+        double rawPan  = axisZ.abs() > axisRX.abs() ? axisZ : axisRX;
+        double rawTilt = axisRZ.abs() > axisRY.abs() ? axisRZ : axisRY;
+
+        // --- DEADZONE PROCESSING ---
+        if (rawMove.abs() > 15 || rawTurn.abs() > 15) {
+          gpMove = rawMove.round().clamp(-100, 100);
+          gpTurn = rawTurn.round().clamp(-100, 100);
         }
-
-        if (rawTilt.abs() >= 15 || rawPan.abs() >= 15) {
-          isGamepadAiming = true;
-          final_tilt_speed = rawTilt.round();
-          final_pan_speed = rawPan.round();
+        if (rawPan.abs() > 15 || rawTilt.abs() > 15) {
+          gpPan = rawPan.round().clamp(-100, 100);
+          gpTilt = rawTilt.round().clamp(-100, 100);
         }
       }
 
-      // If the physical gamepad's driving stick is not being used,
-      // fall back to the on-screen virtual joystick's values.
-      if (!isGamepadDriving) {
-        final_move_speed = _currentCommand.move_speed;
-        final_turn_angle = _currentCommand.turn_angle;
+      // --- DRIVING LOGIC ---
+      int finalMove = 0;
+      int finalTurn = 0;
+
+      if (gpMove != 0 || gpTurn != 0) {
+        // Case A: Gamepad is moving -> Use Gamepad
+        finalMove = gpMove;
+        finalTurn = gpTurn;
+        wasGamepadDriving = true; // Remember we are using gamepad
+      } else if (wasGamepadDriving) {
+        // Case B: Gamepad JUST stopped (went to 0) -> Force 0 to stop robot
+        finalMove = 0;
+        finalTurn = 0;
+        wasGamepadDriving = false; // Reset flag
+      } else {
+        // Case C: Gamepad is idle -> Use Virtual Joystick
+        finalMove = _currentCommand.move_speed;
+        finalTurn = _currentCommand.turn_angle;
       }
 
-      // If the physical gamepad's aiming stick is not being used,
-      // fall back to the on-screen virtual joystick's values.
-      if (!isGamepadAiming) {
-        final_pan_speed = _currentCommand.pan_speed;
-        final_tilt_speed = _currentCommand.tilt_speed;
+      // --- AIMING LOGIC ---
+      int finalPan = 0;
+      int finalTilt = 0;
+
+      if (gpPan != 0 || gpTilt != 0) {
+        // Case A: Gamepad is moving -> Use Gamepad
+        finalPan = gpPan;
+        finalTilt = gpTilt;
+        wasGamepadAiming = true; // Remember we are using gamepad
+      } else if (wasGamepadAiming) {
+        // Case B: Gamepad JUST stopped -> Force 0 to stop camera
+        finalPan = 0;
+        finalTilt = 0;
+        wasGamepadAiming = false; // Reset flag
+      } else {
+        // Case C: Gamepad is idle -> Use Virtual Joystick
+        finalPan = _currentCommand.pan_speed;
+        finalTilt = _currentCommand.tilt_speed;
       }
 
-      // --- Assemble the final packets ---
-
-      // DrivingCommand (UDP)
+      // 3. UPDATE STATE
       DrivingCommand drivingCommand = DrivingCommand(
-        move_speed: final_move_speed,
-        turn_angle: final_turn_angle,
+        move_speed: finalMove,
+        turn_angle: finalTurn,
       );
 
-      // UserCommand (TCP)
-      _currentCommand.pan_speed = final_pan_speed;
-      _currentCommand.tilt_speed = final_tilt_speed;
+      _currentCommand.pan_speed = finalPan;
+      _currentCommand.tilt_speed = finalTilt;
       _currentCommand.lateral_wind_speed = _lateralWindSpeed;
-      _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
-      _currentCommand.bitrate_mode = (_bitrateMode == 'vbr') ? 2 : (_bitrateMode == 'cbr' ? 1 : 0);
-      _currentCommand.target_bitrate = _targetBitrate;
 
-      // UNIFIED ZOOM LOGIC
+      // --- ZOOM LOGIC ---
       _currentCommand.zoom_command = 0;
       if (_isZoomInPressed || _isUiZoomInPressed) {
         _currentCommand.zoom_command = 1;
-      } else if (_isZoomOutPressed || _isUiZoomOutPressed) {
+      } else if (_isZoomOutPressed ||
+          (_gamepadAxisValues['AXIS_LTRIGGER'] ?? 0.0) > 0.5 ||
+          (_gamepadAxisValues['AXIS_BRAKE'] ?? 0.0) > 0.5 ||
+          _isUiZoomOutPressed) {
         _currentCommand.zoom_command = -1;
       }
+      if ((_gamepadAxisValues['AXIS_RTRIGGER'] ?? 0.0) > 0.5) {
+        _currentCommand.zoom_command = 1;
+      }
 
-      // Send both packets
+      // --- SETTINGS ---
+      _currentCommand.resolution_setting = (_videoQuality == 'hd') ? 1 : 0;
+      if (_bitrateMode == 'vbr') _currentCommand.bitrate_mode = 1;
+      else if (_bitrateMode == 'cbr') _currentCommand.bitrate_mode = 2;
+      else _currentCommand.bitrate_mode = 0;
+      _currentCommand.target_bitrate = _targetBitrate;
+
+      // 4. SEND DATA
       _sendCommandPacket(_currentCommand);
       _sendDrivingPacket(drivingCommand);
     });
@@ -987,7 +683,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildCrosshair() {
-    // Condition 1: Is the app in a mode that should show a crosshair?
     bool isCrosshairVisible = _confirmedServerModeId == CommandIds.MANUAL_ATTACK ||
         _confirmedServerModeId == CommandIds.AUTO_ATTACK ||
         _confirmedServerModeId == CommandIds.RECON ||
@@ -997,7 +692,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return const SizedBox.shrink(); // Don't show anything if not in a relevant mode
     }
 
-    // Condition 2: Is the server providing a specific target lock position?
     bool isTargetLocked = _crosshairX >= 0.0 && _crosshairY >= 0.0;
 
     // Determine color based on lock state
@@ -1106,7 +800,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           SizedBox(width: 10 * widthScale),
           Text(
-            // (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
             (_gamepadConnected ? _pendingLateralWindSpeed : _lateralWindSpeed).toStringAsFixed(1),
             style: TextStyle(
               fontFamily: 'NotoSans',
@@ -1241,7 +934,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     fontWeight: FontWeight.w700,
                     fontSize: 34 * heightScale,
                     color: Colors.white,
-                    // Optional: Add a subtle shadow to make the text pop
                     shadows: [
                       Shadow(
                         blurRadius: 2.0,
@@ -1254,7 +946,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ],
           ),
-          // --- END OF FIX ---
         ),
       ),
     );
@@ -1312,13 +1003,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               minScale: 1.0,
               maxScale: 5.0,
               panEnabled: false,
-              // child: KeyedSubtree(
-              //   key: _gstreamerViewKey,
-              //   child: AndroidView(
-              //     viewType: 'gstreamer_view',
-              //     onPlatformViewCreated: _onGStreamerPlatformViewCreated,
-              //   ),
-              // ),
               child: _isNavigatingAway
                   ? Container(color: Colors.black) // Show a black placeholder while away
                   : KeyedSubtree( // Re-create the view when returning
@@ -1534,7 +1218,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // --- NEW: A dedicated builder for the custom zoom buttons ---
+  // A dedicated builder for the custom zoom buttons ---
   Widget _buildZoomButton({
     required String iconPath,
     required VoidCallback? onPressed,
@@ -1581,7 +1265,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
 
-  // --- CORRECTED WIDGET METHOD for +/- buttons ---
+  //  WIDGET METHOD for +/- buttons ---
   Widget _buildIconBottomBarButton(String iconPath, VoidCallback? onPressed) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1589,7 +1273,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final widthScale = screenWidth / 1920.0; // Use widthScale for width
     final bool isEnabled = onPressed != null;
 
-    // --- THIS IS THE FIX ---
     // Define height and width separately to create a rectangle.
     final double buttonHeight = 80 * heightScale; // Keep the height consistent with other buttons
     final double buttonWidth = 120 * widthScale;  // Make the width larger. ADJUST THIS VALUE to your liking.
@@ -1599,8 +1282,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: Opacity(
         opacity: isEnabled ? 1.0 : 0.5,
         child: Container(
-          width: buttonWidth,   // Use the new width
-          height: buttonHeight, // Use the height
+          width: buttonWidth,  
+          height: buttonHeight, 
           decoration: BoxDecoration(
             image: DecorationImage(
               image: AssetImage(iconPath),
@@ -1614,7 +1297,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
 
-  // --- NEW: A dedicated builder for buttons with a custom image background ---
+  //  dedicated builder for buttons with a custom image background ---
   Widget _buildImageBottomBarButton({
     required String label,
     required String iconPath,
@@ -1667,7 +1350,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // --- NEW: A dedicated builder for the "Attack Permitted" red overlay ---
+  // A dedicated builder for the "Attack Permitted" red overlay ---
   Widget _buildDangerOverlay() {
     // This overlay should only be visible when permission has been requested AND granted.
     bool isVisible = _permissionRequestIsActive && _permissionHasBeenGranted;
@@ -1716,9 +1399,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           permissionBackground = ICON_PATH_PERMISSION_BLUE;
           permissionOnPressed = null; // Button is disabled
         }
-        // --- END OF LOGIC ---
 
-        // --- THIS IS THE FIX: Swap the order of the first two buttons ---
+        //  Swap the order of the first two buttons ---
         final List<Widget> leftCluster = [
           // 1. START/STOP button is now first
           _buildWideBottomBarButton(
@@ -1817,7 +1499,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // --- THIS IS THE CORRECTED WIDE BUTTON BUILDER ---
   Widget _buildWideBottomBarButton({
     required String label,
     required String iconPath,
@@ -1870,7 +1551,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // Make the onPressed parameter nullable and add the new textColor parameter
+  // Make the onPressed parameter nullable and add the  textColor parameter
   Widget _buildBottomBarButton(
       String label,
       String? iconPath,
@@ -1984,18 +1665,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (!mounted) return;
     _streamTimeoutTimer?.cancel();
 
-    // --- THIS IS THE FIX ---
-    // No matter what happens (success or error), the switching process is now over.
-    // So, we unlock the button.
-    // setState(() {
-    //   _isSwitchingCamera = false; // 2. Unlock the button
-    // });
     if (_isSwitchingCamera) {
       setState(() {
         _isSwitchingCamera = false; // 2. Unlock the button
       });
     }
-    // --- END OF FIX ---
 
     switch (call.method) {
       case 'onStreamReady':
@@ -2008,22 +1682,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  // void _retryStream() {
-  //   if (_currentCameraIndex == -1) {
-  //     print("Retry failed: No camera index selected.");
-  //     return;
-  //   }
-  //   print("Retrying stream for camera index: $_currentCameraIndex");
-  //
-  //   setState(() {
-  //     _gstreamerViewKey = UniqueKey(); // This is the MOST IMPORTANT line. It forces the widget to be destroyed and recreated.
-  //     _isGStreamerReady = false;
-  //     _isGStreamerLoading = true; // Show the loading spinner again
-  //     _gstreamerHasError = false; // Clear the error state
-  //     _errorMessage = null;
-  //   });
-  // }
-
+ 
   void _retryStream() {
     if (_currentCameraIndex == -1) {
       print("Retry failed: No camera index selected.");
@@ -2031,9 +1690,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
     print("Retrying stream via full native reset for camera index: $_currentCameraIndex");
 
-    // --- THIS IS THE FIX ---
-    // Instead of calling _switchCamera, we now have a dedicated path for retrying
-    // that calls a new, more powerful native reset method.
     if (_gstreamerChannel != null && _isGStreamerReady) {
       setState(() {
         _isGStreamerLoading = true;
@@ -2082,22 +1738,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     if (mounted) {
       _connectToStatusServer();
-      _connectCommandServer(); // <-- ADD THIS CALL
+      _connectCommandServer(); 
       _switchCamera(0);
       _startCommandTimer();
       setState(() => _isLoading = false);
     }
   }
-
-  // Future<void> _sendCommandPacket(UserCommand command) async {
-  //   if (_robotIpAddress.isEmpty) return;
-  //   try {
-  //     final socket = await Socket.connect(_robotIpAddress, 65432, timeout: const Duration(milliseconds: 150));
-  //     socket.add(command.toBytes());
-  //     await socket.flush();
-  //     socket.close();
-  //   } catch (e) {}
-  // }
 
   Future<void> _sendCommandPacket(UserCommand command) async {
     if (_commandSocket != null) {
@@ -2110,19 +1756,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     }
   }
-
-  // Future<void> _sendTouchPacket(TouchCoord coord) async {
-  //   if (_robotIpAddress.isEmpty) return;
-  //   try {
-  //     const int TOUCH_PORT = 65433;
-  //     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-  //     socket.send(coord.toBytes(), InternetAddress(_robotIpAddress), TOUCH_PORT);
-  //     socket.close();
-  //     print('Sent Touch Packet (UDP): X=${coord.x}, Y=${coord.y}');
-  //   } catch (e) {
-  //     print('Error sending touch UDP packet: $e');
-  //   }
-  // }
 
   Future<void> _sendTouchPacket(TouchCoord coord) async {
     if (_robotIpAddress.isEmpty || _touchSocket == null) return;
@@ -2142,47 +1775,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _isGStreamerReady = false;
   }
 
-  // Future<void> _switchCamera(int index) async {
-  //   // If a switch is already in progress, do nothing.
-  //   if (_isSwitchingCamera) {
-  //     print("Camera switch already in progress. Ignoring request.");
-  //     return;
-  //   }
-  //   // --- END OF FIX ---
-  //
-  //   if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
-  //   if (index == _currentCameraIndex && !_gstreamerHasError) return;
-  //
-  //   setState(() {
-  //     _isSwitchingCamera = true; // 1. Lock the button
-  //     _isGStreamerLoading = true; // Show loading indicator immediately
-  //   });
-  //
-  //
-  //   if (_gstreamerChannel != null && _isGStreamerReady) {
-  //     try { await _gstreamerChannel!.invokeMethod('stopStream'); } catch (e) {}
-  //   }
-  //   setState(() {
-  //     _currentCameraIndex = index;
-  //     _gstreamerViewKey = UniqueKey();
-  //     _isGStreamerReady = false;
-  //     _isGStreamerLoading = true;
-  //     _gstreamerHasError = false;
-  //     _errorMessage = null;
-  //   });
-  // }
-
   Future<void> _switchCamera(int index) async {
-    // If a switch is already in progress, do nothing.
     if (_isSwitchingCamera) {
       print("Camera switch already in progress. Ignoring request.");
       return;
     }
     if (_cameraUrls.isEmpty || index < 0 || index >= _cameraUrls.length) return;
     if (index == _currentCameraIndex && !_gstreamerHasError) return;
-
-    // --- THIS IS THE FIX ---
-    // The logic is now centralized here for both initial load and subsequent switches.
 
     // 1. Immediately set the loading and switching state.
     setState(() {
@@ -2209,9 +1808,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     });
 
-    // 3. Decide whether to create a new view or change the stream on the existing one.
+    // 3. Decide whether to create a view or change the stream on the existing one.
     if (_gstreamerChannel != null && _isGStreamerReady) {
-      // PATH A: View already exists, just change the stream.
       try {
         final String url = _cameraUrls[index];
         await _gstreamerChannel!.invokeMethod('changeStream', {'url': url});
@@ -2227,13 +1825,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         }
       }
     } else {
-      // PATH B: This is the first load, so we need to recreate the widget.
       setState(() {
         _gstreamerViewKey = UniqueKey();
       });
-      // The rest of the logic will be handled by _onGStreamerPlatformViewCreated
-      // and _playCurrentCameraStream, which will start its own stream attempt.
-      // Our timeout timer here serves as a backup for this path as well.
     }
   }
 
@@ -2274,33 +1868,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  // Widget _buildStreamOverlay() {
-  //   if (_isGStreamerLoading) {
-  //     return Container(
-  //       color: Colors.black.withOpacity(0.5),
-  //       child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: Colors.white), SizedBox(height: 20), Text('Connecting to stream...', style: TextStyle(color: Colors.white, fontSize: 18))])),
-  //     );
-  //   }
-  //   if (_gstreamerHasError) {
-  //     return Container(
-  //       color: Colors.black.withOpacity(0.7),
-  //       child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-  //         const Icon(Icons.error_outline, color: Colors.redAccent, size: 70),
-  //         const SizedBox(height: 20),
-  //         Padding(padding: const EdgeInsets.symmetric(horizontal: 40.0), child: Text(_errorMessage ?? 'Stream failed to load.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 20))),
-  //         const SizedBox(height: 30),
-  //         ElevatedButton.icon(
-  //           icon: const Icon(Icons.refresh),
-  //           label: const Text('Retry'),
-  //           onPressed: () { if (_currentCameraIndex != -1) _switchCamera(_currentCameraIndex); },
-  //           style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.blueGrey, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-  //         ),
-  //       ])),
-  //     );
-  //   }
-  //   return const SizedBox.shrink();
-  // }
-
   Widget _buildStreamOverlay() {
     if (_isGStreamerLoading) {
       return Container(
@@ -2312,12 +1879,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return Container(
         color: Colors.black.withOpacity(0.7),
         child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          // ... (icon and text are unchanged)
           const SizedBox(height: 30),
           ElevatedButton.icon(
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
-            onPressed: _retryStream, // <-- USE THE NEW RETRY FUNCTION
+            onPressed: _retryStream,
             style: ElevatedButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.blueGrey, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ])),
@@ -2326,13 +1892,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return const SizedBox.shrink();
   }
 
-  // Future<void> _navigateToSettings() async {
-  //   final bool? settingsChanged = await Navigator.push<bool>(context, MaterialPageRoute(builder: (context) => const SettingsMenuPage()));
-  //   if (settingsChanged == true && mounted) {
-  //     _commandTimer?.cancel();
-  //     await _loadSettingsAndInitialize();
-  //   }
-  // }
   Future<void> _navigateToSettings() async {
     _commandTimer?.cancel();
 
@@ -2351,7 +1910,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
 
     if (settingsChanged == true && mounted) {
-      // --- THIS IS THE KEY CHANGE ---
       // 1. Show the loading overlay
       setState(() {
         _isReinitializing = true;
@@ -2366,7 +1924,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           _isReinitializing = false;
         });
       }
-      // --- END OF KEY CHANGE ---
     } else {
       // If no changes, just restart the timer
       _startCommandTimer();
@@ -2374,7 +1931,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _reloadSettingsAndReconnect() async {
-    // Load the potentially new IP and URLs
     _robotIpAddress = await _settingsService.loadIpAddress();
     _cameraUrls = await _settingsService.loadCameraUrls();
 
@@ -2390,9 +1946,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _connectToStatusServer();
     _connectCommandServer();
 
-    // Now, tell the GStreamer view to switch to the new stream URL.
-    // The existing `_switchCamera` function is perfect for this, as it handles
-    // the native recreation logic correctly via the "changeStream" method.
     if (mounted) {
       _switchCamera(_currentCameraIndex);
     }

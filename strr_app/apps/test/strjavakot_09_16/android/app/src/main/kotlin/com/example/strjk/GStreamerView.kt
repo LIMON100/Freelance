@@ -50,36 +50,6 @@ internal class GStreamerView(
         nativeFinalize()
     }
 
-//    override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-//        when (call.method) {
-//            "startStream" -> {
-//                val url = call.argument<String>("url")
-//                if (url != null) {
-//                    val gstDesc = "rtspsrc location=$url protocols=tcp latency=50 ! decodebin3 ! videoconvert ! autovideosink"
-//                    Log.d(TAG, "Initializing native with pipeline: $gstDesc")
-//                    nativeInit(gstDesc)
-//                    is_playing_desired = true
-//                    result.success(null)
-//                } else {
-//                    result.error("INVALID_ARGS", "URL is null", null)
-//                }
-//            }
-//            "stopStream" -> {
-//                Log.d(TAG, "Stopping stream.")
-//                is_playing_desired = false
-//                nativePause()
-//                nativeFinalize() // Finalize to clean up the old pipeline
-//                nativeControllerInit() // Re-initialize for the next stream
-//                result.success(null)
-//            }
-//            "isStreamActive" -> {
-//                result.success(is_playing_desired)
-//            }
-//            else -> result.notImplemented()
-//        }
-//    }
-
-    // In your GStreamerView.kt file
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "startStream" -> {
