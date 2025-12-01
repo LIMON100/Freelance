@@ -22,6 +22,7 @@ dependencies:
   flutter_joystick: ^0.2.2
   wakelock_plus:
   logger:
+  gamepads: ^0.1.7
 
 dev_dependencies:
   flutter_test:

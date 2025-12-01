@@ -87,7 +87,7 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
     );
   }
 
-  // --- MODIFIED: This function now passes the status text ---
+  //  This function now passes the status text ---
   Widget _buildContentForState() {
     switch (_currentState) {
       case WifiConnectionState.waitingForConnection:
@@ -117,10 +117,10 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
     }
   }
 
-  // --- MODIFIED: This widget now includes the status text ---
+  //  This widget now includes the status text ---
   Widget _buildStateUI({
     required String iconPath,
-    required String statusText, // New parameter for the status text
+    required String statusText, 
     required String buttonText,
     required VoidCallback? onPressed,
     bool showSpinner = false,
@@ -149,7 +149,7 @@ class _WifiConnectionScreenState extends State<WifiConnectionScreen> with Widget
         ),
         const SizedBox(height: 40),
 
-        // --- NEW WIDGET: The status text ---
+        // The status text ---
         Text(
           statusText,
           style: const TextStyle(

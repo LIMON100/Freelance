@@ -8,7 +8,6 @@ class RemoteLogOutput extends LogOutput {
 
   RemoteLogOutput(this.remoteAddress, this.remotePort);
 
-  // --- FIX: Add the 'async' keyword ---
   @override
   Future<void> init() async {
     try {
@@ -32,7 +31,6 @@ class RemoteLogOutput extends LogOutput {
     }
   }
 
-  // --- FIX: Add the 'async' keyword ---
   @override
   Future<void> destroy() async {
     _socket?.close();

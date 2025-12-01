@@ -52,24 +52,9 @@ class SplashScreen extends StatelessWidget {
                             // Using SizedBox is more reliable in this structure.
                             const SizedBox(height: 40),
 
-                            // Emblem at the top
-                            //Image.asset('assets/icons/01_Intro_logo.png', height: 100),
                             const SizedBox(height: 24),
 
-                            // Main STR Logo
-                            //Image.asset('assets/icons/01_Intro_str_logo.png', width: 280),
                             const SizedBox(height: 8),
-
-                            // Subtitle Text
-                            // const Text(
-                            //   'Small Tactical Robot',
-                            //   style: TextStyle(
-                            //     color: Colors.white,
-                            //     fontSize: 22,
-                            //     fontWeight: FontWeight.w300,
-                            //     letterSpacing: 1.5,
-                            //   ),
-                            // ),
 
                             const Spacer(),
 
