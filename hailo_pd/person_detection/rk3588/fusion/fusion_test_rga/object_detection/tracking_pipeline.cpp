@@ -856,12 +856,32 @@ TrackingPipeline::~TrackingPipeline() {
     release_resources();
 }
 
+// std::string TrackingPipeline::create_gstreamer_pipeline(bool is_live, const std::string& source_path) {
+//     std::string source_element;
+//     if (is_live) {
+//         source_element = "v4l2src device=" + source_path;
+//     } else {
+//         source_element = "filesrc location=" + source_path + " ! qtdemux ! h264parse ! mppvideodec";
+//     }
+
+//     return source_element + " ! rgaconvert ! " +
+//            "video/x-raw,format=BGR,width=" + std::to_string(m_config.processing_width) +
+//            ",height=" + std::to_string(m_config.processing_height) + " ! " +
+//            "queue ! appsink name=sink drop=true max-buffers=1";
+// }
+
+
 std::string TrackingPipeline::create_gstreamer_pipeline(bool is_live, const std::string& source_path) {
     std::string source_element;
+    std::string fps_enforcement = " ! videorate ! video/x-raw,framerate=30/1";
+
     if (is_live) {
-        source_element = "v4l2src device=" + source_path;
+        // Live Camera: Enforce FPS immediately after capturing
+        source_element = "v4l2src device=" + source_path + fps_enforcement;
     } else {
-        source_element = "filesrc location=" + source_path + " ! qtdemux ! h264parse ! mppvideodec";
+        // Video File: Decode first, then enforce FPS (drops extra frames here)
+        source_element = "filesrc location=" + source_path + 
+                         " ! qtdemux ! h264parse ! mppvideodec" + fps_enforcement;
     }
 
     return source_element + " ! rgaconvert ! " +
@@ -869,6 +889,7 @@ std::string TrackingPipeline::create_gstreamer_pipeline(bool is_live, const std:
            ",height=" + std::to_string(m_config.processing_height) + " ! " +
            "queue ! appsink name=sink drop=true max-buffers=1";
 }
+
 
 cv::Point2f TrackingPipeline::transformIrToEo(const cv::Point2f& ir_point, double zoom, double focus) 
 {
@@ -962,44 +983,6 @@ void TrackingPipeline::release_resources() {
     m_capture_ir.release();
     if (m_config.enable_visualization) cv::destroyAllWindows();
 }
-
-// Main run method launches all parallel threads
-// void TrackingPipeline::run() {
-
-//     // Create the pipeline strings based on the config
-//     std::string eo_pipeline_str = create_gstreamer_pipeline(m_config.use_live_stream, 
-//                                                             m_config.use_live_stream ? m_config.eo_device_path : m_config.eo_video_path);
-//     std::string ir_pipeline_str = create_gstreamer_pipeline(m_config.use_live_stream,
-//                                                             m_config.use_live_stream ? m_config.ir_device_path : m_config.ir_video_path);
-
-//     std::cout << "[GSTREAMER EO] " << eo_pipeline_str << std::endl;
-//     std::cout << "[GSTREAMER IR] " << ir_pipeline_str << std::endl;
-
-//     // Launch all threads
-//     auto capture_eo_thread = std::async(std::launch::async, &TrackingPipeline::capture_worker, this, eo_pipeline_str, m_raw_frames_queue_eo);
-//     auto capture_ir_thread = std::async(std::launch::async, &TrackingPipeline::capture_worker, this, ir_pipeline_str, m_raw_frames_queue_ir);
-
-//     // FIX: Removed unused t_start and t_end variables
-//     auto preprocess_eo_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_eo, this);
-//     auto preprocess_ir_thread = std::async(std::launch::async, &TrackingPipeline::preprocess_worker_ir, this);
-//     auto inference_eo_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_eo, this);
-//     auto inference_ir_thread = std::async(std::launch::async, &TrackingPipeline::inference_worker_ir, this);
-//     auto fusion_thread = std::async(std::launch::async, &TrackingPipeline::fusion_worker, this);
-//     auto postprocess_thread = std::async(std::launch::async, &TrackingPipeline::postprocess_worker, this);
-
-//     postprocess_thread.wait();
-//     stop(); 
-    
-//     preprocess_eo_thread.wait();
-//     preprocess_ir_thread.wait();
-//     inference_eo_thread.wait();
-//     inference_ir_thread.wait();
-//     fusion_thread.wait();
-
-
-//     std::cout << "Pipeline finished." << std::endl;
-// }
-
 
 void TrackingPipeline::run() {
 
@@ -1222,7 +1205,7 @@ float TrackingPipeline::calculate_adaptive_alpha(const cv::Mat& eo_frame) {
 
 
 void TrackingPipeline::fusion_and_inference_worker() {
-    const auto max_sync_delta = std::chrono::milliseconds(15);
+    const auto max_sync_delta = std::chrono::milliseconds(20);
     while (!m_stop_flag.load()) {
         // Step 1: Pop a synchronized pair of preprocessed frames.
         SingleStreamFrameData eo_item, ir_item;
@@ -1356,22 +1339,24 @@ void TrackingPipeline::fusion_and_inference_worker() {
 
         const float search_roi_size = 80.0f;
         
-        // <<< NEW >>>
         // This block handles the adaptive alpha logic based on the feature flag.
-        float alpha;
-        auto t_alpha_start = std::chrono::high_resolution_clock::now();
+        // float alpha;
+        // auto t_alpha_start = std::chrono::high_resolution_clock::now();
 
-        if (m_config.enable_adaptive_alpha) {
-            // Calculate alpha dynamically based on EO frame contrast
-            alpha = calculate_adaptive_alpha(eo_item.org_frame);
-        } else {
-            // Use a fixed, default alpha when the feature is disabled
-            alpha = 0.7f;
-        }
+        // if (m_config.enable_adaptive_alpha) {
+        //     // Calculate alpha dynamically based on EO frame contrast
+        //     alpha = calculate_adaptive_alpha(eo_item.org_frame);
+        // } else {
+        //     //  default alpha when the feature is disabled
+        //     alpha = 0.7f;
+        // }
+
+        float alpha = eo_item.adaptive_alpha_value;
 
         auto t_alpha_end = std::chrono::high_resolution_clock::now();
-        fused_item.alpha_calculation_duration = std::chrono::duration<double, std::milli>(t_alpha_end - t_alpha_start);
-        // <<< END NEW >>>
+        // fused_item.alpha_calculation_duration = std::chrono::duration<double, std::milli>(t_alpha_end - t_alpha_start);
+        fused_item.alpha_calculation_duration = std::chrono::milliseconds(0); 
+
 
         for (auto& eo_obj : eo_objects) {
             cv::Point2f eo_center(eo_obj.rect.x() + eo_obj.rect.width() / 2.0f,
@@ -1395,7 +1380,6 @@ void TrackingPipeline::fusion_and_inference_worker() {
             }
 
             if (best_ir_match != nullptr) {
-                // The formula now uses our new 'alpha' variable, which is either fixed or dynamic.
                 eo_obj.prob = alpha * eo_obj.prob + (1.0f - alpha) * best_ir_match->prob;
             }
         }
@@ -1548,6 +1532,35 @@ void TrackingPipeline::fusion_and_inference_worker() {
 //     m_fused_queue->stop();
 // }
 
+// void TrackingPipeline::preprocess_worker_eo() {
+//     int frame_counter = 0;
+//     while (!m_stop_flag.load()) {
+//         cv::Mat processed_frame;
+//         if (!m_raw_frames_queue_eo->pop(processed_frame)) break;
+
+//         SingleStreamFrameData item;
+//         item.frame_id = frame_counter++;
+//         item.t_capture_start = std::chrono::high_resolution_clock::now();
+        
+//         // The frame from GStreamer is already the correct processing size (e.g., 512x512)
+//         item.org_frame = processed_frame.clone();
+
+//         // The only remaining task is resizing to the model's input size.
+//         // No stabilization or cropping logic is needed here anymore.
+//         cv::resize(processed_frame, item.resized_for_infer, 
+//                    cv::Size(m_config.model_input_width, m_config.model_input_height), 
+//                    0, 0, cv::INTER_LINEAR);
+        
+//         // Since stabilization is disabled, the affine matrix is identity.
+//         item.affine_matrix = cv::Mat::eye(2, 3, CV_64F);
+//         item.crop_offset = cv::Point(0, 0);
+
+//         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
+//         m_preprocessed_queue_eo->push(std::move(item));
+//     }
+//     m_preprocessed_queue_eo->stop();
+// }
+
 void TrackingPipeline::preprocess_worker_eo() {
     int frame_counter = 0;
     while (!m_stop_flag.load()) {
@@ -1558,18 +1571,58 @@ void TrackingPipeline::preprocess_worker_eo() {
         item.frame_id = frame_counter++;
         item.t_capture_start = std::chrono::high_resolution_clock::now();
         
-        // The frame from GStreamer is already the correct processing size (e.g., 512x512)
+        // Store the original frame for display/fusion later
         item.org_frame = processed_frame.clone();
 
-        // The only remaining task is resizing to the model's input size.
-        // No stabilization or cropping logic is needed here anymore.
-        cv::resize(processed_frame, item.resized_for_infer, 
-                   cv::Size(m_config.model_input_width, m_config.model_input_height), 
-                   0, 0, cv::INTER_LINEAR);
-        
-        // Since stabilization is disabled, the affine matrix is identity.
+        // --- CENTER CROP LOGIC ---
+        if (m_config.enable_center_crop) {
+            int img_w = processed_frame.cols;
+            int img_h = processed_frame.rows;
+            int crop_size = m_config.crop_size;
+
+            // Ensure crop size isn't larger than the image
+            if (crop_size > img_w) crop_size = img_w;
+            if (crop_size > img_h) crop_size = img_h;
+
+            // Calculate Top-Left corner (The Offset)
+            // Using floating point math for center precision, then casting to int
+            int x_off = static_cast<int>((img_w - crop_size) / 2.0f);
+            int y_off = static_cast<int>((img_h - crop_size) / 2.0f);
+
+            // Store this EXACT offset for the fusion worker to add back later
+            item.crop_offset = cv::Point(x_off, y_off);
+
+            // Create the Region of Interest (ROI)
+            cv::Rect roi(x_off, y_off, crop_size, crop_size);
+            
+            // Extract the crop
+            cv::Mat crop_img = processed_frame(roi);
+
+            // Resize ONLY the crop to the model input size (e.g., 640x640)
+            // This ensures the model sees the "zoomed in" view full scale
+            cv::resize(crop_img, item.resized_for_infer, 
+                       cv::Size(m_config.model_input_width, m_config.model_input_height), 
+                       0, 0, cv::INTER_LINEAR);
+        } 
+        else {
+            // Standard Resize (No Crop)
+            item.crop_offset = cv::Point(0, 0);
+            cv::resize(processed_frame, item.resized_for_infer, 
+                       cv::Size(m_config.model_input_width, m_config.model_input_height), 
+                       0, 0, cv::INTER_LINEAR);
+        }
+
+        // --- ADD THIS BLOCK HERE ---
+        if (m_config.enable_adaptive_alpha) {
+            // This runs on CPU. Doing it here prevents blocking the Fusion thread later.
+            item.adaptive_alpha_value = calculate_adaptive_alpha(item.org_frame);
+        } else {
+            item.adaptive_alpha_value = 0.7f; // Default static value
+        }
+        // ---------------------------
+
+        // No stabilization in this step, so identity matrix
         item.affine_matrix = cv::Mat::eye(2, 3, CV_64F);
-        item.crop_offset = cv::Point(0, 0);
 
         item.t_preprocess_end = std::chrono::high_resolution_clock::now();
         m_preprocessed_queue_eo->push(std::move(item));
