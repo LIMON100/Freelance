@@ -1,170 +1,120 @@
 import math
 import pygame
+from pathfinding import PathFinder
 
 class FormationManager:
-    """
-    Handles Swarm Logic with improved Collision Avoidance.
-    """
     def __init__(self, leader, followers):
         self.leader = leader
         self.followers = followers
-        # Combine all robots for collision checks
         self.all_robots = [leader] + followers
         
-        # Formation Settings (Distance from Leader)
-        # Format: (Distance Back, Distance Right)
+        # Initialize PathFinder (Map size 1280x720)
+        self.pathfinder = PathFinder(1280, 720)
+        self.current_path = [] # Store the list of points the leader follows
+        self.path_timer = 0    # Don't recalculate every single frame (too slow)
+
+        # Formation Offsets
         self.offsets = [
-            (-60, -50), # Follower 1: Left Rear
-            (-60, 50),  # Follower 2: Right Rear
-            (-120, -100), # Follower 3: Far Left Rear
-            (-120, 100)   # Follower 4: Far Right Rear
+            (-60, -50), (-60, 50), (-120, -100), (-120, 100)
         ]
 
     def update(self, target_obj, walls):
-        """
-        Main update loop for the swarm.
-        """
-        # --- 1. Update Leader ---
-        self.move_robot(self.leader, target_obj.rect.center, walls)
+        # --- 1. Leader Pathfinding ---
+        
+        # Recalculate path every 30 frames (0.5 seconds) OR if we have no path
+        self.path_timer += 1
+        if self.path_timer > 30 or not self.current_path:
+            self.path_timer = 0
+            # Calculate path from Leader to Target
+            # We assume walls don't move instantly.
+            # NOTE: We pass the 'walls' object list to the pathfinder
+            path = self.pathfinder.find_path((self.leader.x, self.leader.y), target_obj.rect.center, walls)
+            if path:
+                self.current_path = path
 
-        # --- 2. Calculate Leader's Heading ---
+        # --- 2. Move Leader along Path ---
+        if self.current_path:
+            # The next immediate target is the first point in the path list
+            next_point = self.current_path[0]
+            
+            # Distance to next waypoint
+            dist = math.sqrt((next_point[0]-self.leader.x)**2 + (next_point[1]-self.leader.y)**2)
+            
+            # If close to waypoint, remove it and go to next
+            if dist < 20: 
+                self.current_path.pop(0)
+            
+            # Move towards the waypoint
+            if self.current_path: # Check again in case we popped the last one
+                self.move_robot_simple(self.leader, self.current_path[0])
+            else:
+                # Arrived at final target
+                self.leader.vx, self.leader.vy = 0, 0
+
+        # --- 3. Leader Heading ---
         if self.leader.vx != 0 or self.leader.vy != 0:
             heading = math.atan2(self.leader.vy, self.leader.vx)
         else:
-            # If stopped, face the target
             dx = target_obj.rect.center[0] - self.leader.x
             dy = target_obj.rect.center[1] - self.leader.y
             heading = math.atan2(dy, dx)
 
-        # --- 3. Update Followers ---
+        # --- 4. Update Followers (Standard Logic) ---
         for i, follower in enumerate(self.followers):
-            # Calculate Virtual Slot
             off_x, off_y = self.offsets[i]
+            rot_x = off_x * math.cos(heading) - off_y * math.sin(heading)
+            rot_y = off_x * math.sin(heading) + off_y * math.cos(heading)
             
-            # Rotate offset based on leader's heading
-            rotated_x = off_x * math.cos(heading) - off_y * math.sin(heading)
-            rotated_y = off_x * math.sin(heading) + off_y * math.cos(heading)
+            slot_x = self.leader.x + rot_x
+            slot_y = self.leader.y + rot_y
             
-            slot_x = self.leader.x + rotated_x
-            slot_y = self.leader.y + rotated_y
-            
-            self.move_robot(follower, (slot_x, slot_y), walls)
+            # Followers can use simple movement because they just follow the leader
+            # (In a real swarm, they would also use A*, but for this demo, direct follow is usually ok)
+            # However, to prevent them clipping walls, we can use the simple repulsion logic here
+            self.move_robot_with_avoidance(follower, (slot_x, slot_y), walls)
 
+    def move_robot_simple(self, robot, goal):
+        """Pure movement to point (for Leader following A* nodes)"""
+        dx = goal[0] - robot.x
+        dy = goal[1] - robot.y
+        dist = math.sqrt(dx**2 + dy**2)
+        if dist > 0:
+            speed = 3.0
+            robot.vx = (dx/dist) * speed
+            robot.vy = (dy/dist) * speed
+            robot.x += robot.vx
+            robot.y += robot.vy
 
-    def move_robot(self, robot, goal_pos, walls):
-        """
-        Enhanced Navigation Logic.
-        1. Attractive Force (Goal)
-        2. Repulsive Force (Walls)
-        3. Repulsive Force (Other Robots) - NEW
-        4. Hard Collision Check (Stop at Wall) - NEW
-        """
-        
-        # --- A. Forces Calculation ---
-        
-        # 1. Goal Attraction
-        dx = goal_pos[0] - robot.x
-        dy = goal_pos[1] - robot.y
+    def move_robot_with_avoidance(self, robot, goal, walls):
+        """Followers use this: Try to go to slot, but push away from walls"""
+        dx = goal[0] - robot.x
+        dy = goal[1] - robot.y
         dist = math.sqrt(dx**2 + dy**2)
         
-        if dist < 5:
-            robot.vx, robot.vy = 0, 0
-            return
-
-        force_x = dx / dist
-        force_y = dy / dist
+        force_x, force_y = 0, 0
         
-        # 2. Wall Repulsion (Soft Push)
-        wall_repulse_x, wall_repulse_y = 0, 0
-        wall_safety_radius = 60
-        
+        if dist > 5:
+            force_x += dx/dist
+            force_y += dy/dist
+            
+        # Wall Repulsion
         for wall in walls:
-            # Get closest point on wall rectangle to robot center
             closest_x = max(wall.rect.left, min(robot.x, wall.rect.right))
             closest_y = max(wall.rect.top, min(robot.y, wall.rect.bottom))
-            
             w_dx = robot.x - closest_x
             w_dy = robot.y - closest_y
             w_dist = math.sqrt(w_dx**2 + w_dy**2)
             
-            if w_dist < wall_safety_radius:
-                if w_dist == 0: w_dist = 0.1 # Prevent div by zero
-                # Stronger repulsion as we get closer
-                strength = (wall_safety_radius - w_dist) / wall_safety_radius
-                wall_repulse_x += (w_dx / w_dist) * strength * 8.0 
-                wall_repulse_y += (w_dy / w_dist) * strength * 8.0
-
-        # 3. Robot Repulsion (Don't hit friends!) - NEW
-        robot_repulse_x, robot_repulse_y = 0, 0
-        robot_separation_radius = 40 # Minimum comfortable distance
-        
-        for other in self.all_robots:
-            if other is robot: continue # Don't repel self
-            
-            r_dx = robot.x - other.x
-            r_dy = robot.y - other.y
-            r_dist = math.sqrt(r_dx**2 + r_dy**2)
-            
-            if r_dist < robot_separation_radius:
-                if r_dist == 0: r_dist = 0.1
-                strength = (robot_separation_radius - r_dist) / robot_separation_radius
-                # Very strong repulsion to prevent overlapping
-                robot_repulse_x += (r_dx / r_dist) * strength * 5.0
-                robot_repulse_y += (r_dy / r_dist) * strength * 5.0
-
-        # --- B. Combine & Move ---
-        
-        # Combine all forces
-        total_fx = force_x + wall_repulse_x + robot_repulse_x
-        total_fy = force_y + wall_repulse_y + robot_repulse_y
-        
-        # Apply Speed
-        speed = 2.0
-        # Normalize result vector to keep constant speed (unless stopped)
-        total_mag = math.sqrt(total_fx**2 + total_fy**2)
-        if total_mag > 0:
-            move_x = (total_fx / total_mag) * speed
-            move_y = (total_fy / total_mag) * speed
-        else:
-            move_x, move_y = 0, 0
-
-        # --- C. Hard Collision Check (The Wall Stop) ---
-        
-        # Proposed new position
-        next_x = robot.x + move_x
-        next_y = robot.y + move_y
-        
-        # Create a temporary rectangle for the robot at new pos
-        robot_rect = pygame.Rect(next_x - 15, next_y - 15, 30, 30) # Assuming radius 15
-        
-        can_move_x = True
-        can_move_y = True
-        
-        for wall in walls:
-            if wall.rect.colliderect(robot_rect):
-                # We hit a wall!
-                # Simple logic: Stop moving.
-                # Advanced logic (sliding) is harder, but stopping prevents "Running over".
-                
-                # Check X collision separately
-                rect_x = pygame.Rect(next_x - 15, robot.y - 15, 30, 30)
-                if wall.rect.colliderect(rect_x):
-                    can_move_x = False
-                
-                # Check Y collision separately
-                rect_y = pygame.Rect(robot.x - 15, next_y - 15, 30, 30)
-                if wall.rect.colliderect(rect_y):
-                    can_move_y = False
-
-        # Apply allowed movement
-        if can_move_x:
-            robot.x += move_x
-            robot.vx = move_x
-        else:
-            robot.vx = 0 # Hit wall in X
-            
-        if can_move_y:
-            robot.y += move_y
-            robot.vy = move_y
-        else:
-            robot.vy = 0 # Hit wall in Y
+            if w_dist < 40:
+                 if w_dist == 0: w_dist = 0.1
+                 force_x += (w_dx/w_dist) * 5.0
+                 force_y += (w_dy/w_dist) * 5.0
+                 
+        # Apply
+        mag = math.sqrt(force_x**2 + force_y**2)
+        speed = 3.0
+        if mag > 0:
+            robot.vx = (force_x/mag) * speed
+            robot.vy = (force_y/mag) * speed
+            robot.x += robot.vx
+            robot.y += robot.vy
