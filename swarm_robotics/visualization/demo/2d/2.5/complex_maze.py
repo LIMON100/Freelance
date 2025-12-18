@@ -189,6 +189,7 @@ class LeaderSelectButton:
         return self.rect.collidepoint(pos)
 
 # --- Main Application ---
+# --- Main Application ---
 def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -202,7 +203,7 @@ def main():
     
     # Robots start at the opposite corner
     robots = [
-        Robot("L", 1150, 800, is_leader=True),
+        Robot("F0", 1150, 800, is_leader=True),
         Robot("F1", 1100, 850),
         Robot("F2", 1200, 850),
         Robot("F3", 1050, 900),
@@ -217,41 +218,29 @@ def main():
         Wall(MAP_WIDTH - 20, 0, 20, SCREEN_HEIGHT), # Right
 
         # --- Maze Interior Walls ---
-        # A long winding central barrier
         Wall(200, 20, 20, 400),
         Wall(200, 400, 300, 20),
         Wall(500, 400, 20, 400),
         Wall(500, 800, 300, 20),
         Wall(800, 500, 20, 300),
         Wall(800, 500, 300, 20),
-
-        # Top-left dead-end section
         Wall(20, 200, 100, 20),
         Wall(350, 20, 20, 200),
-
-        # "Teeth" or small zig-zags to force DWA reaction
         Wall(600, 20, 20, 150),
         Wall(700, 150, 150, 20),
         Wall(850, 20, 20, 150),
-
-        # Bottom-left tight corridor
         Wall(20, 600, 400, 20),
         Wall(150, 600, 20, 200),
         Wall(300, 750, 220, 20),
-        
-        # Bottom-right complex trap
-        Wall(950, 960, 20, -300), # Goes up from bottom
+        Wall(950, 960, 20, -300), 
         Wall(950, 660, 200, 20),
-
-        # Floating blocks in the middle of paths
         Wall(400, 550, 50, 50),
         Wall(700, 300, 50, 50),
     ]
-    # --- END MAZE SETUP ---
 
     waypoint_mgr = WaypointManager()
     
-    # Buttons
+    # 1. Standard Buttons
     btn_start = Button(MAP_WIDTH + 20, 20, 120, 40, "START", COLOR_BTN_START)
     btn_reset = Button(MAP_WIDTH + 160, 20, 120, 40, "RESET", COLOR_BTN_RESET)
     
@@ -260,6 +249,18 @@ def main():
 
     buttons = [btn_start, btn_reset, btn_clear_pts, btn_undo_pt]
 
+    # 2. Leader Selection Buttons
+    leader_buttons = []
+    start_x = MAP_WIDTH + 30
+    start_y = 550 # Position below telemetry
+    labels = ["F0", "F1", "F2", "F3", "F4"]
+    
+    for i in range(5):
+        # Create circle buttons
+        btn = LeaderSelectButton(start_x + (i * 50), start_y, i, labels[i])
+        leader_buttons.append(btn)
+
+    # Logic Managers
     leader_robot = robots[0]
     follower_robots = robots[1:]
     
@@ -275,31 +276,50 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if btn_start.is_clicked(event.pos):
                     sim_running = not sim_running
+                    # Update button text/color immediately
+                    if sim_running:
+                        btn_start.text = "STOP"
+                        btn_start.color = COLOR_BTN_STOP
+                    else:
+                        btn_start.text = "START"
+                        btn_start.color = COLOR_BTN_START
                 
                 elif btn_reset.is_clicked(event.pos):
                     sim_running = False
+                    btn_start.text = "START"
+                    btn_start.color = COLOR_BTN_START
                     target.reset()
                     for r in robots: r.reset()
-                    # Walls in a maze are not reset
                     waypoint_mgr.clear()
                     formation_mgr.leader_history.clear()
+                    # Reset leader to default (Robot 0)
+                    formation_mgr.switch_leader(0)
                 
                 elif btn_clear_pts.is_clicked(event.pos):
                     if not sim_running: waypoint_mgr.clear()
                 elif btn_undo_pt.is_clicked(event.pos):
                     if not sim_running: waypoint_mgr.remove_last()
                 
-                elif event.pos[0] < MAP_WIDTH and not sim_running:
-                    clicked_obj = False
-                    if target.rect.collidepoint(event.pos): clicked_obj = True
-                    for w in walls: 
-                        if w.rect.collidepoint(event.pos): clicked_obj = True
-                    
-                    if not clicked_obj:
-                        waypoint_mgr.add_point(event.pos)
+                else:
+                    # Check Leader Buttons
+                    leader_clicked = False
+                    for l_btn in leader_buttons:
+                        if l_btn.is_clicked(event.pos):
+                            formation_mgr.switch_leader(l_btn.robot_index)
+                            leader_clicked = True
+                            break # Stop checking other leader buttons
+
+                    # Check Map Click (only if didn't click a leader button)
+                    if not leader_clicked and event.pos[0] < MAP_WIDTH and not sim_running:
+                        clicked_obj = False
+                        if target.rect.collidepoint(event.pos): clicked_obj = True
+                        for w in walls: 
+                            if w.rect.collidepoint(event.pos): clicked_obj = True
+                        
+                        if not clicked_obj:
+                            waypoint_mgr.add_point(event.pos)
 
             if not target.handle_event(event):
-                # We disable wall dragging for the maze
                 pass
 
         if sim_running:
@@ -311,11 +331,13 @@ def main():
         for w in walls: w.draw(screen)
         waypoint_mgr.draw(screen)
         
-        # if sim_running and len(formation_mgr.current_path) > 1:
-        #      pygame.draw.lines(screen, (255, 255, 0), False, formation_mgr.current_path, 2)
-
-        if sim_running and len(formation_mgr.leader_path) > 1:
+        # --- FIX IS HERE ---
+        # We check for 'leader_path' instead of 'current_path'
+        if sim_running and hasattr(formation_mgr, 'leader_path') and len(formation_mgr.leader_path) > 1:
              pygame.draw.lines(screen, (255, 255, 0), False, formation_mgr.leader_path, 2)
+        # Fallback if you are using an older formation.py
+        elif sim_running and hasattr(formation_mgr, 'current_path') and len(formation_mgr.current_path) > 1:
+             pygame.draw.lines(screen, (255, 255, 0), False, formation_mgr.current_path, 2)
         
         comm_viz.draw(screen)
         for r in robots: r.draw(screen)
@@ -324,6 +346,7 @@ def main():
         pygame.draw.rect(screen, COLOR_PANEL, (MAP_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT))
         pygame.draw.line(screen, (100, 100, 100), (MAP_WIDTH, 0), (MAP_WIDTH, SCREEN_HEIGHT), 2)
         
+        # Ensure button text is up to date in drawing loop
         btn_start.text = "STOP" if sim_running else "START"
         btn_start.color = COLOR_BTN_STOP if sim_running else COLOR_BTN_START
         for btn in buttons: btn.draw(screen, font)
@@ -341,6 +364,16 @@ def main():
             info = f"ID: {r.id:2} | Pos: ({int(r.x):04}, {int(r.y):03})"
             screen.blit(font.render(info, True, color), (MAP_WIDTH + 20, y_offset))
             y_offset += 25
+
+        # Draw Leader Selectors
+        header_leader = font.render("SELECT LEADER:", True, (200, 200, 200))
+        screen.blit(header_leader, (MAP_WIDTH + 20, 520))
+        
+        # Get Current Leader Index
+        curr_leader_idx = formation_mgr.all_robots.index(formation_mgr.leader)
+        
+        for l_btn in leader_buttons:
+            l_btn.draw(screen, font, curr_leader_idx)
 
         pygame.display.flip()
         clock.tick(60)
