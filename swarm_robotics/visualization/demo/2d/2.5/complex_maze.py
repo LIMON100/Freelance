@@ -1,8 +1,9 @@
 import pygame
 import sys
-from formation import FormationManager
+from formation import FormationManager, FollowerState, SwarmState 
 from communication import CommunicationVisualizer
 from pathfinding import PathFinder
+from lidar import Lidar
 
 # --- Constants ---
 MAP_WIDTH = 1280
@@ -106,6 +107,39 @@ class Target:
     def reset(self):
         self.rect.x, self.rect.y = self.start_pos
 
+
+class Threat:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 20, 20)
+        self.start_pos = (x, y)
+        self.is_dragging = False
+        self.offset_x, self.offset_y = 0, 0
+        self.detected = False
+
+    def draw(self, surface):
+        color = (255, 0, 0) if self.detected else (255, 128, 0)
+        pygame.draw.rect(surface, color, self.rect)
+    
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                self.is_dragging = True
+                self.offset_x = self.rect.x - event.pos[0]
+                self.offset_y = self.rect.y - event.pos[1]
+                return True
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.is_dragging = False
+        elif event.type == pygame.MOUSEMOTION and self.is_dragging:
+            self.rect.x = event.pos[0] + self.offset_x
+            self.rect.y = event.pos[1] + self.offset_y
+            return True
+        return False
+
+    def reset(self):
+        self.rect.x, self.rect.y = self.start_pos
+        self.detected = False
+    
+
 class Robot:
     def __init__(self, id, x, y, is_leader=False):
         self.id = id
@@ -116,8 +150,11 @@ class Robot:
         self.color = COLOR_LEADER if is_leader else COLOR_FOLLOWER
         self.vx = 0
         self.vy = 0
+        
+        self.lidar = Lidar(self)
 
     def draw(self, surface):
+        self.lidar.draw(surface)
         pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), ROBOT_RADIUS)
         pygame.draw.circle(surface, (0, 0, 0), (int(self.x), int(self.y)), ROBOT_RADIUS, 2)
         font = pygame.font.SysFont("Arial", 12, bold=True)
@@ -128,7 +165,7 @@ class Robot:
         self.x, self.y = self.start_pos
         self.vx = 0
         self.vy = 0
-
+        
 class Wall:
     def __init__(self, x, y, w, h):
         self.rect = pygame.Rect(x, y, w, h)
@@ -188,8 +225,6 @@ class LeaderSelectButton:
         # Simple rect check for click
         return self.rect.collidepoint(pos)
 
-# --- Main Application ---
-# --- Main Application ---
 def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -198,6 +233,16 @@ def main():
     font = pygame.font.SysFont("Consolas", 16)
 
     sim_running = False
+    recon_mode = False  # Separate flag for recon mode
+    recon_running = False  # Separate flag for whether recon is actively running
+    
+    # Variables for search/recon area
+    is_drawing_recon = False
+    recon_rect_start = None
+    recon_area = None
+    threat_info = ""  # Will display threat status
+
+    threats = [Threat(500, 350)]  # Already have this
 
     target = Target(100, 100)
     
@@ -243,11 +288,14 @@ def main():
     # 1. Standard Buttons
     btn_start = Button(MAP_WIDTH + 20, 20, 120, 40, "START", COLOR_BTN_START)
     btn_reset = Button(MAP_WIDTH + 160, 20, 120, 40, "RESET", COLOR_BTN_RESET)
+
+    btn_recon = Button(MAP_WIDTH + 20, 250, 120, 30, "RECON AREA", (0, 150, 150))
+    btn_start_recon = Button(MAP_WIDTH + 160, 250, 120, 30, "START RECON", (150, 0, 150))  # Start recon button
     
     btn_clear_pts = Button(MAP_WIDTH + 20, 300, 120, 30, "CLEAR PTS", COLOR_BTN_REMOVE)
     btn_undo_pt = Button(MAP_WIDTH + 160, 300, 120, 30, "UNDO PT", COLOR_BTN_REMOVE)
 
-    buttons = [btn_start, btn_reset, btn_clear_pts, btn_undo_pt]
+    buttons = [btn_start, btn_reset, btn_clear_pts, btn_undo_pt, btn_recon, btn_start_recon]
 
     # 2. Leader Selection Buttons
     leader_buttons = []
@@ -286,14 +334,36 @@ def main():
                 
                 elif btn_reset.is_clicked(event.pos):
                     sim_running = False
+                    recon_mode = False  # Reset recon mode
+                    recon_running = False  # Reset recon running state
                     btn_start.text = "START"
                     btn_start.color = COLOR_BTN_START
+                    btn_start_recon.text = "START RECON"
                     target.reset()
                     for r in robots: r.reset()
                     waypoint_mgr.clear()
                     formation_mgr.leader_history.clear()
                     # Reset leader to default (Robot 0)
                     formation_mgr.switch_leader(0)
+                    # Reset recon area and threat info
+                    recon_area = None
+                    threat_info = ""
+                    for t in threats: t.detected = False
+                
+                # Handle RECON AREA button click
+                elif btn_recon.is_clicked(event.pos):
+                    is_drawing_recon = True
+                    recon_rect_start = pygame.mouse.get_pos()
+                    print("[UI] Started drawing recon area")
+                
+                # Handle START RECON button click
+                elif btn_start_recon.is_clicked(event.pos):
+                    if recon_area:
+                        recon_mode = not recon_mode  # Toggle recon mode
+                        recon_running = recon_mode
+                        btn_start_recon.text = "STOP RECON" if recon_mode else "START RECON"
+                        btn_start_recon.color = COLOR_BTN_STOP if recon_mode else (150, 0, 150)
+                        print(f"[UI] {'Started' if recon_mode else 'Stopped'} recon mode in area {recon_area}")
                 
                 elif btn_clear_pts.is_clicked(event.pos):
                     if not sim_running: waypoint_mgr.clear()
@@ -307,10 +377,10 @@ def main():
                         if l_btn.is_clicked(event.pos):
                             formation_mgr.switch_leader(l_btn.robot_index)
                             leader_clicked = True
-                            break # Stop checking other leader buttons
+                            break
 
                     # Check Map Click (only if didn't click a leader button)
-                    if not leader_clicked and event.pos[0] < MAP_WIDTH and not sim_running:
+                    if not leader_clicked and event.pos[0] < MAP_WIDTH and not sim_running and not recon_running:
                         clicked_obj = False
                         if target.rect.collidepoint(event.pos): clicked_obj = True
                         for w in walls: 
@@ -319,19 +389,67 @@ def main():
                         if not clicked_obj:
                             waypoint_mgr.add_point(event.pos)
 
+            # Handle mouse button up for finishing rectangle drawing
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1 and is_drawing_recon:
+                    is_drawing_recon = False
+                    end_pos = event.pos
+                    x = min(recon_rect_start[0], end_pos[0])
+                    y = min(recon_rect_start[1], end_pos[1])
+                    w = abs(recon_rect_start[0] - end_pos[0])
+                    h = abs(recon_rect_start[1] - end_pos[1])
+                    recon_area = pygame.Rect(x, y, w, h)
+                    print(f"[UI] Recon Area defined at {recon_area}")
+
             if not target.handle_event(event):
                 pass
 
+        # Separate the simulation logic for normal mode and recon mode
         if sim_running:
-            formation_mgr.update(target, walls, waypoint_mgr.waypoints)
+            # Update Lidar Scans first
+            for robot in robots:
+                robot.lidar.update(walls + threats)  # Lidar can now see threats
+            
+            # Run Formation Manager for normal mode
+            formation_mgr.update(target, walls, waypoint_mgr.waypoints, None, None)
+        
+        # Run recon mode independently
+        if recon_running:
+            # Update Lidar Scans first
+            for robot in robots:
+                robot.lidar.update(walls + threats)  # Lidar can now see threats
+            
+            # Run Formation Manager for recon mode
+            formation_mgr.update(target, walls, [], recon_area, threats)
+            
+            # Check for threat detection
+            if formation_mgr.swarm_state == SwarmState.THREAT_DETECTED:
+                detected_threat = formation_mgr.detected_threat
+                threat_info = f"THREAT @ ({detected_threat.rect.centerx}, {detected_threat.rect.centery})"
+            elif formation_mgr.swarm_state == SwarmState.RECON_COMPLETE:
+                threat_info = "Recon Complete. No Threats."
+                recon_running = False  # Stop recon when complete
+                recon_mode = False
+                btn_start_recon.text = "START RECON"
+                btn_start_recon.color = (150, 0, 150)
 
         # Drawing
         screen.fill(COLOR_BG)
+        
+        # Draw recon area with a distinct color
+        if recon_area:
+            color = (0, 255, 0) if recon_running else (0, 200, 200)
+            pygame.draw.rect(screen, color, recon_area, 2)
+        if is_drawing_recon and recon_rect_start:
+            # Draw temporary rect while dragging
+            mouse_pos = pygame.mouse.get_pos()
+            temp_rect = pygame.Rect(recon_rect_start, (mouse_pos[0] - recon_rect_start[0], mouse_pos[1] - recon_rect_start[1]))
+            pygame.draw.rect(screen, (0, 255, 0), temp_rect, 1)
+
         target.draw(screen)
         for w in walls: w.draw(screen)
         waypoint_mgr.draw(screen)
         
-        # --- FIX IS HERE ---
         # We check for 'leader_path' instead of 'current_path'
         if sim_running and hasattr(formation_mgr, 'leader_path') and len(formation_mgr.leader_path) > 1:
              pygame.draw.lines(screen, (255, 255, 0), False, formation_mgr.leader_path, 2)
@@ -339,8 +457,13 @@ def main():
         elif sim_running and hasattr(formation_mgr, 'current_path') and len(formation_mgr.current_path) > 1:
              pygame.draw.lines(screen, (255, 255, 0), False, formation_mgr.current_path, 2)
         
+        # Draw recon path if in recon mode
+        if recon_running and hasattr(formation_mgr, 'recon_path') and len(formation_mgr.recon_path) > 1:
+            pygame.draw.lines(screen, (0, 255, 255), False, formation_mgr.recon_path, 1)
+        
         comm_viz.draw(screen)
         for r in robots: r.draw(screen)
+        for t in threats: t.draw(screen)
 
         # UI Panel
         pygame.draw.rect(screen, COLOR_PANEL, (MAP_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT))
@@ -349,6 +472,9 @@ def main():
         # Ensure button text is up to date in drawing loop
         btn_start.text = "STOP" if sim_running else "START"
         btn_start.color = COLOR_BTN_STOP if sim_running else COLOR_BTN_START
+        btn_start_recon.text = "STOP RECON" if recon_running else "START RECON"
+        btn_start_recon.color = COLOR_BTN_STOP if recon_running else (150, 0, 150)
+        
         for btn in buttons: btn.draw(screen, font)
 
         # Telemetry
@@ -356,6 +482,19 @@ def main():
         screen.blit(target_text, (MAP_WIDTH + 20, 80))
         pts_text = font.render(f"WAYPOINTS: {len(waypoint_mgr.waypoints)}", True, COLOR_WAYPOINT)
         screen.blit(pts_text, (MAP_WIDTH + 20, 110))
+        
+        # Display threat info (only in recon mode)
+        if recon_mode and threat_info:
+            threat_color = (255, 0, 0) if "THREAT" in threat_info else (0, 255, 0)
+            threat_text = font.render(threat_info, True, threat_color)
+            screen.blit(threat_text, (MAP_WIDTH + 20, 200))
+        
+        # Display recon mode status
+        recon_status = "ACTIVE" if recon_running else "INACTIVE"
+        recon_color = (0, 255, 0) if recon_running else (200, 200, 200)
+        recon_text = font.render(f"RECON MODE: {recon_status}", True, recon_color)
+        screen.blit(recon_text, (MAP_WIDTH + 20, 170))
+        
         y_offset = 350
         screen.blit(font.render(f"ROBOT TELEMETRY:", True, (200, 200, 200)), (MAP_WIDTH + 20, y_offset))
         y_offset += 30
