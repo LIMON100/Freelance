@@ -3,6 +3,7 @@ import sys
 from formation import FormationManager
 from communication import CommunicationVisualizer
 from pathfinding import PathFinder
+from lidar import Lidar
 
 # --- Constants ---
 MAP_WIDTH = 1280
@@ -116,8 +117,13 @@ class Robot:
         self.color = COLOR_LEADER if is_leader else COLOR_FOLLOWER
         self.vx = 0
         self.vy = 0
+        self.lidar = Lidar(self)
 
     def draw(self, surface):
+        # Draw Lidar first, so it's behind the robot
+        self.lidar.draw(surface)
+        
+        # Then draw the robot
         pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), ROBOT_RADIUS)
         pygame.draw.circle(surface, (0, 0, 0), (int(self.x), int(self.y)), ROBOT_RADIUS, 2)
         font = pygame.font.SysFont("Arial", 12, bold=True)
@@ -188,7 +194,6 @@ class LeaderSelectButton:
         # Simple rect check for click
         return self.rect.collidepoint(pos)
 
-# --- Main Application ---
 # --- Main Application ---
 def main():
     pygame.init()
@@ -336,6 +341,8 @@ def main():
                 pass
 
         if sim_running:
+            for robot in robots:
+                robot.lidar.update(walls)
             formation_mgr.update(target, walls, waypoint_mgr.waypoints)
 
         # Drawing
@@ -344,7 +351,6 @@ def main():
         for w in walls: w.draw(screen)
         waypoint_mgr.draw(screen)
         
-        # --- FIX IS HERE ---
         # We check for 'leader_path' instead of 'current_path'
         if sim_running and hasattr(formation_mgr, 'leader_path') and len(formation_mgr.leader_path) > 1:
              pygame.draw.lines(screen, (255, 255, 0), False, formation_mgr.leader_path, 2)

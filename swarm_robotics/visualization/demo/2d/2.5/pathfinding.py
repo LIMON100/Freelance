@@ -36,7 +36,6 @@ class PathFinder:
     def is_collision(self, grid_pos, walls):
         world_x, world_y = self.get_world_pos(grid_pos)
         
-        # REDUCED BUFFER: Trust the local planner to squeeze through tight spots
         # Robot Radius is 15. Let's use 16 as buffer.
         buffer = 16 
         
@@ -146,3 +145,44 @@ class PathFinder:
             path.append(self.get_world_pos(current_node.position))
             current_node = current_node.parent
         return path[::-1]
+    
+
+    # Add this method to the PathFinder class
+    def generate_lawnmower_path(self, rect, walls):
+        """Generates a zigzag/lawnmower path within a given rectangle."""
+        path = []
+        if not rect:
+            return path
+
+        x, y, w, h = rect.x, rect.y, rect.width, rect.height
+        step = self.grid_size * 2  # How far apart are the rows
+        
+        # Start at top-left of the rectangle
+        start_node = self.get_valid_node(self.get_grid_pos((x, y)), walls)
+        if not start_node: return []
+        
+        current_y = self.get_world_pos(start_node)[1]
+        
+        direction = 1  # 1 for right, -1 for left
+        
+        while current_y < y + h:
+            # Determine start and end x for this row
+            start_x = x if direction == 1 else x + w
+            end_x = x + w if direction == 1 else x
+            
+            # Find path to the start of the row
+            start_of_row_path = self.find_path((path[-1][0], path[-1][1]) if path else self.get_world_pos(start_node), (start_x, current_y), walls)
+            if start_of_row_path:
+                path.extend(start_of_row_path)
+            
+            # Find path along the row
+            end_of_row_path = self.find_path((start_x, current_y), (end_x, current_y), walls)
+            if end_of_row_path:
+                path.extend(end_of_row_path)
+
+            # Move to next row and reverse direction
+            current_y += step
+            direction *= -1
+                
+        print(f"[PathFinder] Generated Lawnmower Path with {len(path)} waypoints.")
+        return path
